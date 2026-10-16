@@ -817,6 +817,43 @@ object PlayerPreferencesScreen : Screen {
                   summary = { Text("Automatycznie otwiera panel po rozpoczęciu kolejnego filmu. X zamyka go do następnego filmu.") },
                 )
               }
+              // MPVREX_SPEED_PANEL_APPEARANCE_V7
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val panelSize by preferences.threeFingerSpeedPanelSize.collectAsState()
+                SliderPreference(
+                  value = panelSize.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedPanelSize.set(it.roundToInt()) },
+                  title = { Text("Rozmiar panelu") },
+                  valueRange = 70f..150f,
+                  summary = { Text("${panelSize}% — ramka, przyciski i cyfry") },
+                  onSliderValueChange = { preferences.threeFingerSpeedPanelSize.set(it.roundToInt()) },
+                  sliderValue = panelSize.toFloat(),
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+                SliderPreference(
+                  value = transparency.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
+                  title = { Text("Przezroczystość tła panelu") },
+                  valueRange = 0f..100f,
+                  summary = { Text("${transparency}% (0% = pełne tło, 100% = brak tła)") },
+                  onSliderValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
+                  sliderValue = transparency.toFloat(),
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val gap by preferences.threeFingerSpeedPanelGap.collectAsState()
+                SliderPreference(
+                  value = gap.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
+                  title = { Text("Odstępy między przyciskami") },
+                  valueRange = 0f..16f,
+                  summary = { Text("${gap} dp — oba rzędy") },
+                  onSliderValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
+                  sliderValue = gap.toFloat(),
+                )
+              }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
                 SwitchPreference(
                   value = persistent,

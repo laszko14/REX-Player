@@ -18,6 +18,10 @@ class PlayerPreferences(
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
+  // MPVREX_SPEED_PANEL_APPEARANCE_V7
+  val threeFingerSpeedPanelSize = preferenceStore.getInt("three_finger_speed_panel_size_pct", 100)
+  val threeFingerSpeedPanelTransparency = preferenceStore.getInt("three_finger_speed_panel_transparency_pct", 20)
+  val threeFingerSpeedPanelGap = preferenceStore.getInt("three_finger_speed_panel_gap_dp", 2)
   val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4")
   val threeFingerSpeedSeekBack = preferenceStore.getInt("three_finger_speed_seek_back", 10)
   val threeFingerSpeedPersistent = preferenceStore.getBoolean("three_finger_speed_persistent", true)

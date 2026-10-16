@@ -58,19 +58,20 @@ fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
 private fun SeekActionChip(
   label: String,
   onClick: () -> Unit,
+  scale: Float,
   modifier: Modifier = Modifier,
 ) {
   Text(
     text = label,
     color = Color.White.copy(alpha = 0.94f),
-    fontSize = 10.sp,
+    fontSize = (10f * scale).sp,
     maxLines = 1,
     textAlign = TextAlign.Center,
     modifier = modifier
-      .heightIn(min = 20.dp)
-      .clip(RoundedCornerShape(8.dp))
+      .heightIn(min = (20f * scale).dp)
+      .clip(RoundedCornerShape((8f * scale).dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 2.dp, vertical = 1.dp),
+      .padding(horizontal = (2f * scale).dp, vertical = (1f * scale).dp),
   )
 }
 
@@ -87,6 +88,13 @@ fun ThreeFingerSpeedOverlay(
   val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
   val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
   val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+  // MPVREX_SPEED_PANEL_APPEARANCE_V7
+  val panelSizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
+  val transparencyPercent by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+  val panelGap by preferences.threeFingerSpeedPanelGap.collectAsState()
+  val panelScale = panelSizePercent.coerceIn(70, 150) / 100f
+  val gap = panelGap.coerceIn(0, 16).dp
+  val backgroundAlpha = 1f - transparencyPercent.coerceIn(0, 100) / 100f
   val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
   val storedY by preferences.threeFingerSpeedPositionY.collectAsState()
   val presets = remember(rawPresets) { parseThreeFingerSpeedPresets(rawPresets) }
@@ -104,8 +112,8 @@ fun ThreeFingerSpeedOverlay(
   BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
     val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
-    val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp)
-    val shape = RoundedCornerShape(16.dp)
+    val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp * panelScale)
+    val shape = RoundedCornerShape((16f * panelScale).dp)
 
     Column(
       modifier = Modifier
@@ -118,7 +126,7 @@ fun ThreeFingerSpeedOverlay(
         .width(displayWidth)
         .onSizeChanged { panelSize = it }
         .clip(shape)
-        .background(Color(0xCE222228))
+        .background(Color(0xFF222228).copy(alpha = backgroundAlpha))
         .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
         .pointerInput(availableWidthPx, availableHeightPx) {
           detectDragGestures(
@@ -137,13 +145,13 @@ fun ThreeFingerSpeedOverlay(
             },
           )
         }
-        .padding(horizontal = 7.dp, vertical = 2.dp),
-      verticalArrangement = Arrangement.spacedBy(0.dp),
+        .padding(horizontal = (7f * panelScale).dp, vertical = (2f * panelScale).dp),
+      verticalArrangement = Arrangement.spacedBy(gap / 2f),
     ) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.heightIn(min = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(gap),
+        modifier = Modifier.heightIn(min = (20f * panelScale).dp),
       ) {
         Icon(
           Icons.Default.Close,
@@ -154,32 +162,32 @@ fun ThreeFingerSpeedOverlay(
             .clip(RoundedCornerShape(6.dp))
             .clickable(onClick = onClose)
             .padding(1.dp)
-            .width(14.dp),
+            .width((14f * panelScale).dp),
         )
         presets.forEachIndexed { index, preset ->
           Text(
             text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
             color = if (selected == index) accent else Color.White,
-            fontSize = 11.sp,
+            fontSize = (11f * panelScale).sp,
             maxLines = 1,
             textAlign = TextAlign.Center,
             modifier = Modifier
               .weight(1f)
               .clip(RoundedCornerShape(7.dp))
               .clickable { onSelectSpeed(preset) }
-              .padding(vertical = 2.dp),
+              .padding(vertical = (2f * panelScale).dp),
           )
         }
       }
 
       Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.heightIn(min = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(gap),
+        modifier = Modifier.heightIn(min = (20f * panelScale).dp),
       ) {
-        SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, modifier = Modifier.weight(1f))
-        SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, modifier = Modifier.weight(1f))
-        SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, modifier = Modifier.weight(1f))
+        SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, scale = panelScale, modifier = Modifier.weight(1f))
+        SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, scale = panelScale, modifier = Modifier.weight(1f))
+        SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, scale = panelScale, modifier = Modifier.weight(1f))
       }
     }
   }
