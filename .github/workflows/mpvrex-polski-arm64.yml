@@ -1,0 +1,290 @@
+name: MPVRex - Polski ARM64 (jedno APK)
+
+"on":
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/mpvrex-polski-arm64.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mpvrex-pl-arm64-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  polski-arm64:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Model tlumaczenia - offline na runnerze
+        if: ${{ hashFiles('app/src/main/res/values-pl/strings.xml') == '' }}
+        run: python3 -m pip install --disable-pip-version-check --quiet 'argostranslate>=1.9,<2'
+
+      - name: Tlumaczenie ustawien i ograniczenie do jednego ARM64
+        if: ${{ hashFiles('app/src/main/res/values-pl/strings.xml') == '' }}
+        shell: bash
+        run: |
+          python3 <<'PY_SCRIPT'
+          from pathlib import Path
+          from xml.etree import ElementTree as ET
+          import html
+          import re
+          import subprocess
+          import sys
+
+          ROOT = Path('app/src/main')
+          SRC = ROOT / 'res/values/strings.xml'
+          DEST = ROOT / 'res/values-pl/strings.xml'
+          GRADLE = Path('app/build.gradle.kts')
+
+          # Carefully preserve the meanings of important controls and technical terms.
+          OVERRIDE_KEYS = {
+              'pref_preferences': 'Ustawienia',
+              'pref_appearance_title': 'Wygląd',
+              'pref_appearance_summary': 'Tryb ciemny i motywy Material You',
+              'pref_appearance_category_theme': 'Motyw',
+              'pref_appearance_darkmode_system': 'Zgodny z systemem',
+              'pref_appearance_darkmode_light': 'Jasny',
+              'pref_appearance_darkmode_dark': 'Ciemny',
+              'pref_appearance_amoled_mode_title': 'Tryb czerni AMOLED',
+              'pref_appearance_amoled_mode_summary': 'Używaj całkowicie czarnego tła w ciemnym motywie',
+              'pref_appearance_category_bottom_nav': 'Dolny pasek nawigacji',
+              'pref_appearance_tab_home_title': 'Strona główna / Pliki',
+              'pref_appearance_tab_home_summary': 'Pokazuj lokalne foldery i przeglądarkę plików',
+              'pref_appearance_tab_recents_title': 'Ostatnio odtwarzane',
+              'pref_appearance_tab_recents_summary': 'Szybko wznawiaj poprzednio oglądane filmy',
+              'pref_appearance_tab_playlists_title': 'Playlisty',
+              'pref_appearance_tab_network_title': 'Strumieniowanie sieciowe',
+              'pref_appearance_tab_network_summary': 'Dostęp do dysków SMB, FTP i WebDAV',
+              'pref_player': 'Odtwarzacz',
+              'pref_audio': 'Dźwięk',
+              'pref_subtitles': 'Napisy',
+              'pref_gestures': 'Gesty',
+              'pref_decoder': 'Dekoder',
+              'pref_advanced': 'Zaawansowane',
+              'pref_player_gestures': 'Gesty odtwarzacza',
+          }
+          OVERRIDE_TEXT = {
+              'Reset': 'Resetuj', 'Share': 'Udostępnij', 'Confirm': 'Potwierdź',
+              'Cancel': 'Anuluj', 'Disabled': 'Wyłączone', 'Enabled': 'Włączone',
+              'Preferences': 'Ustawienia', 'Settings': 'Ustawienia',
+              'Appearance': 'Wygląd', 'Audio': 'Dźwięk', 'Subtitles': 'Napisy',
+              'Player': 'Odtwarzacz', 'Gestures': 'Gesty', 'Decoder': 'Dekoder',
+              'Decoders': 'Dekodery', 'Advanced': 'Zaawansowane',
+              'Playback': 'Odtwarzanie', 'Display': 'Wyświetlanie',
+              'Brightness': 'Jasność', 'Volume': 'Głośność',
+              'Playback speed': 'Prędkość odtwarzania',
+              'Playback Speed': 'Prędkość odtwarzania',
+              'Speed': 'Prędkość', 'Equalizer': 'Korektor dźwięku',
+              'Normal': 'Normalny', 'Auto': 'Automatycznie',
+              'Automatic': 'Automatycznie', 'Custom': 'Własny',
+              'Default': 'Domyślne', 'None': 'Brak', 'Off': 'Wyłączone',
+              'On': 'Włączone', 'System': 'Systemowy',
+              'Light': 'Jasny', 'Dark': 'Ciemny',
+              'General': 'Ogólne', 'Network': 'Sieć',
+              'Video': 'Wideo', 'Folders': 'Foldery', 'Library': 'Biblioteka',
+              'Playlists': 'Playlisty', 'Recently Played': 'Ostatnio odtwarzane',
+              'Controls': 'Sterowanie', 'Control': 'Sterowanie',
+              'Background playback': 'Odtwarzanie w tle',
+              'Hardware decoding': 'Dekodowanie sprzętowe',
+              'Software decoding': 'Dekodowanie programowe',
+              'High': 'Wysokie', 'Medium': 'Średnie', 'Low': 'Niskie',
+              'Left': 'Lewo', 'Right': 'Prawo', 'Center': 'Środek',
+              'Top': 'Góra', 'Bottom': 'Dół',
+              'Search': 'Szukaj', 'Refresh': 'Odśwież',
+              'Delete': 'Usuń', 'Save': 'Zapisz',
+              'Open': 'Otwórz', 'Back': 'Wstecz', 'Close': 'Zamknij',
+              'Select': 'Wybierz', 'Add': 'Dodaj', 'Remove': 'Usuń',
+              'OK': 'OK',
+          }
+          # Strings worth preserving verbatim in technical UI.
+          TECHNICAL = {'Vulkan','OpenGL','MediaCodec','GPU Next','GPU','CPU','SW','HW','HW+',
+                       'FFmpeg','HDR','SDR','HDR10','Dolby Vision','MPV','mpv','REX','Lua',
+                       'JavaScript','SMB','FTP','SFTP','WebDAV','YouTube','AMOLED','Material You',
+                       'HTTP','HTTPS','JSON','XML','HLS','DASH','SRT','SSA','ASS','FPS','OSD'}
+
+          # Source escaped characters and Android format placeholders must never be changed.
+          TOKEN = re.compile(
+              r'(%(?:\d+\$)?[-+# 0,(]*\d*(?:\.\d+)?[a-zA-Z%])'
+              r'|(\\[nrt\\])'
+              r'|(\\u[0-9a-fA-F]{4})'
+              r'|(\{\{[^}]+\}\}|\{[^}]+\})'
+          )
+
+          # Argos is installed and model downloaded on the GitHub runner, NOT in the Android app.
+          import argostranslate.package
+          import argostranslate.translate
+
+          packages = argostranslate.package.get_installed_packages()
+          if not any(x.from_code == 'en' and x.to_code == 'pl' for x in packages):
+              print('Pobieram model tłumaczenia en->pl (tylko dla tej kompilacji).', flush=True)
+              argostranslate.package.update_package_index()
+              candidates = [p for p in argostranslate.package.get_available_packages() if p.from_code == 'en' and p.to_code == 'pl']
+              if not candidates:
+                  raise RuntimeError('Brak pakietu językowego en->pl w indeksie Argos; nie tworzę nieprzetłumaczonego APK.')
+              argostranslate.package.install_from_path(candidates[0].download())
+
+          CACHE = {}
+          def translate_part(part):
+              if not part.strip() or not re.search(r'[A-Za-z]{2}', part):
+                  return part
+              match = re.fullmatch(r'(\s*)(.*?)(\s*)', part, re.S)
+              before, core, after = match.groups()
+              if core in OVERRIDE_TEXT:
+                  result = OVERRIDE_TEXT[core]
+              elif core in TECHNICAL or core.startswith('@') or re.fullmatch(r'[0-9][0-9.,xX +/:%-]*', core):
+                  result = core
+              else:
+                  if core not in CACHE:
+                      translated = argostranslate.translate.translate(core, 'en', 'pl').strip()
+                      CACHE[core] = translated if translated else core
+                  result = CACHE[core]
+              return before + result + after
+
+          def translate_safe(text):
+              if not text or not re.search('[A-Za-z]', text):
+                  return text
+              if text in OVERRIDE_TEXT:
+                  return OVERRIDE_TEXT[text]
+              return ''.join(translate_part(piece) if not TOKEN.fullmatch(piece) else piece
+                             for piece in filter(lambda x: x is not None, TOKEN.split(text)))
+
+          def android_escape(text):
+              # Explicitly escape single and double quotes in Android string resources.
+              text = re.sub(r"(?<!\\)'", r"\\'", text)
+              text = re.sub(r'(?<!\\)"', r'\\"', text)
+              return text
+
+          # Build a resource locale. The original default values are never modified.
+          root = ET.parse(SRC).getroot()
+          output = ET.Element('resources')
+          count = skipped = 0
+          for child in root:
+              if child.tag != 'string' or not child.attrib.get('name') or child.get('translatable') == 'false':
+                  continue
+              if len(child):
+                  skipped += 1
+                  continue
+              english = child.text or ''
+              if not english.strip():
+                  continue
+              name = child.attrib['name']
+              translation = OVERRIDE_KEYS.get(name, translate_safe(english))
+              # Protect references if used by a string resource.
+              if english.strip().startswith('@string/'):
+                  translation = english
+              attrs = {'name': name}
+              if 'formatted' in child.attrib:
+                  attrs['formatted'] = child.attrib['formatted']
+              item = ET.SubElement(output, 'string', attrs)
+              item.text = android_escape(translation)
+              count += 1
+              if count % 200 == 0:
+                  print(f'Przetłumaczono {count} napisów.', flush=True)
+
+          ET.indent(output, space='    ')
+          DEST.parent.mkdir(parents=True, exist_ok=True)
+          ET.ElementTree(output).write(DEST, encoding='utf-8', xml_declaration=True)
+          ET.parse(DEST)  # XML must be well-formed.
+          print(f'Polski język: {count} tekstów, pominięto {skipped} z wewnętrznym znacznikiem XML.', flush=True)
+
+          # Translate literal visible Text("...") strings in settings screens.
+          # Kotlin program logic, keys and interpolation remain unchanged.
+          pattern = re.compile(r'(?<![\w.])Text\(\s*(?:text\s*=\s*)?"((?:\\.|[^"\\])*)"')
+          kotlin_count = 0
+          settings_dir = ROOT / 'kotlin/xyz/mpv/rex/ui/preferences'
+          for file in sorted(settings_dir.rglob('*Screen.kt')):
+              source = file.read_text(encoding='utf-8')
+              def swap(match):
+                  global kotlin_count
+                  english = match.group(1)
+                  if len(english) > 180 or ('$' in english or '\\' in english or '%' in english or not re.search('[A-Za-z]', english)):
+                      return match.group(0)
+                  polish = translate_safe(english)
+                  if polish == english:
+                      return match.group(0)
+                  polish = polish.replace('\\', '\\\\').replace('"', '\\"').replace('$', '\\$')
+                  kotlin_count += 1
+                  return match.group(0).replace('"' + english + '"', '"' + polish + '"', 1)
+              dest = pattern.sub(swap, source)
+              if dest != source:
+                  file.write_text(dest, encoding='utf-8')
+          print(f'Przetłumaczono {kotlin_count} dodatkowych napisów ekranów ustawień.', flush=True)
+
+          # ABI filtering persists for all future Gradle builds, not just this workflow.
+          source = GRADLE.read_text(encoding='utf-8')
+          original = 'include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")\n      isUniversalApk = true'
+          replacement = 'include("arm64-v8a")\n      isUniversalApk = false'
+          if original in source:
+              source = source.replace(original, replacement, 1)
+          elif replacement not in source:
+              raise RuntimeError('Nieznana konfiguracja ABI w Gradle; przerywam bez ryzykownej edycji.')
+          GRADLE.write_text(source, encoding='utf-8')
+          print('Gradle: tylko arm64-v8a, bez Universal APK.', flush=True)
+          PY_SCRIPT
+
+      - name: Zbuduj jeden APK
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Sprawdz i wybierz pojedynczy ARM64 APK
+        shell: bash
+        run: |
+          mkdir -p dist
+          mapfile -t files < <(find app/build/outputs/apk/debug -maxdepth 1 -type f -name '*.apk' | sort)
+          printf 'Wygenerowane APK: %s\n' "${files[@]}"
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "BŁĄD: Gradle wygenerował ${#files[@]} plików, oczekiwano dokładnie jednego APK ARM64"
+            exit 1
+          fi
+          case "${files[0]}" in
+            *arm64-v8a*debug.apk) ;;
+            *) echo 'BŁĄD: Nie jest to APK arm64-v8a'; exit 1 ;;
+          esac
+          cp "${files[0]}" dist/MPVRex-PL-arm64-v8a.apk
+          ls -lh dist/
+
+      - name: Jeden plik APK do pobrania
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-PL-arm64-v8a
+          path: dist/MPVRex-PL-arm64-v8a.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Zapisz poprawki dopiero po sukcesie
+        if: success()
+        shell: bash
+        run: |
+          if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard app/src/main/res/values-pl)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/build.gradle.kts app/src/main/res/values-pl/ app/src/main/kotlin/xyz/mpv/rex/ui/preferences/
+            git commit -m "feat(i18n): Polish settings and ARM64-only builds"
+            git push
+          else
+            echo 'Brak nowych zmian do zapisu'
+          fi
