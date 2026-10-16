@@ -1,0 +1,669 @@
+name: MPV Alpha - Nakładka Lua, jeden APK arm64 (v10)
+'on':
+  workflow_dispatch: {}
+  push:
+    branches:
+    - master
+    paths:
+    - .github/workflows/mpv-alpha-lua-v10.yml
+permissions:
+  contents: write
+concurrency:
+  group: mpv-alpha-lua-v10-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+    - name: Pobierz repozytorium
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Java 17
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+        cache: gradle
+    - name: Android SDK
+      uses: android-actions/setup-android@v4
+    - name: Android SDK 36
+      run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+    - name: Przebuduj panel Lua i ustawienia (jednorazowo)
+      shell: bash
+      run: |
+        python3 <<'PY_ALPHA_LUA'
+        #!/usr/bin/env python3
+        """One-time MPV Alpha v10 migration, run from root of laszko14/REX-Player."""
+        from pathlib import Path
+        import re
+
+        ROOT = Path('app/src/main/kotlin/xyz/mpv/rex')
+        PREF = ROOT/'preferences/PlayerPreferences.kt'
+        EDITOR = ROOT/'ui/preferences/CustomButtonScreen.kt'
+        PREF_SCREEN = ROOT/'ui/preferences/PreferencesScreen.kt'
+        PLAYER_PREFS = ROOT/'ui/preferences/PlayerPreferencesScreen.kt'
+        PANEL = ROOT/'ui/player/controls/LuaButtonPanel.kt'
+        PANEL_PREFS = ROOT/'ui/preferences/LuaOverlayPreferencesScreen.kt'
+        CONTROLS = ROOT/'ui/player/controls/PlayerControls.kt'
+        VM = ROOT/'ui/player/PlayerViewModel.kt'
+        MANAGER = ROOT/'ui/player/managers/CustomButtonManager.kt'
+        GRADLE = Path('app/build.gradle.kts')
+        STAMP = 'MPV_ALPHA_LUA_PANEL_V10'
+        files = [PREF, EDITOR, PREF_SCREEN, PLAYER_PREFS, CONTROLS, VM, MANAGER, GRADLE]
+        src = {p: p.read_text(encoding='utf-8') for p in files}
+
+        # Do nothing on rebuild; edits are written only once after all anchors match.
+        if STAMP in src[PREF]:
+            if PANEL.exists() and PANEL_PREFS.exists() and STAMP in PANEL.read_text(encoding='utf-8'):
+                print('MPV Alpha v10 is already applied')
+                raise SystemExit(0)
+            raise SystemExit('Incomplete Lua v10 patch detected')
+
+
+        def change(p, old, new, label):
+            matches = src[p].count(old)
+            if matches != 1:
+                raise SystemExit(f'ANCHOR ERROR {label} in {p}: expected 1, got {matches}')
+            src[p] = src[p].replace(old,new,1)
+
+
+        def change_n(p, old, new, count, label):
+            matches = src[p].count(old)
+            if matches != count:
+                raise SystemExit(f'ANCHOR ERROR {label} in {p}: expected {count}, got {matches}')
+            src[p] = src[p].replace(old, new)
+
+
+        def regex(p, pattern, replacement, label, flags=re.S):
+            result, count = re.subn(pattern, lambda m: replacement, src[p], count=1, flags=flags)
+            if count != 1:
+                raise SystemExit(f'ANCHOR ERROR {label} in {p}: expected 1, got {count}')
+            src[p] = result
+
+        # Store dynamic layout controls in durable user preferences.
+        change(PREF,
+               '  val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)',
+               '''  // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
+          val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
+          val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
+          val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)''',
+               'Lua prefs')
+
+        # Raise the original dynamic button editor from 8 to 24 slots while preserving
+        # saved XML and old 8-slot JSON. The manager already iterates every slot.
+        change(EDITOR, 'val slots: List<CustomButton?> = List(8) { null }',
+               'val slots: List<CustomButton?> = List(24) { null }', '24-slot model')
+        change(EDITOR, 'val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(8) { null }) }',
+               'val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(24) { null }) }', '24-slot UI')
+        change(EDITOR, 'val slots = loaded.slots.take(8).toMutableList()',
+               'val slots = loaded.slots.take(24).toMutableList()', '24-slot read')
+        change(EDITOR, 'while (slots.size < 8) slots.add(null)',
+               'while (slots.size < 24) slots.add(null)', '24-slot pad')
+        change_n(EDITOR, 'val slots = MutableList<CustomButton?>(8) { null }',
+               'val slots = MutableList<CustomButton?>(24) { null }', 2, '24-slot old import')
+        change(EDITOR, 'old.forEachIndexed { i, b -> if (i < 8) slots[i] = b }',
+               'old.forEachIndexed { i, b -> if (i < 24) slots[i] = b }', '24-slot old list')
+        change_n(EDITOR, 'val side = if (index < 4) "L${index + 1}" else "R${index - 3}"',
+               'val side = "P${index + 1}"', 2, 'button numbers in editor/import')
+        change(EDITOR, 'if (slotIndex !in 0..7) return@forEach',
+               'if (slotIndex !in 0..23) return@forEach', 'XML slot bounds')
+        # Both the 8->24 reader and persistence were run simultaneously: don't erase
+        # saved user's buttons by writing an empty placeholder before loading finishes.
+        change(EDITOR,
+               '        // Load saved data\n        LaunchedEffect(Unit) {',
+               '        var buttonDataLoaded by remember { mutableStateOf(false) }\n        // Load saved data\n        LaunchedEffect(Unit) {',
+               'editor load flag')
+        change(EDITOR,
+               '        // Persist on every change\n        LaunchedEffect(buttonSlots.toList()) {\n            preferences.customButtons.set(Json.encodeToString(CustomButtonSlots(buttonSlots.toList())))\n        }',
+               '''            buttonDataLoaded = true
+                }
+
+                // Persist only after reading existing buttons; don't wipe old config.
+                LaunchedEffect(buttonDataLoaded, buttonSlots.toList()) {
+                    if (buttonDataLoaded) {
+                        val value = Json.encodeToString(CustomButtonSlots(buttonSlots.toList()))
+                        if (preferences.customButtons.get() != value) preferences.customButtons.set(value)
+                    }
+                }''',
+               'editor safe save')
+        # Fix doubled curly brace inserted by the previous anchor replacement: after
+        # the loader block we inserted `buttonDataLoaded` but original close brace
+        # already exists. Patch explicitly below after previous matching.
+        change(EDITOR, '\n        }\n\n            buttonDataLoaded = true\n        }\n\n        // Persist only after reading existing buttons;',
+               '\n            buttonDataLoaded = true\n        }\n\n        // Persist only after reading existing buttons;',
+               'editor finalize loading flag')
+
+        # Old speed/settings block is replaced with a shortcut on the root screen.
+        regex(PLAYER_PREFS,
+              r'          // Three-finger speed panel\n.*?(?=          // Display Section\n)',
+              '', 'remove old speed panel settings')
+        change(PREF_SCREEN, '          // Media & Library Section',
+               '''          // A dedicated top-level category for fully editable floating Lua buttons.
+                  item {
+                    PreferenceSection(title = "Nakładka Lua") {
+                      GroupedListColumn {
+                        PreferenceItem(
+                          position = GroupPosition.ONLY,
+                          title = "Panel przycisków Lua",
+                          summary = "Dodawanie przycisków i wygląd ramki — bez kompilacji APK",
+                          icon = Icons.Outlined.Code,
+                          onClick = { backstack.add(LuaOverlayPreferencesScreen) },
+                        )
+                      }
+                    }
+                  }
+
+                  // Media & Library Section''', 'Lua settings category')
+
+        # Updating just ONE preference must reload scripts (combine required both flows
+        # to emit), so use merge and don't drop the only event. Preference changes()
+        # already tracks values and emits on updates, not necessarily at subscription.
+        change(VM,'import kotlinx.coroutines.flow.map\n',
+               'import kotlinx.coroutines.flow.map\nimport kotlinx.coroutines.flow.merge\n', 'flow merge import')
+        change(VM,
+               '''      combine(
+                advancedPreferences.enableLuaScripts.changes().drop(1),
+                playerPreferences.customButtons.changes().drop(1)
+              ) { _, _ -> }.collect {
+                _customButtonManager.setup()
+              }''',
+               '''      merge(
+                advancedPreferences.enableLuaScripts.changes().drop(1).map { Unit },
+                playerPreferences.customButtons.changes().drop(1).map { Unit }
+              ).collect {
+                _customButtonManager.setup()
+              }''',
+               'live Lua change refresh')
+
+        # Ensure Lua scripts reloaded after editing don't fire old and new callbacks.
+        # mpv load-script creates a new script client each time.
+        change(MANAGER,
+               '        private const val CUSTOM_BUTTONS_LOADED_FLAG = "user-data/mpvex/custombuttons_loaded"',
+               '''        private const val CUSTOM_BUTTONS_LOADED_FLAG = "user-data/mpvex/custombuttons_loaded"
+                private const val ACTIVE_SCRIPT_GENERATION = "user-data/mpvex/custombuttons_generation"''',
+               'Lua instance generation property')
+        change(MANAGER, '    private var scriptPath: String? = null',
+               '    private var scriptPath: String? = null\n    private var scriptGeneration: String? = null',
+               'Lua generation state')
+        change(MANAGER, '                val scriptContent = buildString {\n                    val jsonString = playerPreferences.customButtons.get()',
+               '''                val scriptToken = System.nanoTime().toString()
+                        val scriptContent = buildString {
+                            append("local user_button_generation = '$scriptToken'\\n")
+                            val jsonString = playerPreferences.customButtons.get()''',
+               'Lua script initialization version')
+        change(MANAGER,
+               '''                    scriptPath = file.absolutePath
+
+                            if (isMpvReady) {''',
+               '''                    scriptPath = file.absolutePath
+                            scriptGeneration = scriptToken
+
+                            if (isMpvReady) {''', 'save script generation')
+        change(MANAGER,
+               '''        return runCatching {
+                    MPVLib.command("load-script", file.absolutePath)''',
+               '''        return runCatching {
+                    scriptGeneration?.let { MPVLib.setPropertyString(ACTIVE_SCRIPT_GENERATION, it) }
+                    MPVLib.command("load-script", file.absolutePath)''',
+               'Lua atomic activation guard')
+        change(MANAGER, '                        ${command}\n',
+               '''                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
+                                ${command}
+        ''', 'Lua stale click guard')
+        change(MANAGER, '                        ${longPressCommand}\n',
+               '''                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
+                                ${longPressCommand}
+        ''', 'Lua stale long click guard')
+
+        # Build initial 9-speed/3-seek panel, with user presets, *once*; preserves all
+        # already defined custom buttons and fills free positions up to slot 24.
+        change(MANAGER, 'import kotlinx.serialization.json.Json\n',
+               'import kotlinx.serialization.json.Json\nimport kotlinx.serialization.encodeToString\nimport java.util.Locale\n',
+               'manager json serialization import')
+        change(MANAGER,
+               '''                val scriptContent = buildString {
+                            val jsonString = playerPreferences.customButtons.get()''',
+               '''                // MPV_ALPHA_LUA_PANEL_V10: seed speeds/seek without changing saved user buttons.
+                        if (!playerPreferences.luaPanelInitialized.get()) {
+                            val current = playerPreferences.customButtons.get()
+                            val slots = try {
+                                json.decodeFromString<CustomButtonSlots>(current).slots.take(24).toMutableList()
+                            } catch (_: Exception) {
+                                try {
+                                    json.decodeFromString<List<CustomButton>>(current).take(24)
+                                        .map { it as CustomButton? }.toMutableList()
+                                } catch (_: Exception) {
+                                    mutableListOf<CustomButton?>()
+                                }
+                            }
+                            while (slots.size < 24) slots.add(null)
+                            val speeds = playerPreferences.threeFingerSpeedPresets.get().split(',')
+                                .mapNotNull { it.trim().toFloatOrNull()?.takeIf { v -> v in 0.25f..6f } }
+                                .take(9)
+                            val fallback = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f, 5.5f)
+                            val defaults = (0 until 9).map { index ->
+                                val speed = speeds.getOrNull(index) ?: fallback[index]
+                                val display = String.format(Locale.US, "%.2f", speed).trimEnd('0').trimEnd('.')
+                                CustomButton(id = "lua_alpha_speed_$index", title = "${display}x",
+                                    content = "mp.set_property_number('speed', $speed)")
+                            } + listOf(
+                                playerPreferences.threeFingerSpeedSeekButton1.get(),
+                                playerPreferences.threeFingerSpeedSeekButton2.get(),
+                                playerPreferences.threeFingerSpeedSeekButton3.get()
+                            ).mapIndexed { index, duration ->
+                                val sign = if (duration > 0) "+" else ""
+                                CustomButton(id = "lua_alpha_seek_$index", title = "$sign${duration}s",
+                                    content = "mp.commandv('seek', '$duration', 'relative')")
+                            }
+                            for (button in defaults) {
+                                if (slots.none { it?.id == button.id }) {
+                                    val free = slots.indexOfFirst { it == null }
+                                    if (free >= 0) slots[free] = button
+                                }
+                            }
+                            playerPreferences.customButtons.set(json.encodeToString(CustomButtonSlots(slots)))
+                            playerPreferences.luaPanelInitialized.set(true)
+                        }
+
+                        val scriptContent = buildString {
+                            val jsonString = playerPreferences.customButtons.get()''', 'one-time migration')
+
+        # Hide legacy left/right/portrait strips when using the new single panel;
+        # the old editor still works as the panel's live Lua button configuration.
+        change_n(CONTROLS, 'visible = areButtonsVisible && !isPortrait,',
+               'visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,',
+               2, 'hide legacy strips left/right')
+        change(CONTROLS, 'visible = areButtonsVisible && isPortrait,',
+               'visible = areButtonsVisible && isPortrait && !threeFingerSpeedEnabled,',
+               'hide legacy strip portrait')
+        regex(CONTROLS,
+              r'        if \(threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled\) \{\n.*?\n        \}\n      \}\n     \}',
+              '''        if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
+                  LuaButtonPanel(
+                    preferences = playerPreferences,
+                    buttons = customButtons,
+                    onClose = { threeFingerSpeedVisible = false },
+                    onButtonClick = { id ->
+                      viewModel.callCustomButton(id)
+                      threeFingerSpeedInteractionCount++
+                    },
+                    onButtonLongClick = { id ->
+                      viewModel.callCustomButtonLongPress(id)
+                      threeFingerSpeedInteractionCount++
+                    },
+                    modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
+                      start.linkTo(parent.start)
+                      end.linkTo(parent.end)
+                      top.linkTo(parent.top)
+                      bottom.linkTo(parent.bottom)
+                      width = Dimension.fillToConstraints
+                      height = Dimension.fillToConstraints
+                    },
+                  )
+                }
+              }
+             }''',
+              'replace v9 hardcoded panel with Lua')
+
+        LUA_PANEL = r'''package xyz.mpv.rex.ui.player.controls
+
+        // MPV_ALPHA_LUA_PANEL_V10
+        import androidx.compose.foundation.ExperimentalFoundationApi
+        import androidx.compose.foundation.background
+        import androidx.compose.foundation.border
+        import androidx.compose.foundation.combinedClickable
+        import androidx.compose.foundation.gestures.detectDragGestures
+        import androidx.compose.foundation.layout.Arrangement
+        import androidx.compose.foundation.layout.BoxWithConstraints
+        import androidx.compose.foundation.layout.Column
+        import androidx.compose.foundation.layout.Row
+        import androidx.compose.foundation.layout.fillMaxSize
+        import androidx.compose.foundation.layout.heightIn
+        import androidx.compose.foundation.layout.offset
+        import androidx.compose.foundation.layout.padding
+        import androidx.compose.foundation.layout.width
+        import androidx.compose.foundation.rememberScrollState
+        import androidx.compose.foundation.shape.RoundedCornerShape
+        import androidx.compose.foundation.verticalScroll
+        import androidx.compose.material.icons.Icons
+        import androidx.compose.material.icons.filled.Close
+        import androidx.compose.material.icons.filled.DragHandle
+        import androidx.compose.material3.Icon
+        import androidx.compose.material3.Text
+        import androidx.compose.runtime.Composable
+        import androidx.compose.runtime.LaunchedEffect
+        import androidx.compose.runtime.collectAsState
+        import androidx.compose.runtime.getValue
+        import androidx.compose.runtime.mutableFloatStateOf
+        import androidx.compose.runtime.mutableStateOf
+        import androidx.compose.runtime.remember
+        import androidx.compose.runtime.setValue
+        import androidx.compose.ui.Alignment
+        import androidx.compose.ui.Modifier
+        import androidx.compose.ui.draw.clip
+        import androidx.compose.ui.graphics.Color
+        import androidx.compose.ui.input.pointer.pointerInput
+        import androidx.compose.ui.layout.onSizeChanged
+        import androidx.compose.ui.text.style.TextAlign
+        import androidx.compose.ui.text.style.TextOverflow
+        import androidx.compose.ui.unit.IntOffset
+        import androidx.compose.ui.unit.IntSize
+        import androidx.compose.ui.unit.dp
+        import androidx.compose.ui.unit.sp
+        import xyz.mpv.rex.preferences.PlayerPreferences
+        import xyz.mpv.rex.preferences.preference.collectAsState
+        import xyz.mpv.rex.ui.player.managers.CustomButtonManager
+        import kotlin.math.roundToInt
+
+        @OptIn(ExperimentalFoundationApi::class)
+        @Composable
+        fun LuaButtonPanel(
+            preferences: PlayerPreferences,
+            buttons: List<CustomButtonManager.CustomButtonState>,
+            onClose: () -> Unit,
+            onButtonClick: (String) -> Unit,
+            onButtonLongClick: (String) -> Unit,
+            modifier: Modifier = Modifier,
+        ) {
+            val sizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
+            val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+            val buttonGap by preferences.threeFingerSpeedPanelGap.collectAsState()
+            val columns by preferences.luaPanelColumns.collectAsState()
+            val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
+            val storedY by preferences.threeFingerSpeedPositionY.collectAsState()
+            val factor = sizePercent.coerceIn(70, 150) / 100f
+            val gap = buttonGap.coerceIn(0, 16).dp
+            val cols = columns.coerceIn(2, 6)
+            var x by remember { mutableFloatStateOf(storedX.coerceIn(0f, 1f)) }
+            var y by remember { mutableFloatStateOf(storedY.coerceIn(0f, 1f)) }
+            var measured by remember { mutableStateOf(IntSize.Zero) }
+            LaunchedEffect(storedX, storedY) {
+                x = storedX.coerceIn(0f, 1f)
+                y = storedY.coerceIn(0f, 1f)
+            }
+            BoxWithConstraints(modifier.fillMaxSize()) {
+                val maxX = (constraints.maxWidth - measured.width).coerceAtLeast(0)
+                val maxY = (constraints.maxHeight - measured.height).coerceAtLeast(0)
+                val width = (312f * factor).dp.coerceAtMost(maxWidth - 12.dp)
+                val shape = RoundedCornerShape((14f * factor).dp)
+                Column(
+                    modifier = Modifier
+                        .offset { IntOffset((x * maxX).roundToInt(), (y * maxY).roundToInt()) }
+                        .width(width)
+                        .heightIn(max = maxHeight * 0.72f)
+                        .onSizeChanged { measured = it }
+                        .clip(shape)
+                        .background(Color(0xFF222228).copy(alpha = 1f - transparency.coerceIn(0,100) / 100f))
+                        .border(1.dp, Color.White.copy(alpha = 0.20f), shape)
+                        .padding(horizontal = (6f * factor).dp, vertical = (3f * factor).dp),
+                    verticalArrangement = Arrangement.spacedBy(gap),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(gap)) {
+                        Icon(Icons.Default.DragHandle, contentDescription = "Przeciągnij panel",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = (22f * factor).dp)
+                                .pointerInput(maxX, maxY) {
+                                    detectDragGestures(onDragEnd = {
+                                        preferences.threeFingerSpeedPositionX.set(x.coerceIn(0f, 1f))
+                                        preferences.threeFingerSpeedPositionY.set(y.coerceIn(0f, 1f))
+                                    }) { change, drag ->
+                                        change.consume()
+                                        if (maxX > 0) x = (x + drag.x / maxX).coerceIn(0f, 1f)
+                                        if (maxY > 0) y = (y + drag.y / maxY).coerceIn(0f, 1f)
+                                    }
+                                }
+                        )
+                        Text("Lua", color = Color.White.copy(alpha = 0.8f),
+                            fontSize = (10f * factor).sp, modifier = Modifier.weight(2f),
+                            textAlign = TextAlign.Center)
+                        Icon(Icons.Default.Close, contentDescription = "Zamknij nakładkę",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .weight(1f)
+                                .heightIn(min = (22f * factor).dp)
+                                .combinedClickable(onClick = onClose))
+                    }
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(gap),
+                    ) {
+                        if (buttons.isEmpty()) {
+                            Text("Brak przycisków. Dodaj je w Ustawienia → Nakładka Lua.",
+                                fontSize = (10f * factor).sp,
+                                color = Color.White, modifier = Modifier.padding(8.dp))
+                        } else {
+                            buttons.chunked(cols).forEach { line ->
+                                Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
+                                    line.forEach { button ->
+                                        Text(
+                                            text = button.label,
+                                            color = Color.White,
+                                            fontSize = (11f * factor).sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            textAlign = TextAlign.Center,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .heightIn(min = (26f * factor).dp)
+                                                .clip(RoundedCornerShape((6f * factor).dp))
+                                                .background(Color.White.copy(alpha = 0.09f))
+                                                .combinedClickable(
+                                                    onClick = { onButtonClick(button.id) },
+                                                    onLongClick = { onButtonLongClick(button.id) },
+                                                )
+                                                .padding(horizontal = 2.dp, vertical = (5f * factor).dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        '''
+
+        LUA_SETTINGS = r'''package xyz.mpv.rex.ui.preferences
+
+        // MPV_ALPHA_LUA_PANEL_V10
+        import androidx.compose.foundation.layout.Arrangement
+        import androidx.compose.foundation.layout.Column
+        import androidx.compose.foundation.layout.Row
+        import androidx.compose.foundation.layout.fillMaxSize
+        import androidx.compose.foundation.layout.fillMaxWidth
+        import androidx.compose.foundation.layout.padding
+        import androidx.compose.foundation.rememberScrollState
+        import androidx.compose.foundation.verticalScroll
+        import androidx.compose.material.icons.Icons
+        import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+        import androidx.compose.material3.Button
+        import androidx.compose.material3.ExperimentalMaterial3Api
+        import androidx.compose.material3.Icon
+        import androidx.compose.material3.IconButton
+        import androidx.compose.material3.Scaffold
+        import androidx.compose.material3.Slider
+        import androidx.compose.material3.Switch
+        import androidx.compose.material3.Text
+        import androidx.compose.material3.TopAppBar
+        import androidx.compose.runtime.Composable
+        import androidx.compose.runtime.getValue
+        import androidx.compose.ui.Alignment
+        import androidx.compose.ui.Modifier
+        import androidx.compose.ui.unit.dp
+        import kotlinx.serialization.Serializable
+        import org.koin.compose.koinInject
+        import xyz.mpv.rex.preferences.AdvancedPreferences
+        import xyz.mpv.rex.preferences.PlayerPreferences
+        import xyz.mpv.rex.preferences.preference.collectAsState
+        import xyz.mpv.rex.presentation.Screen
+        import xyz.mpv.rex.ui.utils.LocalBackStack
+        import kotlin.math.roundToInt
+
+        @Serializable
+        object LuaOverlayPreferencesScreen : Screen {
+            @OptIn(ExperimentalMaterial3Api::class)
+            @Composable
+            override fun Content() {
+                val backstack = LocalBackStack.current
+                val prefs = koinInject<PlayerPreferences>()
+                val advanced = koinInject<AdvancedPreferences>()
+                val luaEnabled by advanced.enableLuaScripts.collectAsState()
+                val panelEnabled by prefs.threeFingerSpeedEnabled.collectAsState()
+                val autoShow by prefs.threeFingerSpeedAutoShow.collectAsState()
+                val persistent by prefs.threeFingerSpeedPersistent.collectAsState()
+                val hideAfter by prefs.threeFingerSpeedAutoHide.collectAsState()
+                val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+                val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+                val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
+                val columns by prefs.luaPanelColumns.collectAsState()
+
+                Scaffold(topBar = {
+                    TopAppBar(title = { Text("Nakładka Lua") }, navigationIcon = {
+                        IconButton(onClick = backstack::removeLastOrNull) {
+                            Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Wróć")
+                        }
+                    })
+                }) { inner ->
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(inner)
+                            .verticalScroll(rememberScrollState()).padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Text("Przyciski działają z kodem Lua zapisanym w aplikacji. " +
+                            "Po ich zmianie nie trzeba kompilować ani instalować nowego APK.")
+                        Button(onClick = { backstack.add(CustomButtonScreen) },
+                            modifier = Modifier.fillMaxWidth()) {
+                            Text("Dodaj / usuń / edytuj przyciski Lua (24 miejsca)")
+                        }
+                        ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
+                            advanced.enableLuaScripts.set(it)
+                        }
+                        ToggleLine("Włącz nakładkę (gest trzech palców)", panelEnabled) {
+                            prefs.threeFingerSpeedEnabled.set(it)
+                        }
+                        ToggleLine("Pokaż panel po uruchomieniu filmu", autoShow) {
+                            prefs.threeFingerSpeedAutoShow.set(it)
+                        }
+                        ToggleLine("Pozostań widoczny do zamknięcia X", persistent) {
+                            prefs.threeFingerSpeedPersistent.set(it)
+                        }
+                        if (!persistent) {
+                            LuaNumberSlider("Automatyczne ukrywanie", hideAfter, 3, 30, " s") {
+                                prefs.threeFingerSpeedAutoHide.set(it)
+                            }
+                        }
+                        LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
+                            prefs.luaPanelColumns.set(it)
+                        }
+                        LuaNumberSlider("Wielkość panelu", scale, 70, 150, "%") {
+                            prefs.threeFingerSpeedPanelSize.set(it)
+                        }
+                        LuaNumberSlider("Przezroczystość tła", transparency, 0, 100, "%") {
+                            prefs.threeFingerSpeedPanelTransparency.set(it)
+                        }
+                        LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
+                            prefs.threeFingerSpeedPanelGap.set(it)
+                        }
+                        Button(onClick = {
+                            prefs.threeFingerSpeedPositionX.set(0.5f)
+                            prefs.threeFingerSpeedPositionY.set(0.16f)
+                        }) { Text("Przywróć pozycję panelu") }
+                        Text("Pozycję zmienisz również, przeciągając uchwyt u góry nakładki. " +
+                             "Kliknięcie i przytrzymanie przycisku mają osobne skrypty.")
+                    }
+                }
+            }
+        }
+
+        @Composable
+        private fun ToggleLine(title: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(title, modifier = Modifier.weight(1f))
+                Switch(checked = checked, onCheckedChange = onCheckedChange)
+            }
+        }
+
+        @Composable
+        private fun LuaNumberSlider(
+            title: String, value: Int, min: Int, max: Int, suffix: String,
+            onChange: (Int) -> Unit
+        ) {
+            Column {
+                Text("$title: $value$suffix")
+                Slider(value = value.toFloat(), onValueChange = { onChange(it.roundToInt()) },
+                    valueRange = min.toFloat()..max.toFloat())
+            }
+        }
+        '''
+
+        # New files created only after all source replacements are verified.
+        if 'include("arm64-v8a")' not in src[GRADLE] or 'isUniversalApk = false' not in src[GRADLE]:
+            raise SystemExit('Required arm64-only Gradle configuration not found')
+        if PANEL.exists() or PANEL_PREFS.exists():
+            raise SystemExit('Unexpected existing Lua panel files; no overwrite performed')
+        for p,v in src.items():
+            if v != p.read_text(encoding='utf-8'):
+                p.write_text(v, encoding='utf-8')
+                print('PATCHED',p)
+        PANEL.write_text(LUA_PANEL, encoding='utf-8')
+        PANEL_PREFS.write_text(LUA_SETTINGS, encoding='utf-8')
+        print('MPV Alpha Lua panel v10 source patch complete. Build APK to verify Kotlin compilation.')
+        PY_ALPHA_LUA
+    - name: Kompiluj jedną aplikację Android ARM64
+      shell: bash
+      run: |
+        chmod +x gradlew
+        ./gradlew :app:assembleDebug --stacktrace
+    - name: Zweryfikuj dokładnie jeden APK ARM64
+      shell: bash
+      run: |
+        shopt -s nullglob
+        apks=(app/build/outputs/apk/debug/*.apk)
+        if [ "${#apks[@]}" -ne 1 ]; then
+          echo "BŁĄD: oczekiwano 1 APK, znaleziono ${#apks[@]}"
+          printf '%s\n' "${apks[@]}"
+          exit 1
+        fi
+        if [[ "${apks[0]}" != *arm64-v8a* ]]; then
+          echo "BŁĄD: APK nie jest ARM64: ${apks[0]}"
+          exit 1
+        fi
+        mkdir -p dist
+        cp "${apks[0]}" dist/MPV-Alpha-Lua-arm64-v8a.apk
+        ls -lh dist/MPV-Alpha-Lua-arm64-v8a.apk
+    - name: Udostępnij pojedyncze APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: MPV-Alpha-Lua-arm64
+        path: dist/MPV-Alpha-Lua-arm64-v8a.apk
+        if-no-files-found: error
+        compression-level: 0
+        retention-days: 14
+    - name: Zapisz poprawny kod źródłowy v10
+      if: success()
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/CustomButtonScreen.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PreferencesScreen.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/LuaOverlayPreferencesScreen.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/LuaButtonPanel.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/player/PlayerViewModel.kt
+        git add app/src/main/kotlin/xyz/mpv/rex/ui/player/managers/CustomButtonManager.kt
+        if ! git diff --cached --quiet; then
+          git commit -m "feat: configurable Lua panel without APK rebuild (v10)"
+          git pull --rebase origin master
+          git push origin HEAD:master
+        else
+          echo "v10 already committed"
+        fi
