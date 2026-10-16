@@ -1,0 +1,210 @@
+name: MPVRex - czas bateria i zegar
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-czas-bateria-zegar.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Dodaj nakladke i zbuduj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Dodaj nakladke czasu baterii i zegara
+        run: |
+          python3 - <<'PYCODE'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          root = Path('app/src/main/kotlin/xyz/mpv/rex')
+
+          def patch(path, marker, updates):
+              original = path.read_text(encoding='utf-8')
+              if marker in original:
+                  print('Pominięto - już zainstalowane:', path)
+                  return
+              result = original
+              for old, new in updates:
+                  matches = result.count(old)
+                  if matches != 1:
+                      raise RuntimeError(f'{path}: oczekiwano jednego fragmentu, znaleziono {matches}: {old[:95]!r}')
+                  result = result.replace(old, new, 1)
+              path.write_text(result, encoding='utf-8')
+              print('Zmieniono:', path)
+
+          patch(
+              root / 'preferences/PlayerPreferences.kt',
+              'val showPlaybackInfoOverlay = preferenceStore.getBoolean(',
+              [(
+                '  val invertDuration = preferenceStore.getBoolean("invert_duration")\n',
+                '  val invertDuration = preferenceStore.getBoolean("invert_duration")\n'
+                '  val showPlaybackInfoOverlay = preferenceStore.getBoolean("show_playback_info_overlay", true)\n',
+              )],
+          )
+
+          patch(
+              root / 'ui/preferences/PlayerPreferencesScreen.kt',
+              'highlightKey = R.string.pref_player_display_show_playback_info_overlay,',
+              [
+                (
+                  '            val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()\n',
+                  '            val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()\n'
+                  '            val showPlaybackInfoOverlay by preferences.showPlaybackInfoOverlay.collectAsState()\n'
+                  '            val invertDuration by preferences.invertDuration.collectAsState()\n',
+                ),
+                (
+                  '              GroupedPreferenceCard(\n'
+                  '                position = GroupPosition.MIDDLE,\n'
+                  '                highlightKey = listOf(R.string.pref_player_display_show_navigation_bar, R.string.pref_show_navigation_bar_title),\n',
+                  '              GroupedPreferenceCard(\n'
+                  '                position = GroupPosition.MIDDLE,\n'
+                  '                highlightKey = R.string.pref_player_display_show_remaining_time,\n'
+                  '              ) {\n'
+                  '                SwitchPreference(\n'
+                  '                  value = invertDuration,\n'
+                  '                  onValueChange = preferences.invertDuration::set,\n'
+                  '                  title = { Text(stringResource(R.string.pref_player_display_show_remaining_time)) },\n'
+                  '                  summary = { Text(stringResource(R.string.pref_player_display_show_remaining_time_summary)) },\n'
+                  '                )\n'
+                  '              }\n\n'
+                  '              GroupedPreferenceCard(\n'
+                  '                position = GroupPosition.MIDDLE,\n'
+                  '                highlightKey = R.string.pref_player_display_show_playback_info_overlay,\n'
+                  '              ) {\n'
+                  '                SwitchPreference(\n'
+                  '                  value = showPlaybackInfoOverlay,\n'
+                  '                  onValueChange = preferences.showPlaybackInfoOverlay::set,\n'
+                  '                  title = { Text(stringResource(R.string.pref_player_display_show_playback_info_overlay)) },\n'
+                  '                  summary = { Text(stringResource(R.string.pref_player_display_show_playback_info_overlay_summary)) },\n'
+                  '                )\n'
+                  '              }\n\n'
+                  '              GroupedPreferenceCard(\n'
+                  '                position = GroupPosition.MIDDLE,\n'
+                  '                highlightKey = listOf(R.string.pref_player_display_show_navigation_bar, R.string.pref_show_navigation_bar_title),\n',
+                ),
+              ],
+          )
+
+          patch(
+              root / 'ui/player/controls/PlayerControls.kt',
+              'val playbackInfoOverlayRef = createRef()',
+              [
+                (
+                  '  val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()\n',
+                  '  val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()\n'
+                  '  val showPlaybackInfoOverlay by playerPreferences.showPlaybackInfoOverlay.collectAsState()\n'
+                  '  val showRemainingTimeInOverlay by playerPreferences.invertDuration.collectAsState()\n',
+                ),
+                (
+                  '        val seekbar = createRef()\n',
+                  '        val seekbar = createRef()\n'
+                  '        val playbackInfoOverlayRef = createRef()\n',
+                ),
+                (
+                  '        AnimatedVisibility(\n'
+                  '          visible = (controlsShown || seekBarShown) && !areControlsLocked,\n',
+                  '        // Compact information bar; kept below the title and away from 8 custom buttons.\n'
+                  '        AnimatedVisibility(\n'
+                  '          visible = controlsShown && !areControlsLocked && showPlaybackInfoOverlay,\n'
+                  '          enter = fadeIn(),\n'
+                  '          exit = fadeOut(),\n'
+                  '          modifier = Modifier.constrainAs(playbackInfoOverlayRef) {\n'
+                  '            top.linkTo(topLeftControls.bottom, spacing.small)\n'
+                  '            start.linkTo(parent.start)\n'
+                  '            end.linkTo(parent.end)\n'
+                  '          },\n'
+                  '        ) {\n'
+                  '          PlaybackInfoOverlay(\n'
+                  '            positionSeconds = precisePosition,\n'
+                  '            durationSeconds = if (preciseDuration > 0f) preciseDuration else (duration ?: 0).toFloat(),\n'
+                  '            showRemaining = showRemainingTimeInOverlay,\n'
+                  '          )\n'
+                  '        }\n\n'
+                  '        AnimatedVisibility(\n'
+                  '          visible = (controlsShown || seekBarShown) && !areControlsLocked,\n',
+                ),
+              ],
+          )
+
+          patch(
+              Path('app/src/main/res/values/strings.xml'),
+              '<string name="pref_player_display_show_playback_info_overlay">',
+              [(
+                '    <string name="pref_player_gestures">Gestures</string>\n',
+                '    <string name="pref_player_gestures">Gestures</string>\n'
+                '    <string name="pref_player_display_show_remaining_time">Show remaining time</string>\n'
+                '    <string name="pref_player_display_show_remaining_time_summary">Display time left instead of total duration on the seekbar and overlay</string>\n'
+                '    <string name="pref_player_display_show_playback_info_overlay">Show battery &amp; clock overlay</string>\n'
+                '    <string name="pref_player_display_show_playback_info_overlay_summary">Show time, battery level and current clock when controls are visible</string>\n',
+              )],
+          )
+          ET.parse('app/src/main/res/values/strings.xml')
+
+          new_component = root / 'ui/player/controls/PlaybackInfoOverlay.kt'
+          new_content = 'package xyz.mpv.rex.ui.player.controls\n\nimport android.content.Intent\nimport android.content.IntentFilter\nimport android.os.BatteryManager\nimport android.text.format.DateUtils\nimport androidx.compose.foundation.background\nimport androidx.compose.foundation.layout.Arrangement\nimport androidx.compose.foundation.layout.Row\nimport androidx.compose.foundation.layout.Spacer\nimport androidx.compose.foundation.layout.height\nimport androidx.compose.foundation.layout.padding\nimport androidx.compose.foundation.layout.size\nimport androidx.compose.foundation.layout.width\nimport androidx.compose.foundation.shape.RoundedCornerShape\nimport androidx.compose.material.icons.Icons\nimport androidx.compose.material.icons.filled.AccessTime\nimport androidx.compose.material.icons.filled.BatteryFull\nimport androidx.compose.material.icons.filled.HourglassBottom\nimport androidx.compose.material3.Icon\nimport androidx.compose.material3.MaterialTheme\nimport androidx.compose.material3.Text\nimport androidx.compose.runtime.Composable\nimport androidx.compose.runtime.LaunchedEffect\nimport androidx.compose.runtime.getValue\nimport androidx.compose.runtime.mutableIntStateOf\nimport androidx.compose.runtime.mutableStateOf\nimport androidx.compose.runtime.remember\nimport androidx.compose.runtime.setValue\nimport androidx.compose.ui.Alignment\nimport androidx.compose.ui.Modifier\nimport androidx.compose.ui.graphics.Color\nimport androidx.compose.ui.platform.LocalContext\nimport androidx.compose.ui.unit.dp\nimport kotlinx.coroutines.delay\nimport java.text.SimpleDateFormat\nimport java.util.Date\nimport java.util.Locale\n\n/** Small, non-clickable information pill displayed together with player controls. */\n@Composable\ninternal fun PlaybackInfoOverlay(\n  positionSeconds: Float,\n  durationSeconds: Float,\n  showRemaining: Boolean,\n) {\n  val context = LocalContext.current\n  var batteryPercent by remember { mutableIntStateOf(-1) }\n  var clockText by remember {\n    mutableStateOf(SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date()))\n  }\n\n  // Read sticky battery broadcast without installing a permanent receiver.\n  // Updates stop automatically when the control overlay leaves composition.\n  LaunchedEffect(context) {\n    while (true) {\n      val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))\n      val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1\n      val scale = battery?.getIntExtra(BatteryManager.EXTRA_SCALE, -1) ?: -1\n      batteryPercent = if (level >= 0 && scale > 0) (level * 100 / scale).coerceIn(0, 100) else -1\n      clockText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())\n      delay(15_000L)\n    }\n  }\n\n  val remaining = (durationSeconds - positionSeconds).coerceAtLeast(0f).toLong()\n  val length = durationSeconds.coerceAtLeast(0f).toLong()\n  val timer = if (durationSeconds <= 0f) {\n    "--:--"\n  } else if (showRemaining) {\n    "-" + DateUtils.formatElapsedTime(remaining)\n  } else {\n    DateUtils.formatElapsedTime(length)\n  }\n\n  Row(\n    modifier = Modifier\n      .background(Color.Black.copy(alpha = 0.66f), RoundedCornerShape(20.dp))\n      .padding(horizontal = 14.dp, vertical = 8.dp),\n    verticalAlignment = Alignment.CenterVertically,\n    horizontalArrangement = Arrangement.spacedBy(8.dp),\n  ) {\n    Icon(Icons.Default.HourglassBottom, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)\n    Text(timer, style = MaterialTheme.typography.labelLarge, color = Color.White)\n    Spacer(Modifier.width(2.dp))\n    Spacer(Modifier.width(1.dp).height(17.dp).background(Color.White.copy(alpha = 0.45f)))\n    Spacer(Modifier.width(2.dp))\n    Icon(Icons.Default.BatteryFull, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)\n    Text(if (batteryPercent >= 0) "$batteryPercent%" else "--%", style = MaterialTheme.typography.labelLarge, color = Color.White)\n    Icon(Icons.Default.AccessTime, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color.White)\n    Text(clockText, style = MaterialTheme.typography.labelLarge, color = Color.White)\n  }\n}\n'
+          if not new_component.exists():
+              new_component.write_text(new_content, encoding='utf-8')
+              print('Dodano:', new_component)
+          elif new_component.read_text(encoding='utf-8') == new_content:
+              print('Plik już istnieje i jest identyczny:', new_component)
+          else:
+              raise RuntimeError('Plik PlaybackInfoOverlay.kt już istnieje z inną zawartością - nie nadpisuję')
+
+          print('OK: ustawienia pozostałego czasu + bateria + zegar; reszta bez zmian')
+
+          PYCODE
+
+      - name: Zbuduj APK dla Nothing Phone 1
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-czas-bateria-zegar-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz poprawke w repozytorium
+        if: github.ref == 'refs/heads/master'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt \
+            app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt \
+            app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt \
+            app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlaybackInfoOverlay.kt \
+            app/src/main/res/values/strings.xml
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat(player): add remaining time battery and clock overlay'
+            git pull --rebase origin master
+            git push origin HEAD:master
+          else
+            echo 'Poprawka jest juz zapisana.'
+          fi
