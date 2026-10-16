@@ -87,7 +87,7 @@ fun ThreeFingerSpeedOverlay(
   BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
     val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
-    val displayWidth = (maxWidth - 20.dp).coerceAtMost(700.dp)
+    val displayWidth = (maxWidth - 20.dp).coerceAtMost(340.dp)
 
     Column(
       modifier = Modifier
@@ -99,11 +99,11 @@ fun ThreeFingerSpeedOverlay(
         }
         .width(displayWidth)
         .onSizeChanged { panelSize = it }
-        .clip(RoundedCornerShape(22.dp))
-        .background(Color(0xE6262530))
-        .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(22.dp))
-        .padding(horizontal = 12.dp, vertical = 5.dp),
-      verticalArrangement = Arrangement.spacedBy(2.dp),
+        .clip(RoundedCornerShape(18.dp))
+        .background(Color(0xD9222228))
+        .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
+        .padding(horizontal = 10.dp, vertical = 4.dp),
+      verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
       Row(
         modifier = Modifier
@@ -127,11 +127,11 @@ fun ThreeFingerSpeedOverlay(
           },
         verticalAlignment = Alignment.CenterVertically,
       ) {
-        IconButton(onClick = onClose, modifier = Modifier.size(38.dp)) {
-          Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White)
+        IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
+          Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White, modifier = Modifier.size(18.dp))
         }
-        Icon(Icons.Default.DragHandle, contentDescription = null, tint = Color.White.copy(alpha = 0.70f), modifier = Modifier.size(20.dp))
-        Text("PRĘDKOŚĆ • przesuń panel", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+        Icon(Icons.Default.DragHandle, contentDescription = null, tint = Color.White.copy(alpha = 0.70f), modifier = Modifier.size(16.dp))
+        Text("PRĘDKOŚĆ", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)
       }
 
       Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -141,37 +141,37 @@ fun ThreeFingerSpeedOverlay(
               .weight(1f)
               .clip(RoundedCornerShape(10.dp))
               .clickable { onSelectSpeed(preset, index == 0) }
-              .padding(vertical = 6.dp),
+              .padding(vertical = 2.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
           ) {
             Text(
-              text = String.format(Locale.US, "%gx", preset),
+              text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
               color = if (selected == index) accent else Color.White,
-              fontSize = 16.sp,
+              fontSize = 14.sp,
               maxLines = 1,
             )
             if (index == 0) {
-              Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 11.sp)
+              Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 9.sp)
             } else {
-              Spacer(modifier = Modifier.height(16.dp))
+              Spacer(modifier = Modifier.height(11.dp))
             }
           }
         }
       }
 
-      Canvas(modifier = Modifier.fillMaxWidth().height(17.dp)) {
+      Canvas(modifier = Modifier.fillMaxWidth().height(10.dp)) {
         val step = size.width / presets.size
         val firstX = step / 2f
         val lastX = size.width - firstX
         val middleY = size.height / 2f
-        drawLine(Color.White.copy(alpha = 0.40f), Offset(firstX, middleY), Offset(lastX, middleY), 4.dp.toPx())
+        drawLine(Color.White.copy(alpha = 0.40f), Offset(firstX, middleY), Offset(lastX, middleY), 2.dp.toPx())
         if (selected >= 0) {
-          drawLine(accent, Offset(firstX, middleY), Offset(firstX + selected * step, middleY), 4.dp.toPx())
+          drawLine(accent, Offset(firstX, middleY), Offset(firstX + selected * step, middleY), 2.dp.toPx())
         }
         presets.indices.forEach { index ->
           drawCircle(
             color = if (index <= selected) accent else Color.White.copy(alpha = 0.74f),
-            radius = 5.dp.toPx(),
+            radius = 3.dp.toPx(),
             center = Offset(firstX + index * step, middleY),
           )
         }
