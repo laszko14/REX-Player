@@ -788,7 +788,6 @@ object PlayerPreferencesScreen : Screen {
           item {
             val enabled by preferences.threeFingerSpeedEnabled.collectAsState()
             val savedSpeeds by preferences.threeFingerSpeedPresets.collectAsState()
-            val seekBack by preferences.threeFingerSpeedSeekBack.collectAsState()
             val persistent by preferences.threeFingerSpeedPersistent.collectAsState()
             val hideAfter by preferences.threeFingerSpeedAutoHide.collectAsState()
             val positionX by preferences.threeFingerSpeedPositionX.collectAsState()
@@ -831,14 +830,39 @@ object PlayerPreferencesScreen : Screen {
                 }
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
                 SliderPreference(
-                  value = seekBack.toFloat(),
-                  onValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
-                  title = { Text("Pierwszy przycisk: cofnij film") },
-                  valueRange = 0f..60f,
-                  summary = { Text("${seekBack} sekund (0 = bez cofania)") },
-                  onSliderValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
-                  sliderValue = seekBack.toFloat(),
+                  value = jumpBack.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
+                  title = { Text("Dolny przycisk 1: cofanie") },
+                  valueRange = 1f..300f,
+                  summary = { Text("-${jumpBack} sekund") },
+                  onSliderValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
+                  sliderValue = jumpBack.toFloat(),
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+                SliderPreference(
+                  value = jumpForward1.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
+                  title = { Text("Dolny przycisk 2: przewijanie do przodu") },
+                  valueRange = 1f..300f,
+                  summary = { Text("+${jumpForward1} sekund") },
+                  onSliderValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
+                  sliderValue = jumpForward1.toFloat(),
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+                SliderPreference(
+                  value = jumpForward2.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
+                  title = { Text("Dolny przycisk 3: dalsze przewijanie") },
+                  valueRange = 1f..300f,
+                  summary = { Text("+${jumpForward2} sekund") },
+                  onSliderValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
+                  sliderValue = jumpForward2.toFloat(),
                 )
               }
               for (index in 0 until 6) {
@@ -848,7 +872,7 @@ object PlayerPreferencesScreen : Screen {
                     onValueChange = { savePreset(index, it) },
                     title = { Text("Prędkość przycisku ${index + 1}") },
                     valueRange = 0.25f..6f,
-                    summary = { Text("${presets[index]}x" + if (index == 0) " + cofnięcie filmu" else "") },
+                    summary = { Text("${presets[index]}x") },
                     onSliderValueChange = { savePreset(index, it) },
                     sliderValue = presets[index],
                   )

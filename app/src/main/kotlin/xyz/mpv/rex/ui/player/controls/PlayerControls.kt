@@ -2111,11 +2111,12 @@ fun PlayerControls(
             preferences = playerPreferences,
             currentSpeed = playbackSpeed ?: 1f,
             onClose = { threeFingerSpeedVisible = false },
-            onSelectSpeed = { speed, first ->
+            onSelectSpeed = { speed ->
               viewModel.setPlaybackSpeed(speed)
-              if (first && threeFingerSpeedSeekBack > 0) {
-                viewModel.seekBy(-threeFingerSpeedSeekBack)
-              }
+              threeFingerSpeedInteractionCount++
+            },
+            onSeekBy = { delta ->
+              viewModel.seekBy(delta)
               threeFingerSpeedInteractionCount++
             },
             modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {

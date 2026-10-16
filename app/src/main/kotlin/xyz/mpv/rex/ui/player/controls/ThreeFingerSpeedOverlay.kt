@@ -1,6 +1,5 @@
 package xyz.mpv.rex.ui.player.controls
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -9,20 +8,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +34,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -52,7 +47,6 @@ import kotlin.math.roundToInt
 
 private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f)
 
-/** Six independent speed presets; bad or older stored settings fall back safely. */
 fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
   val stored = raw.split(',')
   return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
@@ -61,15 +55,37 @@ fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
 }
 
 @Composable
+private fun SeekActionChip(
+  label: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Text(
+    text = label,
+    color = Color.White.copy(alpha = 0.94f),
+    fontSize = 10.sp,
+    maxLines = 1,
+    textAlign = TextAlign.Center,
+    modifier = modifier
+      .clip(RoundedCornerShape(8.dp))
+      .clickable(onClick = onClick)
+      .padding(horizontal = 2.dp, vertical = 4.dp),
+  )
+}
+
+@Composable
 fun ThreeFingerSpeedOverlay(
   preferences: PlayerPreferences,
   currentSpeed: Float,
   onClose: () -> Unit,
-  onSelectSpeed: (Float, Boolean) -> Unit,
+  onSelectSpeed: (Float) -> Unit,
+  onSeekBy: (Int) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val rawPresets by preferences.threeFingerSpeedPresets.collectAsState()
-  val seekBackSeconds by preferences.threeFingerSpeedSeekBack.collectAsState()
+  val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
+  val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+  val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
   val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
   val storedY by preferences.threeFingerSpeedPositionY.collectAsState()
   val presets = remember(rawPresets) { parseThreeFingerSpeedPresets(rawPresets) }
@@ -84,15 +100,13 @@ fun ThreeFingerSpeedOverlay(
     localY = storedY.coerceIn(0f, 1f)
   }
 
-  // MPVREX_SINGLE_LINE_SPEED_BAR_V3
   BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
     val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
-    // One compact row: close button and six speed presets. No title or dot slider.
-    val displayWidth = (maxWidth - 12.dp).coerceAtMost(310.dp)
-    val shape = RoundedCornerShape(20.dp)
+    val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp)
+    val shape = RoundedCornerShape(16.dp)
 
-    Row(
+    Column(
       modifier = Modifier
         .offset {
           IntOffset(
@@ -105,7 +119,6 @@ fun ThreeFingerSpeedOverlay(
         .clip(shape)
         .background(Color(0xCE222228))
         .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
-        // Drag the bar itself to move it; short taps still select speeds.
         .pointerInput(availableWidthPx, availableHeightPx) {
           detectDragGestures(
             onDragEnd = {
@@ -124,31 +137,48 @@ fun ThreeFingerSpeedOverlay(
           )
         }
         .padding(horizontal = 7.dp, vertical = 3.dp),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.spacedBy(2.dp),
+      verticalArrangement = Arrangement.spacedBy(1.dp),
     ) {
-      Icon(
-        Icons.Default.Close,
-        contentDescription = "Zamknij panel prędkości",
-        tint = Color.White,
-        modifier = Modifier
-          .size(23.dp)
-          .clip(RoundedCornerShape(6.dp))
-          .clickable(onClick = onClose),
-      )
-      presets.forEachIndexed { index, preset ->
-        Text(
-          text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
-          color = if (selected == index) accent else Color.White,
-          fontSize = 13.sp,
-          maxLines = 1,
-          textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier.heightIn(min = 22.dp),
+      ) {
+        Icon(
+          Icons.Default.Close,
+          contentDescription = "Zamknij panel prędkości",
+          tint = Color.White,
           modifier = Modifier
-            .weight(1f)
-            .clip(RoundedCornerShape(7.dp))
-            .clickable { onSelectSpeed(preset, index == 0) }
-            .padding(vertical = 6.dp),
+            .padding(start = 1.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .clickable(onClick = onClose)
+            .padding(1.dp)
+            .width(14.dp),
         )
+        presets.forEachIndexed { index, preset ->
+          Text(
+            text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+            color = if (selected == index) accent else Color.White,
+            fontSize = 11.sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(7.dp))
+              .clickable { onSelectSpeed(preset) }
+              .padding(vertical = 2.dp),
+          )
+        }
+      }
+
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.heightIn(min = 18.dp),
+      ) {
+        SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, modifier = Modifier.weight(1f))
+        SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, modifier = Modifier.weight(1f))
+        SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, modifier = Modifier.weight(1f))
       }
     }
   }
