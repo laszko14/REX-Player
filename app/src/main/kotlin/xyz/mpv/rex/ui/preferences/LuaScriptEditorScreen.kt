@@ -301,7 +301,7 @@ data class LuaScriptEditorScreen(
                 Box {
                   if (fileName.isEmpty()) {
                     Text(
-                      text = "Script name",
+                      text = "Nazwa skryptu",
                       style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
@@ -314,7 +314,7 @@ data class LuaScriptEditorScreen(
             )
             if (hasUnsavedChanges) {
               Text(
-                text = "Unsaved changes",
+                text = "Niezapisane zmiany",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,
               )

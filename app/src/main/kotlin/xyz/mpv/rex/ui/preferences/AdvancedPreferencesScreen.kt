@@ -477,7 +477,7 @@ object AdvancedPreferencesScreen : Screen {
                         color = MaterialTheme.colorScheme.outline
                       )
                       selectedScripts.size == 1 -> Text(
-                        "1 script enabled",
+                        "1 skrypt włączony",
                         color = MaterialTheme.colorScheme.outline
                       )
                       else -> Text(

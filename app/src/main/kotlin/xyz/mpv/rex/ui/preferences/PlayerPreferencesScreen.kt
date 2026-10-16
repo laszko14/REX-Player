@@ -805,7 +805,7 @@ object PlayerPreferencesScreen : Screen {
                 SwitchPreference(
                   value = enabled,
                   onValueChange = preferences.threeFingerSpeedEnabled::set,
-                  title = { Text("Otwieraj panel dotknięciem trzema palcami") },
+                  title = { Text("Otwiraj panel dotkniêciem trzema palcami") },
                 )
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
@@ -813,8 +813,8 @@ object PlayerPreferencesScreen : Screen {
                 SwitchPreference(
                   value = autoShow,
                   onValueChange = preferences.threeFingerSpeedAutoShow::set,
-                  title = { Text("Pokazuj panel przy nowym filmie") },
-                  summary = { Text("Automatycznie otwiera panel po rozpoczęciu kolejnego filmu. X zamyka go do następnego filmu.") },
+                  title = { Text("Pokazuj panel dla nowego filmie") },
+                  summary = { Text("Automatyczne otwiera panel po rozruchu kolejnego filmu. X zamika go do następnego filmu.") },
                 )
               }
               // MPVREX_SPEED_PANEL_APPEARANCE_V7
@@ -835,7 +835,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = transparency.toFloat(),
                   onValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
-                  title = { Text("Przezroczystość tła panelu") },
+                  title = { Text("Prześwietlenie tej płyty") },
                   valueRange = 0f..100f,
                   summary = { Text("${transparency}% (0% = pełne tło, 100% = brak tła)") },
                   onSliderValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
@@ -847,7 +847,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = gap.toFloat(),
                   onValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
-                  title = { Text("Odstępy między przyciskami") },
+                  title = { Text("Odmawiają produkcji przyciskami") },
                   valueRange = 0f..16f,
                   summary = { Text("${gap} dp — oba rzędy") },
                   onSliderValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
@@ -858,8 +858,8 @@ object PlayerPreferencesScreen : Screen {
                 SwitchPreference(
                   value = persistent,
                   onValueChange = preferences.threeFingerSpeedPersistent::set,
-                  title = { Text("Widoczny aż do zamknięcia X") },
-                  summary = { Text("Wyłącz, aby panel znikał automatycznie po wybranym czasie") },
+                  title = { Text("WIDOCZNY AŻ DO ZAMKNIĘCIA X") },
+                  summary = { Text("Wymień, aby panel zniósł automatycznie po wyjęciu") },
                 )
               }
               if (!persistent) {
@@ -880,7 +880,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = jumpBack.toFloat(),
                   onValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
-                  title = { Text("Dolny przycisk 1: cofanie") },
+                  title = { Text("Dolny przycišsk 1: cofanie") },
                   valueRange = 1f..300f,
                   summary = { Text("-${jumpBack} sekund") },
                   onSliderValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
@@ -892,7 +892,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = jumpForward1.toFloat(),
                   onValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
-                  title = { Text("Dolny przycisk 2: przewijanie do przodu") },
+                  title = { Text("Dolny przycišsk 2: przewijanie do przedu") },
                   valueRange = 1f..300f,
                   summary = { Text("+${jumpForward1} sekund") },
                   onSliderValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
@@ -928,7 +928,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = positionX,
                   onValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
-                  title = { Text("Położenie poziome (lewo – prawo)") },
+                  title = { Text("POŁOŻENIE POZIOME (lewo - prawo)") },
                   valueRange = 0f..1f,
                   summary = { Text("${(positionX * 100).roundToInt()}%") },
                   onSliderValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
@@ -939,7 +939,7 @@ object PlayerPreferencesScreen : Screen {
                 SliderPreference(
                   value = positionY,
                   onValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },
-                  title = { Text("Położenie pionowe (góra – dół)") },
+                  title = { Text("Położenie pionowe (góra - dzień)") },
                   valueRange = 0f..1f,
                   summary = { Text("${(positionY * 100).roundToInt()}%. Możesz też przeciągnąć panel podczas filmu") },
                   onSliderValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },

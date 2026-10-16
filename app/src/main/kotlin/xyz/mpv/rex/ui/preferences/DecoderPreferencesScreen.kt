@@ -319,7 +319,7 @@ object DecoderPreferencesScreen : Screen {
                         color = MaterialTheme.colorScheme.outline,
                       )
                       Text(
-                        text = "github.com/bloc97/Anime4K",
+                        text = "github.com / block97 / Anime4K",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                         textDecoration = TextDecoration.Underline,
@@ -347,15 +347,15 @@ object DecoderPreferencesScreen : Screen {
                         preferences.enableAnime4K.set(false)
                       }
                     },
-                    title = { Text("HDR-to-SDR Tone Mapping (hdr-toys)") },
+                    title = { Text("HDR- to- SDR Tone Mapping (hdr- zabawki)") },
                     summary = {
                       Column {
                         Text(
-                          "Apply high quality GLSL shaders for HDR-to-SDR conversion. Requires gpu-next.",
+                          "Do konwersji HDR- to- SDR należy stosować wysokiej jakości Shadery GLSL. Wymaga gpu- następny.",
                           color = MaterialTheme.colorScheme.outline,
                         )
                         Text(
-                          text = "github.com/natural-harmonia-gropius/hdr-toys",
+                          text = "github.com / natural- harmonia- gropius / hdr- zabawki",
                           color = MaterialTheme.colorScheme.primary,
                           style = MaterialTheme.typography.bodySmall,
                           textDecoration = TextDecoration.Underline,
@@ -375,7 +375,7 @@ object DecoderPreferencesScreen : Screen {
                       value = currentTone,
                       onValueChange = { preferences.hdrToysToneMapping.set(it.name) },
                       values = HdrToysManager.ToneMapping.entries,
-                      title = { Text("  Tone Mapping Algorithm") },
+                      title = { Text("  Tone Mapping Algorytm") },
                       summary = {
                         Text(
                           "  " + currentTone.name,
@@ -390,7 +390,7 @@ object DecoderPreferencesScreen : Screen {
                       value = currentGamut,
                       onValueChange = { preferences.hdrToysGamutMapping.set(it.name) },
                       values = HdrToysManager.GamutMapping.entries,
-                      title = { Text("  Gamut Mapping Algorithm") },
+                      title = { Text("  Gamut Mapping Algorytm") },
                       summary = {
                         Text(
                           "  " + currentGamut.name,

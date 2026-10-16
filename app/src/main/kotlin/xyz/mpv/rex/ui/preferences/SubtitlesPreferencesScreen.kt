@@ -560,7 +560,7 @@ object SubtitlesPreferencesScreen : Screen {
                 highlightKey = listOf("Subtitle Sources", R.string.pref_subtitle_search_title),
               ) {
                 MultiChoicePreference(
-                  title = { Text("Subtitle Sources") },
+                  title = { Text("Źródła podtytułu") },
                   summary = {
                     val summaryText = if (wyzieSources.isEmpty() || wyzieSources.contains("all")) {
                       "All"
@@ -611,7 +611,7 @@ object SubtitlesPreferencesScreen : Screen {
                     horizontalArrangement = Arrangement.SpaceBetween
                   ) {
                     Text(
-                      text = "Advanced Search Filters",
+                      text = "Zaawansowane filtry wyszukiwania",
                       style = MaterialTheme.typography.labelLarge,
                       color = MaterialTheme.colorScheme.primary,
                       fontWeight = FontWeight.Bold
@@ -628,14 +628,14 @@ object SubtitlesPreferencesScreen : Screen {
                       SwitchPreference(
                         value = wyzieHearingImpaired,
                         onValueChange = { preferences.wyzieHearingImpaired.set(it) },
-                        title = { Text("Hearing-impaired friendly") },
-                        summary = { Text("Only show subtitles optimized for hearing impaired") }
+                        title = { Text("Przyjazny z zaburzeniami serca") },
+                        summary = { Text("Pokaż tylko napisy zoptymalizowane do słuchu") }
                       )
 
                       PreferenceDivider()
 
                       MultiChoicePreference(
-                        title = { Text("Preferred Formats") },
+                        title = { Text("Preferowane formaty") },
                         summary = {
                           val summaryText = if (wyzieFormats.isEmpty() || wyzieFormats.contains("all")) {
                             "All"
@@ -653,7 +653,7 @@ object SubtitlesPreferencesScreen : Screen {
                       PreferenceDivider()
 
                       MultiChoicePreference(
-                        title = { Text("Preferred Encodings") },
+                        title = { Text("Preferowane kody") },
                         summary = {
                           val summaryText = if (wyzieEncodings.isEmpty() || wyzieEncodings.contains("all")) {
                             "All"
@@ -806,7 +806,7 @@ object SubtitlesPreferencesScreen : Screen {
                     verticalAlignment = Alignment.CenterVertically
                   ) {
                     Text(
-                      text = "Subtitle Search provided by",
+                      text = "Tłumaczenie:",
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
