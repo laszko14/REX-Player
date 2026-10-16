@@ -16,6 +16,7 @@ import androidx.navigation3.runtime.NavBackStack
 import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.ui.player.controls.components.sheets.AspectRatioSheet
 import xyz.mpv.rex.ui.player.controls.components.sheets.AudioTracksSheet
+import xyz.mpv.rex.ui.player.controls.components.sheets.RexEqualizerSheet
 import xyz.mpv.rex.ui.player.controls.components.sheets.ChaptersSheet
 import xyz.mpv.rex.ui.player.controls.components.sheets.CustomSkipDurationSheet
 import xyz.mpv.rex.ui.player.controls.components.sheets.SleepTimerSheet
@@ -215,6 +216,10 @@ fun PlayerSheets(
       )
     }
 
+    Sheets.Equalizer -> {
+      RexEqualizerSheet(onDismissRequest = onDismissRequest)
+    }
+
     Sheets.AudioTracks -> {
       val audioPicker =
         rememberLauncherForActivityResult(
@@ -276,6 +281,7 @@ fun PlayerSheets(
         onSelect = onSelectAudio,
         onAddAudioTrack = { showFilePicker = true },
         onOpenDelayPanel = { onOpenPanel(Panels.AudioDelay) },
+        onOpenEqualizer = { onShowSheet(Sheets.Equalizer) },
         onDismissRequest,
       )
     }

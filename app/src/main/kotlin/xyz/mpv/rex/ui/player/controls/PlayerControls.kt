@@ -185,6 +185,14 @@ fun PlayerControls(
   val showNextPreviousButtons by appearancePreferences.showNextPreviousButtons.collectAsState()
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
+  val rexEqEnabled by audioPreferences.rexEqEnabled.collectAsState()
+  val rexEqBands by audioPreferences.rexEqBands.collectAsState()
+  val rexEqBoost by audioPreferences.rexEqBoost.collectAsState()
+  val rexEqMediaPath by MPVLib.propString["path"].collectAsState()
+  LaunchedEffect(rexEqEnabled, rexEqBands, rexEqBoost, rexEqMediaPath) {
+    delay(130L)
+    RexEqualizerAudio.apply(rexEqEnabled, RexEqualizerAudio.parseBands(rexEqBands), rexEqBoost)
+  }
   val gesturePreferences = koinInject<GesturePreferences>()
   val playerTutorialManager = koinInject<PlayerTutorialManager>()
   val enableReleaseToCancel by gesturePreferences.enableReleaseToCancel.collectAsState()

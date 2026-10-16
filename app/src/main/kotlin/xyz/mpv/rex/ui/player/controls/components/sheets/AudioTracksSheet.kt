@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreTime
+import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,6 +44,7 @@ fun AudioTracksSheet(
   onSelect: (TrackNode) -> Unit,
   onAddAudioTrack: () -> Unit,
   onOpenDelayPanel: () -> Unit,
+  onOpenEqualizer: () -> Unit,
   onDismissRequest: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -59,6 +61,9 @@ fun AudioTracksSheet(
         actions = {
           IconButton(onClick = onOpenDelayPanel) {
             Icon(Icons.Default.MoreTime, null)
+          }
+          IconButton(onClick = onOpenEqualizer) {
+            Icon(Icons.Default.Equalizer, contentDescription = "Korektor dzwieku")
           }
         },
       )

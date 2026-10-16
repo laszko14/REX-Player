@@ -140,6 +140,7 @@ enum class Sheets {
   SubtitleTracks,
   OnlineSubtitleSearch,
   AudioTracks,
+  Equalizer,
   Chapters,
   Decoders,
   More,
