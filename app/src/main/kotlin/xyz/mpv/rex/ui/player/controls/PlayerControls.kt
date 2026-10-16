@@ -806,9 +806,7 @@ fun PlayerControls(
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customLeftButtonsRef) {
                 start.linkTo(parent.start, spacing.large)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-                verticalBias = 0.65f
+                top.linkTo(customRightButtonsRef.bottom, 6.dp)
                 width = Dimension.preferredWrapContent
                 height = Dimension.wrapContent
             }
@@ -872,10 +870,10 @@ fun PlayerControls(
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customRightButtonsRef) {
-                end.linkTo(parent.end, spacing.large)
+                start.linkTo(parent.start, spacing.large)
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
-                verticalBias = 0.65f
+                verticalBias = 0.57f
                 width = Dimension.preferredWrapContent
                 height = Dimension.wrapContent
             }
@@ -894,7 +892,7 @@ fun PlayerControls(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .padding(vertical = 6.dp)
-                    .horizontalScroll(rightScrollState, reverseScrolling = true)
+                    .horizontalScroll(rightScrollState)
             ) {
                 customButtons.filter { !it.isLeft }.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
