@@ -1,0 +1,269 @@
+name: MPV Alpha - panel 2x6 i jeden APK arm64 v9
+
+"on":
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-alpha-v9.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mpv-alpha-v9-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Sprawdz i zastosuj zmiany v9
+        shell: bash
+        run: |
+          python3 <<'PY_PATCH'
+          from pathlib import Path
+          import re
+
+          ROOT = Path('app/src/main')
+          KOTLIN = ROOT / 'kotlin/xyz/mpv/rex'
+          PREFS = KOTLIN / 'preferences/PlayerPreferences.kt'
+          SCREEN = KOTLIN / 'ui/preferences/PlayerPreferencesScreen.kt'
+          OVERLAY = KOTLIN / 'ui/player/controls/ThreeFingerSpeedOverlay.kt'
+          GRADLE = Path('app/build.gradle.kts')
+          STRINGS = ROOT / 'res/values/strings.xml'
+          DEBUG_STRINGS = Path('app/src/debug/res/values/strings.xml')
+          MARKER = 'MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9'
+
+          paths = [PREFS, SCREEN, OVERLAY, GRADLE, STRINGS, DEBUG_STRINGS]
+          original = {p: p.read_text(encoding='utf-8') for p in paths}
+          source = dict(original)
+
+          def replace(p, old, new, name):
+              n = source[p].count(old)
+              if n != 1:
+                  raise SystemExit(f'PATCH ERROR: {name}: expected one anchor, got {n} in {p}')
+              source[p] = source[p].replace(old, new, 1)
+
+          def replace_regex(p, pattern, repl, name):
+              new, n = re.subn(pattern, lambda match: repl, source[p], count=1, flags=re.MULTILINE | re.DOTALL)
+              if n != 1:
+                  raise SystemExit(f'PATCH ERROR: {name}: expected one match, got {n} in {p}')
+              source[p] = new
+
+          if MARKER in source[OVERLAY]:
+              required = ('threeFingerSpeedSeekButton1', 'threeFingerSpeedSeekButton2', 'threeFingerSpeedSeekButton3')
+              if all(x in source[PREFS] and x in source[SCREEN] for x in required) and 'MPV Alpha' in source[DEBUG_STRINGS]:
+                  print('v9 already installed, no source changes')
+                  raise SystemExit(0)
+              raise SystemExit('Found incomplete v9 patch. Refusing to overwrite.')
+
+          # Preserve users' existing six speed values and previous custom seek durations.
+          replace(
+              PREFS,
+              '  val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4")',
+              '  val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4,4.5,5,5.5")',
+              'nine speed defaults',
+          )
+          base = '  val threeFingerSpeedJumpForward2 = preferenceStore.getInt("three_finger_speed_jump_forward_2", 30)\n'
+          addition = '''  // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9
+            // New signed values use previously saved durations as their initial defaults.
+            val threeFingerSpeedSeekButton1 = preferenceStore.getInt("three_finger_seek_signed_1", -threeFingerSpeedJumpBack.get())
+            val threeFingerSpeedSeekButton2 = preferenceStore.getInt("three_finger_seek_signed_2", threeFingerSpeedJumpForward1.get())
+            val threeFingerSpeedSeekButton3 = preferenceStore.getInt("three_finger_seek_signed_3", threeFingerSpeedJumpForward2.get())
+          '''
+          replace(PREFS, base, base + addition, 'signed seek preferences')
+
+          # The existing saved string of six speeds remains valid: last three receive fallback values.
+          replace(
+              OVERLAY,
+              'private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f)',
+              'private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f, 5.5f)',
+              'overlay preset defaults',
+          )
+          old_states = '''  val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
+            val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+            val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+          '''
+          new_states = '''  // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9
+            val signedSeek1 by preferences.threeFingerSpeedSeekButton1.collectAsState()
+            val signedSeek2 by preferences.threeFingerSpeedSeekButton2.collectAsState()
+            val signedSeek3 by preferences.threeFingerSpeedSeekButton3.collectAsState()
+          '''
+          replace(OVERLAY, old_states, new_states, 'signed seek overlay states')
+          # Use the user's last configured speed to choose the additional three defaults.
+          # Example: 1.25,1.5,2,2.5,3,3.5 -> 4,4.5,5 on the lower row.
+          replace(OVERLAY,
+          '''  return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
+              stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: fallback
+            }
+          ''',
+          '''  return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
+              val nextFallback = if (index < 6) fallback else {
+                val lastUserSpeed = stored.getOrNull(5)?.trim()?.toFloatOrNull()
+                  ?.takeIf { it in 0.25f..6f } ?: DEFAULT_SPEED_PANEL_PRESETS[5]
+                (lastUserSpeed + (index - 5) * 0.5f).coerceAtMost(6f)
+              }
+              stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: nextFallback
+            }
+          ''', 'additional speeds follow last saved speed')
+          anchor = '@Composable\nprivate fun SeekActionChip('
+          helper = '''private fun formatSignedSeek(seconds: Int): String =
+            if (seconds > 0) "+${seconds}s" else "${seconds}s"
+
+          '''
+          replace(OVERLAY, anchor, helper + anchor, 'seek label formatting')
+          replace(OVERLAY, '        presets.forEachIndexed { index, preset ->', '        presets.take(6).forEachIndexed { index, preset ->', 'six top speed buttons')
+          old_bottom = '''        SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, scale = panelScale, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, scale = panelScale, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, scale = panelScale, modifier = Modifier.weight(1f))
+          '''
+          new_bottom = '''        // Three additional speeds followed by three independent signed seek buttons.
+                  presets.drop(6).take(3).forEachIndexed { index, preset ->
+                    Text(
+                      text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+                      color = if (selected == index + 6) accent else Color.White,
+                      fontSize = (11f * panelScale).sp,
+                      maxLines = 1,
+                      textAlign = TextAlign.Center,
+                      modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(7.dp))
+                        .clickable { onSelectSpeed(preset) }
+                        .padding(vertical = (2f * panelScale).dp),
+                    )
+                  }
+                  SeekActionChip(label = formatSignedSeek(signedSeek1), onClick = { if (signedSeek1 != 0) onSeekBy(signedSeek1) }, scale = panelScale, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = formatSignedSeek(signedSeek2), onClick = { if (signedSeek2 != 0) onSeekBy(signedSeek2) }, scale = panelScale, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = formatSignedSeek(signedSeek3), onClick = { if (signedSeek3 != 0) onSeekBy(signedSeek3) }, scale = panelScale, modifier = Modifier.weight(1f))
+          '''
+          replace(OVERLAY, old_bottom, new_bottom, 'bottom row 3 speeds + 3 seeks')
+
+          # Settings remain grouped as before; avoid depending on machine-translated titles.
+          for old_var, field, new_var, index in [
+              ('jumpBack', 'threeFingerSpeedJumpBack', 'seek1', 1),
+              ('jumpForward1', 'threeFingerSpeedJumpForward1', 'seek2', 2),
+              ('jumpForward2', 'threeFingerSpeedJumpForward2', 'seek3', 3),
+          ]:
+              block_pattern = (
+                  r'^              GroupedPreferenceCard\(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures\) \{\n'
+                  r'                val ' + old_var + r' by preferences\.' + field + r'\.collectAsState\(\)\n'
+                  r'.*?'
+                  r'                  sliderValue = ' + old_var + r'\.toFloat\(\),\n'
+                  r'                \)\n'
+                  r'              \}\n'
+              )
+              block = f'''              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {{
+                          // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9: negative = backwards, positive = forwards.
+                          val {new_var} by preferences.threeFingerSpeedSeekButton{index}.collectAsState()
+                          SliderPreference(
+                            value = {new_var}.toFloat(),
+                            onValueChange = {{ preferences.threeFingerSpeedSeekButton{index}.set(it.roundToInt()) }},
+                            title = {{ Text("Przewijanie {index}: kierunek i czas") }},
+                            valueRange = -300f..300f,
+                            summary = {{ Text(when {{
+                              {new_var} < 0 -> "Do tyłu: ${{-{new_var}}} s"
+                              {new_var} > 0 -> "Do przodu: ${{{new_var}}} s"
+                              else -> "0 s — bez przewijania"
+                            }}) }},
+                            onSliderValueChange = {{ preferences.threeFingerSpeedSeekButton{index}.set(it.roundToInt()) }},
+                            sliderValue = {new_var}.toFloat(),
+                          )
+                        }}
+          '''
+              replace_regex(SCREEN, block_pattern, block, 'seek slider ' + str(index))
+          replace(SCREEN, '              for (index in 0 until 6) {', '              for (index in 0 until 9) {', 'nine speed settings')
+
+          # In the debug build, Android uses src/debug/res/values/strings.xml as a priority
+          # overlay; edit it as well, otherwise the launcher would still say REX Player(Debug).
+          replace(STRINGS, '<string name="app_name" translatable="false">REX Player</string>', '<string name="app_name" translatable="false">MPV Alpha</string>', 'main app label')
+          replace(DEBUG_STRINGS, '<string name="app_name" translatable="false">REX Player(Debug)</string>', '<string name="app_name" translatable="false">MPV Alpha</string>', 'debug app label')
+
+          # The existing Polish+ARM64 workflow has already limited the build to a single ABI.
+          if 'include("arm64-v8a")' not in source[GRADLE] or 'isUniversalApk = false' not in source[GRADLE]:
+              raise SystemExit('Source is not yet configured for arm64-only builds. Refusing 500MB package.')
+
+          # Commit only after all patches validated.
+          for path, txt in source.items():
+              if txt != original[path]:
+                  path.write_text(txt, encoding='utf-8')
+                  print('PATCHED', path)
+          print('PATCH V9 OK: 6 upper speeds, 3 lower speeds, 3 configurable signed seeks, MPV Alpha launcher name, ARM64 only')
+          PY_PATCH
+
+      - name: Zbuduj APK
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Zweryfikuj i zachowaj JEDEN APK
+        shell: bash
+        run: |
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/debug/*.apk)
+          if [ "${#apks[@]}" -ne 1 ]; then
+            echo "BLAD: zamiast jednego powstalo ${#apks[@]} APK"
+            printf '%s\n' "${apks[@]}"
+            exit 1
+          fi
+          if [[ "${apks[0]}" != *arm64-v8a* ]]; then
+            echo "BLAD: APK nie jest wersja ARM64: ${apks[0]}"
+            exit 1
+          fi
+          mkdir -p dist
+          cp "${apks[0]}" dist/MPV-Alpha-arm64-v8a.apk
+          ls -lh dist/MPV-Alpha-arm64-v8a.apk
+
+      - name: Udostepnij jeden APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-arm64
+          path: dist/MPV-Alpha-arm64-v8a.apk
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Zapisz kod po poprawnej kompilacji
+        if: success()
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+          git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+          git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+          git add app/src/main/res/values/strings.xml
+          git add app/src/debug/res/values/strings.xml
+          # Two older workflow files have invalid YAML and can generate false failure notifications.
+          for broken in .github/workflows/mpvrex-alpha-panel-v8.yml .github/workflows/mpvrex-panel-predkosci-v4.yml; do
+            if [ -f "$broken" ]; then
+              git rm -f -- "$broken"
+            fi
+          done
+          if ! git diff --cached --quiet; then
+            git commit -m "feat(player): MPV Alpha, nine speeds, signed seeks and single arm64 APK"
+            git pull --rebase origin master
+            git push origin HEAD:master
+          else
+            echo "Zmiany zostaly juz zapisane"
+          fi
