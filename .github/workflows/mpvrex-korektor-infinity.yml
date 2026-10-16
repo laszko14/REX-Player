@@ -1,0 +1,154 @@
+name: MPVRex - korektor dzwieku 5 pasm
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-korektor-infinity.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  eq:
+    name: Dodaj EQ i zbuduj debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Przygotuj Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Przygotuj Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Zainstaluj SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Dodaj korektor i jego ustawienia
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import base64
+          
+          root = Path('app/src/main/kotlin/xyz/mpv/rex')
+          
+          def edit(relative, transforms):
+              p = root / relative
+              src = p.read_text(encoding='utf-8')
+              for old, new in transforms:
+                  if old not in src:
+                      raise RuntimeError(f'Patch incompatible with {p}: {old[:110]!r}')
+                  if src.count(old) != 1:
+                      raise RuntimeError(f'Expected one anchor in {p}, found {src.count(old)}: {old[:110]!r}')
+                  src = src.replace(old, new, 1)
+              p.write_text(src, encoding='utf-8')
+          
+          base64_files = {
+            'app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/components/sheets/RexEqualizerSheet.kt': 'cGFja2FnZSB4eXoubXB2LnJleC51aS5wbGF5ZXIuY29udHJvbHMuY29tcG9uZW50cy5zaGVldHMKCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24uQ2FudmFzCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24uZ2VzdHVyZXMuYXdhaXRFYWNoR2VzdHVyZQppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmdlc3R1cmVzLmF3YWl0Rmlyc3REb3duCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24ubGF5b3V0LkFycmFuZ2VtZW50CmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24ubGF5b3V0LkNvbHVtbgppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmxheW91dC5Sb3cKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UuZm91bmRhdGlvbi5sYXlvdXQuU3BhY2VyCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24ubGF5b3V0LmZpbGxNYXhXaWR0aAppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmxheW91dC5oZWlnaHQKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UuZm91bmRhdGlvbi5sYXlvdXQucGFkZGluZwppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmxheW91dC53aWR0aAppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmxhenkuTGF6eVJvdwppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5mb3VuZGF0aW9uLmxhenkuaXRlbXMKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UuZm91bmRhdGlvbi5yZW1lbWJlclNjcm9sbFN0YXRlCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLmZvdW5kYXRpb24udmVydGljYWxTY3JvbGwKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UubWF0ZXJpYWwzLkJ1dHRvbgppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5tYXRlcmlhbDMuRmlsdGVyQ2hpcAppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5tYXRlcmlhbDMuTWF0ZXJpYWxUaGVtZQppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5tYXRlcmlhbDMuU2xpZGVyCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLm1hdGVyaWFsMy5Td2l0Y2gKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UubWF0ZXJpYWwzLlRleHQKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UucnVudGltZS5Db21wb3NhYmxlCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLnJ1bnRpbWUuY29sbGVjdEFzU3RhdGUKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UucnVudGltZS5nZXRWYWx1ZQppbXBvcnQgYW5kcm9pZHguY29tcG9zZS5ydW50aW1lLnJlbWVtYmVyVXBkYXRlZFN0YXRlCmltcG9ydCBhbmRyb2lkeC5jb21wb3NlLnVpLkFsaWdubWVudAppbXBvcnQgYW5kcm9pZHguY29tcG9zZS51aS5Nb2RpZmllcgppbXBvcnQgYW5kcm9pZHguY29tcG9zZS51aS5nZW9tZXRyeS5PZmZzZXQKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UudWkuZ3JhcGhpY3MuQ29sb3IKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UudWkuaW5wdXQucG9pbnRlci5wb2ludGVySW5wdXQKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UudWkudGV4dC5mb250LkZvbnRXZWlnaHQKaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UudWkudGV4dC5zdHlsZS5UZXh0QWxpZ24KaW1wb3J0IGFuZHJvaWR4LmNvbXBvc2UudWkudW5pdC5kcAppbXBvcnQgYW5kcm9pZHguY29tcG9zZS51aS51bml0LnNwCmltcG9ydCBvcmcua29pbi5jb21wb3NlLmtvaW5JbmplY3QKaW1wb3J0IHh5ei5tcHYucmV4LnByZWZlcmVuY2VzLkF1ZGlvUHJlZmVyZW5jZXMKaW1wb3J0IHh5ei5tcHYucmV4LnByZWZlcmVuY2VzLnByZWZlcmVuY2UuY29sbGVjdEFzU3RhdGUKaW1wb3J0IHh5ei5tcHYucmV4LnByZXNlbnRhdGlvbi5jb21wb25lbnRzLlBsYXllclNoZWV0CmltcG9ydCB4eXoubXB2LnJleC51aS5wbGF5ZXIuY29udHJvbHMuUmV4RXF1YWxpemVyQXVkaW8KaW1wb3J0IGtvdGxpbi5tYXRoLnJvdW5kVG9JbnQKCi8qKiBJbmRlcGVuZGVudGx5IGltcGxlbWVudGVkIGZpdmUtYmFuZCBFUSBpbnRlcmZhY2UsIGluc3BpcmVkIGJ5IHRoZSBhdmFpbGFibGUgY29udHJvbHMgaW4gbXB24oieLiAqLwpAQ29tcG9zYWJsZQpmdW4gUmV4RXF1YWxpemVyU2hlZXQob25EaXNtaXNzUmVxdWVzdDogKCkgLT4gVW5pdCkgewogIHZhbCBwcmVmZXJlbmNlcyA9IGtvaW5JbmplY3Q8QXVkaW9QcmVmZXJlbmNlcz4oKQogIHZhbCBlbmFibGVkIGJ5IHByZWZlcmVuY2VzLnJleEVxRW5hYmxlZC5jb2xsZWN0QXNTdGF0ZSgpCiAgdmFsIHN0b3JlZEJhbmRzIGJ5IHByZWZlcmVuY2VzLnJleEVxQmFuZHMuY29sbGVjdEFzU3RhdGUoKQogIHZhbCBzZWxlY3RlZFByZXNldCBieSBwcmVmZXJlbmNlcy5yZXhFcVByZXNldC5jb2xsZWN0QXNTdGF0ZSgpCiAgdmFsIHZvbHVtZUJvb3N0IGJ5IHByZWZlcmVuY2VzLnJleEVxQm9vc3QuY29sbGVjdEFzU3RhdGUoKQogIHZhbCBiYW5kcyA9IFJleEVxdWFsaXplckF1ZGlvLnBhcnNlQmFuZHMoc3RvcmVkQmFuZHMpCiAgdmFsIHNob3duUHJlc2V0cyA9IGlmIChzZWxlY3RlZFByZXNldCA9PSAiQ3VzdG9tIikgbGlzdE9mKCJDdXN0b20iIHRvIGVtcHR5TGlzdDxJbnQ+KCkpICsgUmV4RXF1YWxpemVyQXVkaW8ucHJlc2V0cyBlbHNlIFJleEVxdWFsaXplckF1ZGlvLnByZXNldHMKCiAgUGxheWVyU2hlZXQob25EaXNtaXNzUmVxdWVzdCA9IG9uRGlzbWlzc1JlcXVlc3QpIHsKICAgIENvbHVtbigKICAgICAgbW9kaWZpZXIgPSBNb2RpZmllcgogICAgICAgIC5maWxsTWF4V2lkdGgoKQogICAgICAgIC52ZXJ0aWNhbFNjcm9sbChyZW1lbWJlclNjcm9sbFN0YXRlKCkpCiAgICAgICAgLnBhZGRpbmcoc3RhcnQgPSAxNi5kcCwgZW5kID0gMTYuZHAsIHRvcCA9IDE0LmRwLCBib3R0b20gPSAyMi5kcCksCiAgICAgIHZlcnRpY2FsQXJyYW5nZW1lbnQgPSBBcnJhbmdlbWVudC5zcGFjZWRCeSgxMi5kcCksCiAgICApIHsKICAgICAgUm93KAogICAgICAgIG1vZGlmaWVyID0gTW9kaWZpZXIuZmlsbE1heFdpZHRoKCksCiAgICAgICAgdmVydGljYWxBbGlnbm1lbnQgPSBBbGlnbm1lbnQuQ2VudGVyVmVydGljYWxseSwKICAgICAgICBob3Jpem9udGFsQXJyYW5nZW1lbnQgPSBBcnJhbmdlbWVudC5TcGFjZUJldHdlZW4sCiAgICAgICkgewogICAgICAgIFRleHQoIktPUkVLVE9SIETFuVdJxJhLVSIsIHN0eWxlID0gTWF0ZXJpYWxUaGVtZS50eXBvZ3JhcGh5LnRpdGxlTWVkaXVtLCBmb250V2VpZ2h0ID0gRm9udFdlaWdodC5Cb2xkKQogICAgICAgIFN3aXRjaChjaGVja2VkID0gZW5hYmxlZCwgb25DaGVja2VkQ2hhbmdlID0gcHJlZmVyZW5jZXMucmV4RXFFbmFibGVkOjpzZXQpCiAgICAgIH0KCiAgICAgIExhenlSb3coaG9yaXpvbnRhbEFycmFuZ2VtZW50ID0gQXJyYW5nZW1lbnQuc3BhY2VkQnkoNy5kcCkpIHsKICAgICAgICBpdGVtcyhzaG93blByZXNldHMsIGtleSA9IHsgaXQuZmlyc3QgfSkgeyBwcmVzZXQgLT4KICAgICAgICAgIEZpbHRlckNoaXAoCiAgICAgICAgICAgIHNlbGVjdGVkID0gc2VsZWN0ZWRQcmVzZXQgPT0gcHJlc2V0LmZpcnN0LAogICAgICAgICAgICBvbkNsaWNrID0gewogICAgICAgICAgICAgIGlmIChwcmVzZXQuZmlyc3QgIT0gIkN1c3RvbSIpIHsKICAgICAgICAgICAgICAgIHByZWZlcmVuY2VzLnJleEVxUHJlc2V0LnNldChwcmVzZXQuZmlyc3QpCiAgICAgICAgICAgICAgICBwcmVmZXJlbmNlcy5yZXhFcUJhbmRzLnNldChwcmVzZXQuc2Vjb25kLmpvaW5Ub1N0cmluZygiLCIpKQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSwKICAgICAgICAgICAgbGFiZWwgPSB7IFRleHQocHJlc2V0LmZpcnN0KSB9LAogICAgICAgICAgICBlbmFibGVkID0gZW5hYmxlZCAmJiBwcmVzZXQuZmlyc3QgIT0gIkN1c3RvbSIsCiAgICAgICAgICApCiAgICAgICAgfQogICAgICB9CgogICAgICBSb3coCiAgICAgICAgbW9kaWZpZXIgPSBNb2RpZmllci5maWxsTWF4V2lkdGgoKSwKICAgICAgICBob3Jpem9udGFsQXJyYW5nZW1lbnQgPSBBcnJhbmdlbWVudC5zcGFjZWRCeSgzLmRwKSwKICAgICAgKSB7CiAgICAgICAgUmV4RXF1YWxpemVyQXVkaW8uZnJlcXVlbmNpZXMuZm9yRWFjaEluZGV4ZWQgeyBpbmRleCwgZnJlcXVlbmN5IC0+CiAgICAgICAgICBFcUJhbmRDb250cm9sKAogICAgICAgICAgICB0aXRsZSA9IGlmIChmcmVxdWVuY3kgPj0gMTAwMCkgIiR7ZnJlcXVlbmN5IC8gMTAwMGZ9ayIgZWxzZSAiJGZyZXF1ZW5jeSIsCiAgICAgICAgICAgIGdhaW4gPSBiYW5kc1tpbmRleF0sCiAgICAgICAgICAgIGVuYWJsZWQgPSBlbmFibGVkLAogICAgICAgICAgICBvbkdhaW5DaGFuZ2VkID0geyBuZXdHYWluIC0+CiAgICAgICAgICAgICAgdmFsIGNvcHkgPSBiYW5kcy50b011dGFibGVMaXN0KCkKICAgICAgICAgICAgICBjb3B5W2luZGV4XSA9IG5ld0dhaW4KICAgICAgICAgICAgICBwcmVmZXJlbmNlcy5yZXhFcUJhbmRzLnNldChjb3B5LmpvaW5Ub1N0cmluZygiLCIpKQogICAgICAgICAgICAgIHByZWZlcmVuY2VzLnJleEVxUHJlc2V0LnNldCgiQ3VzdG9tIikKICAgICAgICAgICAgfSwKICAgICAgICAgICAgbW9kaWZpZXIgPSBNb2RpZmllci53ZWlnaHQoMWYpLAogICAgICAgICAgKQogICAgICAgIH0KICAgICAgfQoKICAgICAgVGV4dCgiV1pNT0NOSUVOSUUgR8WBT8WaTk/FmkNJICAgKyR7dm9sdW1lQm9vc3R9IGRCIiwgc3R5bGUgPSBNYXRlcmlhbFRoZW1lLnR5cG9ncmFwaHkubGFiZWxNZWRpdW0pCiAgICAgIFNsaWRlcigKICAgICAgICB2YWx1ZSA9IHZvbHVtZUJvb3N0LnRvRmxvYXQoKSwKICAgICAgICB2YWx1ZVJhbmdlID0gMGYuLjEwZiwKICAgICAgICBzdGVwcyA9IDksCiAgICAgICAgZW5hYmxlZCA9IGVuYWJsZWQsCiAgICAgICAgb25WYWx1ZUNoYW5nZSA9IHsgcHJlZmVyZW5jZXMucmV4RXFCb29zdC5zZXQoaXQucm91bmRUb0ludCgpLmNvZXJjZUluKDAsIDEwKSkgfSwKICAgICAgKQogICAgICBUZXh0KAogICAgICAgICJXem1vY25pZW5pZSBwb3d5xbxlaiAwIGRCIG1vxbxlIHBvd29kb3dhxIcgcHJ6ZXN0ZXJvd2FuaWUuIEZpbHRyeSBMdWEgcG96b3N0YWrEhSBuaWV6YWxlxbxuZS4iLAogICAgICAgIHN0eWxlID0gTWF0ZXJpYWxUaGVtZS50eXBvZ3JhcGh5LmJvZHlTbWFsbCwKICAgICAgICBjb2xvciA9IE1hdGVyaWFsVGhlbWUuY29sb3JTY2hlbWUub25TdXJmYWNlVmFyaWFudCwKICAgICAgKQogICAgICBSb3coaG9yaXpvbnRhbEFycmFuZ2VtZW50ID0gQXJyYW5nZW1lbnQuc3BhY2VkQnkoMTIuZHApKSB7CiAgICAgICAgQnV0dG9uKG9uQ2xpY2sgPSB7CiAgICAgICAgICBwcmVmZXJlbmNlcy5yZXhFcVByZXNldC5zZXQoIkZsYXQiKQogICAgICAgICAgcHJlZmVyZW5jZXMucmV4RXFCYW5kcy5zZXQoIjAsMCwwLDAsMCIpCiAgICAgICAgICBwcmVmZXJlbmNlcy5yZXhFcUJvb3N0LnNldCgwKQogICAgICAgIH0pIHsKICAgICAgICAgIFRleHQoIld5emVydWoiKQogICAgICAgIH0KICAgICAgICBCdXR0b24ob25DbGljayA9IG9uRGlzbWlzc1JlcXVlc3QpIHsKICAgICAgICAgIFRleHQoIlphbWtuaWoiKQogICAgICAgIH0KICAgICAgfQogICAgfQogIH0KfQoKQENvbXBvc2FibGUKcHJpdmF0ZSBmdW4gRXFCYW5kQ29udHJvbCgKICB0aXRsZTogU3RyaW5nLAogIGdhaW46IEludCwKICBlbmFibGVkOiBCb29sZWFuLAogIG9uR2FpbkNoYW5nZWQ6IChJbnQpIC0+IFVuaXQsCiAgbW9kaWZpZXI6IE1vZGlmaWVyID0gTW9kaWZpZXIsCikgewogIHZhbCBhY2NlbnQgPSBNYXRlcmlhbFRoZW1lLmNvbG9yU2NoZW1lLnByaW1hcnkKICB2YWwgbGF0ZXN0T25HYWluQ2hhbmdlZCBieSByZW1lbWJlclVwZGF0ZWRTdGF0ZShvbkdhaW5DaGFuZ2VkKQogIENvbHVtbihtb2RpZmllciA9IG1vZGlmaWVyLCBob3Jpem9udGFsQWxpZ25tZW50ID0gQWxpZ25tZW50LkNlbnRlckhvcml6b250YWxseSkgewogICAgVGV4dChpZiAoZ2FpbiA+IDApICIrJGdhaW4iIGVsc2UgIiRnYWluIiwgZm9udFNpemUgPSAxMi5zcCwgY29sb3IgPSBhY2NlbnQsIGZvbnRXZWlnaHQgPSBGb250V2VpZ2h0LkJvbGQpCiAgICBDYW52YXMoCiAgICAgIG1vZGlmaWVyID0gTW9kaWZpZXIKICAgICAgICAuZmlsbE1heFdpZHRoKCkKICAgICAgICAuaGVpZ2h0KDE1MC5kcCkKICAgICAgICAucG9pbnRlcklucHV0KGVuYWJsZWQpIHsKICAgICAgICAgIGlmICghZW5hYmxlZCkgcmV0dXJuQHBvaW50ZXJJbnB1dAogICAgICAgICAgYXdhaXRFYWNoR2VzdHVyZSB7CiAgICAgICAgICAgIHZhbCBkb3duID0gYXdhaXRGaXJzdERvd24ocmVxdWlyZVVuY29uc3VtZWQgPSBmYWxzZSkKICAgICAgICAgICAgbGF0ZXN0T25HYWluQ2hhbmdlZCgoKCgxZiAtIGRvd24ucG9zaXRpb24ueSAvIHNpemUuaGVpZ2h0KSAqIDMwZikgLSAxNWYpLnJvdW5kVG9JbnQoKS5jb2VyY2VJbigtMTUsIDE1KSkKICAgICAgICAgICAgZG93bi5jb25zdW1lKCkKICAgICAgICAgICAgZG8gewogICAgICAgICAgICAgIHZhbCBldmVudCA9IGF3YWl0UG9pbnRlckV2ZW50KCkKICAgICAgICAgICAgICB2YWwgY2hhbmdlID0gZXZlbnQuY2hhbmdlcy5maXJzdE9yTnVsbCgpID86IGJyZWFrCiAgICAgICAgICAgICAgaWYgKGNoYW5nZS5wcmVzc2VkKSB7CiAgICAgICAgICAgICAgICB2YWwgdmFsdWUgPSAoKCgxZiAtIGNoYW5nZS5wb3NpdGlvbi55IC8gc2l6ZS5oZWlnaHQpICogMzBmKSAtIDE1Zikucm91bmRUb0ludCgpLmNvZXJjZUluKC0xNSwgMTUpCiAgICAgICAgICAgICAgICBsYXRlc3RPbkdhaW5DaGFuZ2VkKHZhbHVlKQogICAgICAgICAgICAgICAgY2hhbmdlLmNvbnN1bWUoKQogICAgICAgICAgICAgIH0KICAgICAgICAgICAgfSB3aGlsZSAoZXZlbnQuY2hhbmdlcy5hbnkgeyBpdC5wcmVzc2VkIH0pCiAgICAgICAgICB9CiAgICAgICAgfSwKICAgICkgewogICAgICB2YWwgY2VudGVyWCA9IHNpemUud2lkdGggLyAyZgogICAgICB2YWwgdGh1bWJZID0gc2l6ZS5oZWlnaHQgKiAoMWYgLSAoZ2FpbiArIDE1ZikgLyAzMGYpCiAgICAgIGRyYXdMaW5lKENvbG9yLkdyYXkuY29weShhbHBoYSA9IDAuNTBmKSwgT2Zmc2V0KGNlbnRlclgsIDYuZHAudG9QeCgpKSwgT2Zmc2V0KGNlbnRlclgsIHNpemUuaGVpZ2h0IC0gNi5kcC50b1B4KCkpLCA0LmRwLnRvUHgoKSkKICAgICAgZHJhd0xpbmUoYWNjZW50LmNvcHkoYWxwaGEgPSBpZiAoZW5hYmxlZCkgMWYgZWxzZSAwLjM1ZiksIE9mZnNldChjZW50ZXJYLCB0aHVtYlkpLCBPZmZzZXQoY2VudGVyWCwgc2l6ZS5oZWlnaHQgLSA2LmRwLnRvUHgoKSksIDQuZHAudG9QeCgpKQogICAgICBkcmF3Q2lyY2xlKGlmIChlbmFibGVkKSBhY2NlbnQgZWxzZSBDb2xvci5HcmF5LCByYWRpdXMgPSA4LmRwLnRvUHgoKSwgY2VudGVyID0gT2Zmc2V0KGNlbnRlclgsIHRodW1iWS5jb2VyY2VJbig4LmRwLnRvUHgoKSwgc2l6ZS5oZWlnaHQgLSA4LmRwLnRvUHgoKSkpKQogICAgfQogICAgVGV4dCh0aXRsZSwgdGV4dEFsaWduID0gVGV4dEFsaWduLkNlbnRlciwgZm9udFNpemUgPSAxMS5zcCwgbWF4TGluZXMgPSAxKQogICAgU3BhY2VyKE1vZGlmaWVyLmhlaWdodCgyLmRwKSkKICAgIFRleHQoIkh6IiwgZm9udFNpemUgPSA5LnNwLCBjb2xvciA9IE1hdGVyaWFsVGhlbWUuY29sb3JTY2hlbWUub25TdXJmYWNlVmFyaWFudCkKICB9Cn0K',
+            'app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/RexEqualizerAudio.kt': 'cGFja2FnZSB4eXoubXB2LnJleC51aS5wbGF5ZXIuY29udHJvbHMKCmltcG9ydCBgaXNgLnh5ei5tcHYuTVBWTGliCgovKiogSW5kZXBlbmRlbnQgbXB2IGF1ZGlvLWZpbHRlciBpbXBsZW1lbnRhdGlvbiwga2VlcHMgdGhlIHVzZXIncyBMdWEgZmlsdGVycyBpbiBwbGFjZS4gKi8Kb2JqZWN0IFJleEVxdWFsaXplckF1ZGlvIHsKICB2YWwgZnJlcXVlbmNpZXMgPSBsaXN0T2YoNjAsIDIzMCwgOTEwLCAzNjAwLCAxNDAwMCkKICB2YWwgcHJlc2V0czogTGlzdDxQYWlyPFN0cmluZywgTGlzdDxJbnQ+Pj4gPSBsaXN0T2YoCiAgICAiRmxhdCIgdG8gbGlzdE9mKDAsIDAsIDAsIDAsIDApLAogICAgIlJvY2siIHRvIGxpc3RPZig0LCAyLCAtMSwgMiwgNCksCiAgICAiUG9wIiB0byBsaXN0T2YoLTEsIDIsIDQsIDIsIC0xKSwKICAgICJKYXp6IiB0byBsaXN0T2YoMywgMiwgLTEsIDIsIDMpLAogICAgIkNsYXNzaWNhbCIgdG8gbGlzdE9mKDMsIDEsIC0xLCAyLCAzKSwKICAgICJFbGVjdHJvbmljIiB0byBsaXN0T2YoNSwgMywgMCwgMiwgNCksCiAgICAiQmFzcyBCb29zdCIgdG8gbGlzdE9mKDUsIDMsIDAsIC0xLCAtMiksCiAgICAiVHJlYmxlIEJvb3N0IiB0byBsaXN0T2YoLTIsIC0xLCAwLCAzLCA1KSwKICAgICJWb2ljZSBCb29zdCIgdG8gbGlzdE9mKDIsIDQsIDUsIDMsIDEpLAogICAgIkxvdWRuZXNzIiB0byBsaXN0T2YoNCwgMiwgMCwgMiwgNCksCiAgKQoKICBmdW4gcGFyc2VCYW5kcyh2YWx1ZTogU3RyaW5nKTogTGlzdDxJbnQ+IHsKICAgIHZhbCBwaWVjZXMgPSB2YWx1ZS5zcGxpdCgnLCcpCiAgICByZXR1cm4gKDAgdW50aWwgNSkubWFwIHsgcGllY2VzLmdldE9yTnVsbChpdCk/LnRyaW0oKT8udG9JbnRPck51bGwoKT8uY29lcmNlSW4oLTE1LCAxNSkgPzogMCB9CiAgfQoKICBmdW4gYXBwbHkoZW5hYmxlZDogQm9vbGVhbiwgZ2FpbnM6IExpc3Q8SW50PiwgYm9vc3REYjogSW50KSB7CiAgICAvLyBOZXZlciByZXNldCB0aGUgd2hvbGUgJ2FmJyBsaXN0OiBpdCBtYXkgY29udGFpbiB0aGUgdXNlcidzIE5SL3ZvaWNlL0x1YSBmaWx0ZXJzLgogICAgcnVuQ2F0Y2hpbmcgeyBNUFZMaWIuY29tbWFuZCgiY2hhbmdlLWxpc3QiLCAiYWYiLCAicmVtb3ZlIiwgIkByZXhfdmlzdWFsX2VxIikgfQogICAgaWYgKCFlbmFibGVkKSByZXR1cm4KICAgIHZhbCBiYW5kcyA9ICgwIHVudGlsIDUpLm1hcCB7IGluZGV4IC0+CiAgICAgIHZhbCBnYWluID0gZ2FpbnMuZ2V0T3JFbHNlKGluZGV4KSB7IDAgfS5jb2VyY2VJbigtMTUsIDE1KQogICAgICAiZXF1YWxpemVyPWY9JHtmcmVxdWVuY2llc1tpbmRleF19OnQ9cTp3PTE6Zz0kZ2FpbiIKICAgIH0KICAgIHZhbCBmaWx0ZXJzID0gYmFuZHMgKyBpZiAoYm9vc3REYiA+IDApIGxpc3RPZigidm9sdW1lPSR7Ym9vc3REYi5jb2VyY2VJbigwLCAxMCl9ZEIiKSBlbHNlIGVtcHR5TGlzdCgpCiAgICB2YWwgZmlsdGVyU3BlYyA9ICJAcmV4X3Zpc3VhbF9lcTpsYXZmaT1bJHtmaWx0ZXJzLmpvaW5Ub1N0cmluZygiLCIpfV0iCiAgICBydW5DYXRjaGluZyB7IE1QVkxpYi5jb21tYW5kKCJjaGFuZ2UtbGlzdCIsICJhZiIsICJhcHBlbmQiLCBmaWx0ZXJTcGVjKSB9CiAgfQp9Cg==',
+          }
+          
+          if (root / 'ui/player/controls/RexEqualizerAudio.kt').exists():
+              print('Korektor juz dodany. Pomijam ponowne nakladanie patcha.')
+          else:
+              edit('preferences/AudioPreferences.kt', [
+                ('  val volumeBoostCap = preferenceStore.getInt("audio_volume_boost_cap", 30)\n',
+                 '  val volumeBoostCap = preferenceStore.getInt("audio_volume_boost_cap", 30)\n'
+                 '  val rexEqEnabled = preferenceStore.getBoolean("rex_equalizer_enabled", false)\n'
+                 '  val rexEqPreset = preferenceStore.getString("rex_equalizer_preset", "Flat")\n'
+                 '  val rexEqBands = preferenceStore.getString("rex_equalizer_bands", "0,0,0,0,0")\n'
+                 '  val rexEqBoost = preferenceStore.getInt("rex_equalizer_boost", 0)\n')
+              ])
+              edit('ui/player/PlayerEnums.kt', [
+                ('  AudioTracks,\n', '  AudioTracks,\n  Equalizer,\n')
+              ])
+              edit('ui/player/controls/PlayerSheets.kt', [
+                ('import xyz.mpv.rex.ui.player.controls.components.sheets.AudioTracksSheet\n',
+                 'import xyz.mpv.rex.ui.player.controls.components.sheets.AudioTracksSheet\n'
+                 'import xyz.mpv.rex.ui.player.controls.components.sheets.RexEqualizerSheet\n'),
+                ('    Sheets.AudioTracks -> {\n',
+                 '    Sheets.Equalizer -> {\n'
+                 '      RexEqualizerSheet(onDismissRequest = onDismissRequest)\n'
+                 '    }\n\n'
+                 '    Sheets.AudioTracks -> {\n'),
+                ('        onOpenDelayPanel = { onOpenPanel(Panels.AudioDelay) },\n',
+                 '        onOpenDelayPanel = { onOpenPanel(Panels.AudioDelay) },\n'
+                 '        onOpenEqualizer = { onShowSheet(Sheets.Equalizer) },\n'),
+              ])
+              edit('ui/player/controls/components/sheets/AudioTracksSheet.kt', [
+                ('import androidx.compose.material.icons.filled.MoreTime\n',
+                 'import androidx.compose.material.icons.filled.MoreTime\n'
+                 'import androidx.compose.material.icons.filled.Equalizer\n'),
+                ('  onOpenDelayPanel: () -> Unit,\n',
+                 '  onOpenDelayPanel: () -> Unit,\n'
+                 '  onOpenEqualizer: () -> Unit,\n'),
+                ('          IconButton(onClick = onOpenDelayPanel) {\n'
+                 '            Icon(Icons.Default.MoreTime, null)\n'
+                 '          }',
+                 '          IconButton(onClick = onOpenDelayPanel) {\n'
+                 '            Icon(Icons.Default.MoreTime, null)\n'
+                 '          }\n'
+                 '          IconButton(onClick = onOpenEqualizer) {\n'
+                 '            Icon(Icons.Default.Equalizer, contentDescription = "Korektor dzwieku")\n'
+                 '          }')
+              ])
+              edit('ui/player/controls/PlayerControls.kt', [
+                ('  val audioPreferences = koinInject<AudioPreferences>()\n',
+                 '  val audioPreferences = koinInject<AudioPreferences>()\n'
+                 '  val rexEqEnabled by audioPreferences.rexEqEnabled.collectAsState()\n'
+                 '  val rexEqBands by audioPreferences.rexEqBands.collectAsState()\n'
+                 '  val rexEqBoost by audioPreferences.rexEqBoost.collectAsState()\n'
+                 '  val rexEqMediaPath by MPVLib.propString["path"].collectAsState()\n'
+                 '  LaunchedEffect(rexEqEnabled, rexEqBands, rexEqBoost, rexEqMediaPath) {\n'
+                 '    delay(130L)\n'
+                 '    RexEqualizerAudio.apply(rexEqEnabled, RexEqualizerAudio.parseBands(rexEqBands), rexEqBoost)\n'
+                 '  }\n')
+              ])
+          
+              for relative, encoded in base64_files.items():
+                  p = Path(relative)
+                  if p.exists():
+                      raise RuntimeError(f'Refusing to overwrite existing EQ file: {p}')
+                  p.parent.mkdir(parents=True, exist_ok=True)
+                  p.write_bytes(base64.b64decode(encoded))
+          
+              print('Dodano korektor 5 pasm, 10 profili, Custom, Volume Boost 0..10dB.')
+              print('Korektor dostepny przez Player -> sciezki audio -> ikona korektora.')
+          
+          PY
+
+      - name: Zbuduj APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-EQ-5-pasm-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz zmiany po udanej kompilacji
+        if: github.ref == 'refs/heads/master'
+        run: |
+          if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard app/src/main/kotlin)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/xyz/mpv/rex
+            git commit -m 'feat(audio): add native five-band MPV equalizer with presets and boost'
+            git push origin HEAD:master
+          else
+            echo 'Korektor juz jest obecny.'
+          fi
