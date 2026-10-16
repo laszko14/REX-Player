@@ -84,12 +84,15 @@ fun ThreeFingerSpeedOverlay(
     localY = storedY.coerceIn(0f, 1f)
   }
 
+  // MPVREX_SINGLE_LINE_SPEED_BAR_V3
   BoxWithConstraints(modifier = modifier.fillMaxSize()) {
     val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
     val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
-    val displayWidth = (maxWidth - 20.dp).coerceAtMost(340.dp)
+    // One compact row: close button and six speed presets. No title or dot slider.
+    val displayWidth = (maxWidth - 12.dp).coerceAtMost(310.dp)
+    val shape = RoundedCornerShape(20.dp)
 
-    Column(
+    Row(
       modifier = Modifier
         .offset {
           IntOffset(
@@ -99,82 +102,53 @@ fun ThreeFingerSpeedOverlay(
         }
         .width(displayWidth)
         .onSizeChanged { panelSize = it }
-        .clip(RoundedCornerShape(18.dp))
-        .background(Color(0xD9222228))
-        .border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
-        .padding(horizontal = 10.dp, vertical = 4.dp),
-      verticalArrangement = Arrangement.spacedBy(0.dp),
-    ) {
-      Row(
-        modifier = Modifier
-          .fillMaxWidth()
-          .pointerInput(availableWidthPx, availableHeightPx) {
-            detectDragGestures(
-              onDragEnd = {
-                preferences.threeFingerSpeedPositionX.set(localX.coerceIn(0f, 1f))
-                preferences.threeFingerSpeedPositionY.set(localY.coerceIn(0f, 1f))
-              },
-              onDrag = { change, drag ->
-                change.consume()
-                if (availableWidthPx > 0) {
-                  localX = (localX + drag.x / availableWidthPx).coerceIn(0f, 1f)
-                }
-                if (availableHeightPx > 0) {
-                  localY = (localY + drag.y / availableHeightPx).coerceIn(0f, 1f)
-                }
-              },
-            )
-          },
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        IconButton(onClick = onClose, modifier = Modifier.size(28.dp)) {
-          Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White, modifier = Modifier.size(18.dp))
-        }
-        Icon(Icons.Default.DragHandle, contentDescription = null, tint = Color.White.copy(alpha = 0.70f), modifier = Modifier.size(16.dp))
-        Text("PRĘDKOŚĆ", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)
-      }
-
-      Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-        presets.forEachIndexed { index, preset ->
-          Column(
-            modifier = Modifier
-              .weight(1f)
-              .clip(RoundedCornerShape(10.dp))
-              .clickable { onSelectSpeed(preset, index == 0) }
-              .padding(vertical = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-          ) {
-            Text(
-              text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
-              color = if (selected == index) accent else Color.White,
-              fontSize = 14.sp,
-              maxLines = 1,
-            )
-            if (index == 0) {
-              Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 9.sp)
-            } else {
-              Spacer(modifier = Modifier.height(11.dp))
-            }
-          }
-        }
-      }
-
-      Canvas(modifier = Modifier.fillMaxWidth().height(10.dp)) {
-        val step = size.width / presets.size
-        val firstX = step / 2f
-        val lastX = size.width - firstX
-        val middleY = size.height / 2f
-        drawLine(Color.White.copy(alpha = 0.40f), Offset(firstX, middleY), Offset(lastX, middleY), 2.dp.toPx())
-        if (selected >= 0) {
-          drawLine(accent, Offset(firstX, middleY), Offset(firstX + selected * step, middleY), 2.dp.toPx())
-        }
-        presets.indices.forEach { index ->
-          drawCircle(
-            color = if (index <= selected) accent else Color.White.copy(alpha = 0.74f),
-            radius = 3.dp.toPx(),
-            center = Offset(firstX + index * step, middleY),
+        .clip(shape)
+        .background(Color(0xCE222228))
+        .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
+        // Drag the bar itself to move it; short taps still select speeds.
+        .pointerInput(availableWidthPx, availableHeightPx) {
+          detectDragGestures(
+            onDragEnd = {
+              preferences.threeFingerSpeedPositionX.set(localX.coerceIn(0f, 1f))
+              preferences.threeFingerSpeedPositionY.set(localY.coerceIn(0f, 1f))
+            },
+            onDrag = { change, drag ->
+              change.consume()
+              if (availableWidthPx > 0) {
+                localX = (localX + drag.x / availableWidthPx).coerceIn(0f, 1f)
+              }
+              if (availableHeightPx > 0) {
+                localY = (localY + drag.y / availableHeightPx).coerceIn(0f, 1f)
+              }
+            },
           )
         }
+        .padding(horizontal = 7.dp, vertical = 3.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+      Icon(
+        Icons.Default.Close,
+        contentDescription = "Zamknij panel prędkości",
+        tint = Color.White,
+        modifier = Modifier
+          .size(23.dp)
+          .clip(RoundedCornerShape(6.dp))
+          .clickable(onClick = onClose),
+      )
+      presets.forEachIndexed { index, preset ->
+        Text(
+          text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+          color = if (selected == index) accent else Color.White,
+          fontSize = 13.sp,
+          maxLines = 1,
+          textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+          modifier = Modifier
+            .weight(1f)
+            .clip(RoundedCornerShape(7.dp))
+            .clickable { onSelectSpeed(preset, index == 0) }
+            .padding(vertical = 6.dp),
+        )
       }
     }
   }
