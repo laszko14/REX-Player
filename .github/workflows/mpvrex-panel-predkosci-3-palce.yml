@@ -1,0 +1,544 @@
+name: MPVRex - panel predkosci 3 palce
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-panel-predkosci-3-palce.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mpvrex-panel-3-palce-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Dodaj panel predkosci i zbuduj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skonfiguruj Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Skonfiguruj Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Zainstaluj Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Dodaj panel predkosci i ustawienia
+        run: |
+          python3 - <<'PY'
+          PANEL_CONTENT = r'''package xyz.mpv.rex.ui.player.controls
+          
+          import androidx.compose.foundation.Canvas
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.border
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.gestures.detectDragGestures
+          import androidx.compose.foundation.layout.Arrangement
+          import androidx.compose.foundation.layout.BoxWithConstraints
+          import androidx.compose.foundation.layout.Column
+          import androidx.compose.foundation.layout.Row
+          import androidx.compose.foundation.layout.Spacer
+          import androidx.compose.foundation.layout.fillMaxSize
+          import androidx.compose.foundation.layout.fillMaxWidth
+          import androidx.compose.foundation.layout.height
+          import androidx.compose.foundation.layout.offset
+          import androidx.compose.foundation.layout.padding
+          import androidx.compose.foundation.layout.size
+          import androidx.compose.foundation.layout.width
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.Close
+          import androidx.compose.material.icons.filled.DragHandle
+          import androidx.compose.material3.Icon
+          import androidx.compose.material3.IconButton
+          import androidx.compose.material3.MaterialTheme
+          import androidx.compose.material3.Text
+          import androidx.compose.runtime.Composable
+          import androidx.compose.runtime.LaunchedEffect
+          import androidx.compose.runtime.collectAsState
+          import androidx.compose.runtime.getValue
+          import androidx.compose.runtime.mutableFloatStateOf
+          import androidx.compose.runtime.mutableStateOf
+          import androidx.compose.runtime.remember
+          import androidx.compose.runtime.setValue
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.clip
+          import androidx.compose.ui.geometry.Offset
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.input.pointer.pointerInput
+          import androidx.compose.ui.layout.onSizeChanged
+          import androidx.compose.ui.unit.IntOffset
+          import androidx.compose.ui.unit.IntSize
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
+          import xyz.mpv.rex.preferences.PlayerPreferences
+          import xyz.mpv.rex.preferences.preference.collectAsState
+          import java.util.Locale
+          import kotlin.math.abs
+          import kotlin.math.roundToInt
+          
+          private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f)
+          
+          /** Six independent speed presets; bad or older stored settings fall back safely. */
+          fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
+            val stored = raw.split(',')
+            return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
+              stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: fallback
+            }
+          }
+          
+          @Composable
+          fun ThreeFingerSpeedOverlay(
+            preferences: PlayerPreferences,
+            currentSpeed: Float,
+            onClose: () -> Unit,
+            onSelectSpeed: (Float, Boolean) -> Unit,
+            modifier: Modifier = Modifier,
+          ) {
+            val rawPresets by preferences.threeFingerSpeedPresets.collectAsState()
+            val seekBackSeconds by preferences.threeFingerSpeedSeekBack.collectAsState()
+            val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
+            val storedY by preferences.threeFingerSpeedPositionY.collectAsState()
+            val presets = remember(rawPresets) { parseThreeFingerSpeedPresets(rawPresets) }
+            var localX by remember { mutableFloatStateOf(storedX.coerceIn(0f, 1f)) }
+            var localY by remember { mutableFloatStateOf(storedY.coerceIn(0f, 1f)) }
+            var panelSize by remember { mutableStateOf(IntSize.Zero) }
+            val selected = presets.indexOfFirst { abs(it - currentSpeed) < 0.025f }
+            val accent = MaterialTheme.colorScheme.primary
+          
+            LaunchedEffect(storedX, storedY) {
+              localX = storedX.coerceIn(0f, 1f)
+              localY = storedY.coerceIn(0f, 1f)
+            }
+          
+            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+              val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
+              val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
+              val displayWidth = (maxWidth - 20.dp).coerceAtMost(700.dp)
+          
+              Column(
+                modifier = Modifier
+                  .offset {
+                    IntOffset(
+                      (localX * availableWidthPx).roundToInt(),
+                      (localY * availableHeightPx).roundToInt(),
+                    )
+                  }
+                  .width(displayWidth)
+                  .onSizeChanged { panelSize = it }
+                  .clip(RoundedCornerShape(22.dp))
+                  .background(Color(0xE6262530))
+                  .border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(22.dp))
+                  .padding(horizontal = 12.dp, vertical = 5.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+              ) {
+                Row(
+                  modifier = Modifier
+                    .fillMaxWidth()
+                    .pointerInput(availableWidthPx, availableHeightPx) {
+                      detectDragGestures(
+                        onDragEnd = {
+                          preferences.threeFingerSpeedPositionX.set(localX.coerceIn(0f, 1f))
+                          preferences.threeFingerSpeedPositionY.set(localY.coerceIn(0f, 1f))
+                        },
+                        onDrag = { change, drag ->
+                          change.consume()
+                          if (availableWidthPx > 0) {
+                            localX = (localX + drag.x / availableWidthPx).coerceIn(0f, 1f)
+                          }
+                          if (availableHeightPx > 0) {
+                            localY = (localY + drag.y / availableHeightPx).coerceIn(0f, 1f)
+                          }
+                        },
+                      )
+                    },
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  IconButton(onClick = onClose, modifier = Modifier.size(38.dp)) {
+                    Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White)
+                  }
+                  Icon(Icons.Default.DragHandle, contentDescription = null, tint = Color.White.copy(alpha = 0.70f), modifier = Modifier.size(20.dp))
+                  Text("PRĘDKOŚĆ • przesuń panel", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)
+                }
+          
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                  presets.forEachIndexed { index, preset ->
+                    Column(
+                      modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable { onSelectSpeed(preset, index == 0) }
+                        .padding(vertical = 6.dp),
+                      horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                      Text(
+                        text = String.format(Locale.US, "%gx", preset),
+                        color = if (selected == index) accent else Color.White,
+                        fontSize = 16.sp,
+                        maxLines = 1,
+                      )
+                      if (index == 0) {
+                        Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 11.sp)
+                      } else {
+                        Spacer(modifier = Modifier.height(16.dp))
+                      }
+                    }
+                  }
+                }
+          
+                Canvas(modifier = Modifier.fillMaxWidth().height(17.dp)) {
+                  val step = size.width / presets.size
+                  val firstX = step / 2f
+                  val lastX = size.width - firstX
+                  val middleY = size.height / 2f
+                  drawLine(Color.White.copy(alpha = 0.40f), Offset(firstX, middleY), Offset(lastX, middleY), 4.dp.toPx())
+                  if (selected >= 0) {
+                    drawLine(accent, Offset(firstX, middleY), Offset(firstX + selected * step, middleY), 4.dp.toPx())
+                  }
+                  presets.indices.forEach { index ->
+                    drawCircle(
+                      color = if (index <= selected) accent else Color.White.copy(alpha = 0.74f),
+                      radius = 5.dp.toPx(),
+                      center = Offset(firstX + index * step, middleY),
+                    )
+                  }
+                }
+              }
+            }
+          }
+          '''
+          from pathlib import Path
+          
+          root = Path('app/src/main/kotlin/xyz/mpv/rex')
+          
+          def edit(relative, changes, done_marker):
+              file = root / relative
+              source = file.read_text(encoding='utf-8')
+              if done_marker in source:
+                  print(f'Already modified: {relative}')
+                  return
+              for before, after in changes:
+                  occurrences = source.count(before)
+                  if occurrences != 1:
+                      raise RuntimeError(f'{relative}: expected exactly one anchor, got {occurrences}: {before[:105]!r}')
+                  source = source.replace(before, after, 1)
+              file.write_text(source, encoding='utf-8')
+              print(f'Updated: {relative}')
+          
+          # 1. Persist panel controls. Existing settings and buttons remain untouched.
+          edit('preferences/PlayerPreferences.kt', [(
+            '  val invertDuration = preferenceStore.getBoolean("invert_duration")\n',
+            '''  val invertDuration = preferenceStore.getBoolean("invert_duration")
+            val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
+            val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4")
+            val threeFingerSpeedSeekBack = preferenceStore.getInt("three_finger_speed_seek_back", 10)
+            val threeFingerSpeedPersistent = preferenceStore.getBoolean("three_finger_speed_persistent", true)
+            val threeFingerSpeedAutoHide = preferenceStore.getInt("three_finger_speed_auto_hide", 5)
+            val threeFingerSpeedPositionX = preferenceStore.getFloat("three_finger_speed_position_x", 0.5f)
+            val threeFingerSpeedPositionY = preferenceStore.getFloat("three_finger_speed_position_y", 0.16f)
+          '''
+          )], 'val threeFingerSpeedEnabled = preferenceStore.getBoolean(')
+          
+          # 2. Triple-finger tap recognition and no accidental single-tap actions.
+          edit('ui/player/controls/GestureHandler.kt', [(
+            'import androidx.compose.runtime.remember\n',
+            'import androidx.compose.runtime.remember\nimport androidx.compose.runtime.rememberUpdatedState\n'
+          ),(
+            'fun GestureHandler(\n  viewModel: PlayerViewModel,\n  interactionSource: MutableInteractionSource,\n  modifier: Modifier = Modifier,\n) {',
+            'fun GestureHandler(\n  viewModel: PlayerViewModel,\n  interactionSource: MutableInteractionSource,\n  modifier: Modifier = Modifier,\n  onThreeFingerTap: () -> Unit = {},\n) {'
+          ),(
+            '  // Isolated double-tap state tracking\n',
+            '  val currentThreeFingerTap by rememberUpdatedState(onThreeFingerTap)\n\n  // Isolated double-tap state tracking\n'
+          ),(
+            '''    modifier = modifier
+                .fillMaxSize()
+                // The subtitle recognizer must sit BEFORE the padding below.''',
+            '''    modifier = modifier
+                .fillMaxSize()
+                .pointerInput(areControlsLocked) {
+                  if (areControlsLocked) return@pointerInput
+                  awaitEachGesture {
+                    val first = awaitFirstDown(requireUnconsumed = false)
+                    val startLocations = mutableMapOf(first.id to first.position)
+                    val maxMove = 26.dp.toPx()
+                    var maximumTouchCount = 1
+                    var valid = true
+                    var lastUptime = first.uptimeMillis
+                    do {
+                      val event = awaitPointerEvent()
+                      val active = event.changes.count { it.pressed }
+                      maximumTouchCount = maxOf(maximumTouchCount, active)
+                      event.changes.forEach { change ->
+                        val origin = startLocations.getOrPut(change.id) { change.position }
+                        if ((change.position - origin).getDistance() > maxMove) valid = false
+                        lastUptime = maxOf(lastUptime, change.uptimeMillis)
+                      }
+                      if (maximumTouchCount > 3 || lastUptime - first.uptimeMillis > 650L) valid = false
+                      if (active == 0) {
+                        if (valid && maximumTouchCount == 3) currentThreeFingerTap()
+                        break
+                      }
+                    } while (true)
+                  }
+                }
+                // The subtitle recognizer must sit BEFORE the padding below.'''
+          ),(
+            '          var isDrag = false\n          var wasConsumedByTapGesture = false\n',
+            '          var isDrag = false\n          var hadMultiplePointers = false\n          var wasConsumedByTapGesture = false\n'
+          ),(
+            '            val event = awaitPointerEvent()\n            val pointer = event.changes.firstOrNull { it.id == down.id } ?: break\n',
+            '            val event = awaitPointerEvent()\n            if (event.changes.count { it.pressed } > 1) hadMultiplePointers = true\n            val pointer = event.changes.firstOrNull { it.id == down.id } ?: break\n'
+          ),(
+            '              if (!isDrag && !wasConsumedByTapGesture) {\n',
+            '              if (!isDrag && !wasConsumedByTapGesture && !hadMultiplePointers) {\n'
+          )], 'val currentThreeFingerTap by rememberUpdatedState(')
+          
+          # 3. Settings inside the existing Player -> Display page.
+          settings = root / 'ui/preferences/PlayerPreferencesScreen.kt'
+          content = settings.read_text(encoding='utf-8')
+          if 'Panel prędkości (3 palce)' not in content:
+              anchor = '''          // Display Section
+                    item {
+                      PreferenceSectionHeader(title = stringResource(R.string.pref_player_display))
+                    }'''
+              section = '''          // Three-finger speed panel
+                    item {
+                      PreferenceSectionHeader(title = "Panel prędkości (3 palce)")
+                    }
+                    item {
+                      val enabled by preferences.threeFingerSpeedEnabled.collectAsState()
+                      val savedSpeeds by preferences.threeFingerSpeedPresets.collectAsState()
+                      val seekBack by preferences.threeFingerSpeedSeekBack.collectAsState()
+                      val persistent by preferences.threeFingerSpeedPersistent.collectAsState()
+                      val hideAfter by preferences.threeFingerSpeedAutoHide.collectAsState()
+                      val positionX by preferences.threeFingerSpeedPositionX.collectAsState()
+                      val positionY by preferences.threeFingerSpeedPositionY.collectAsState()
+                      val presets = xyz.mpv.rex.ui.player.controls.parseThreeFingerSpeedPresets(savedSpeeds)
+          
+                      fun savePreset(index: Int, value: Float) {
+                        val copy = presets.toMutableList()
+                        copy[index] = ((value * 4).roundToInt() / 4f).coerceIn(0.25f, 6f)
+                        preferences.threeFingerSpeedPresets.set(copy.joinToString(","))
+                      }
+          
+                      GroupedListColumn {
+                        GroupedPreferenceCard(position = GroupPosition.FIRST, highlightKey = R.string.pref_player_gestures) {
+                          SwitchPreference(
+                            value = enabled,
+                            onValueChange = preferences.threeFingerSpeedEnabled::set,
+                            title = { Text("Otwieraj panel dotknięciem trzema palcami") },
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          SwitchPreference(
+                            value = persistent,
+                            onValueChange = preferences.threeFingerSpeedPersistent::set,
+                            title = { Text("Widoczny aż do zamknięcia X") },
+                            summary = { Text("Wyłącz, aby panel znikał automatycznie po wybranym czasie") },
+                          )
+                        }
+                        if (!persistent) {
+                          GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                            SliderPreference(
+                              value = hideAfter.toFloat(),
+                              onValueChange = { preferences.threeFingerSpeedAutoHide.set(it.roundToInt()) },
+                              title = { Text("Automatyczne ukrywanie") },
+                              valueRange = 3f..30f,
+                              summary = { Text("Po ${hideAfter} sekundach") },
+                              onSliderValueChange = { preferences.threeFingerSpeedAutoHide.set(it.roundToInt()) },
+                              sliderValue = hideAfter.toFloat(),
+                            )
+                          }
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          SliderPreference(
+                            value = seekBack.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                            title = { Text("Pierwszy przycisk: cofnij film") },
+                            valueRange = 0f..60f,
+                            summary = { Text("${seekBack} sekund (0 = bez cofania)") },
+                            onSliderValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                            sliderValue = seekBack.toFloat(),
+                          )
+                        }
+                        for (index in 0 until 6) {
+                          GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                            SliderPreference(
+                              value = presets[index],
+                              onValueChange = { savePreset(index, it) },
+                              title = { Text("Prędkość przycisku ${index + 1}") },
+                              valueRange = 0.25f..6f,
+                              summary = { Text("${presets[index]}x" + if (index == 0) " + cofnięcie filmu" else "") },
+                              onSliderValueChange = { savePreset(index, it) },
+                              sliderValue = presets[index],
+                            )
+                          }
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          SliderPreference(
+                            value = positionX,
+                            onValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
+                            title = { Text("Położenie poziome (lewo – prawo)") },
+                            valueRange = 0f..1f,
+                            summary = { Text("${(positionX * 100).roundToInt()}%") },
+                            onSliderValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
+                            sliderValue = positionX,
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.LAST, highlightKey = R.string.pref_player_gestures) {
+                          SliderPreference(
+                            value = positionY,
+                            onValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },
+                            title = { Text("Położenie pionowe (góra – dół)") },
+                            valueRange = 0f..1f,
+                            summary = { Text("${(positionY * 100).roundToInt()}%. Możesz też przeciągnąć panel podczas filmu") },
+                            onSliderValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },
+                            sliderValue = positionY,
+                          )
+                        }
+                      }
+                    }
+          
+          '''
+              if content.count(anchor)!=1: raise RuntimeError('Settings section anchor changed')
+              settings.write_text(content.replace(anchor,section+anchor,1),encoding='utf-8')
+          
+          # 4. Overlay appears above video and other controls, independently of controlsShown.
+          edit('ui/player/controls/PlayerControls.kt', [(
+            '  val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()\n',
+            '''  val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
+            val threeFingerSpeedEnabled by playerPreferences.threeFingerSpeedEnabled.collectAsState()
+            val threeFingerSpeedPersistent by playerPreferences.threeFingerSpeedPersistent.collectAsState()
+            val threeFingerSpeedAutoHide by playerPreferences.threeFingerSpeedAutoHide.collectAsState()
+            val threeFingerSpeedSeekBack by playerPreferences.threeFingerSpeedSeekBack.collectAsState()
+            var threeFingerSpeedVisible by remember { mutableStateOf(false) }
+            var threeFingerSpeedInteractionCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+            LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount) {
+              if (threeFingerSpeedVisible && !threeFingerSpeedPersistent) {
+                delay(threeFingerSpeedAutoHide.coerceIn(3, 30) * 1000L)
+                threeFingerSpeedVisible = false
+              }
+            }
+          '''
+          ),(
+            '''  GestureHandler(
+              viewModel = viewModel,
+              interactionSource = interactionSource,
+            )''',
+            '''  GestureHandler(
+              viewModel = viewModel,
+              interactionSource = interactionSource,
+              onThreeFingerTap = {
+                if (threeFingerSpeedEnabled && !areControlsLocked) {
+                  threeFingerSpeedVisible = true
+                  threeFingerSpeedInteractionCount++
+                }
+              },
+            )'''
+          ),(
+            '''        val seekbar = createRef()
+          ''',
+            '''        val seekbar = createRef()
+                  val threeFingerSpeedPanelRef = createRef()
+          '''
+          )], 'val threeFingerSpeedEnabled by playerPreferences.threeFingerSpeedEnabled.collectAsState()')
+          
+          # Insert the panel directly before the end of the ConstraintLayout, after the frame navigation overlay.
+          sourcefile=root/'ui/player/controls/PlayerControls.kt'
+          s=sourcefile.read_text(encoding='utf-8')
+          marker='''          }
+                  }
+                }
+               }
+              }
+          
+              val sheetShown by viewModel.sheetShown.collectAsState()'''
+          replacement='''          }
+                  }
+          
+                  if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
+                    ThreeFingerSpeedOverlay(
+                      preferences = playerPreferences,
+                      currentSpeed = playbackSpeed ?: 1f,
+                      onClose = { threeFingerSpeedVisible = false },
+                      onSelectSpeed = { speed, first ->
+                        viewModel.setPlaybackSpeed(speed)
+                        if (first && threeFingerSpeedSeekBack > 0) {
+                          viewModel.seekBy(-threeFingerSpeedSeekBack)
+                        }
+                        threeFingerSpeedInteractionCount++
+                      },
+                      modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        width = Dimension.fillToConstraints
+                        height = Dimension.fillToConstraints
+                      },
+                    )
+                  }
+                }
+               }
+              }
+          
+              val sheetShown by viewModel.sheetShown.collectAsState()'''
+          if 'if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled)' not in s:
+              if s.count(marker)!=1:raise RuntimeError('Unable to identify end of player ConstraintLayout')
+              s=s.replace(marker,replacement,1)
+              sourcefile.write_text(s,encoding='utf-8')
+          
+          panel_path=root/'ui/player/controls/ThreeFingerSpeedOverlay.kt'
+          if panel_path.exists() and 'fun ThreeFingerSpeedOverlay(' not in panel_path.read_text(encoding='utf-8'):
+              raise RuntimeError('Panel source file exists with unrelated content')
+          if not panel_path.exists():
+              panel_path.write_text(PANEL_CONTENT,encoding='utf-8')
+          print('Three-finger speed panel is ready.')
+          
+          PY
+
+      - name: Zbuduj aplikacje APK debug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij arm64 APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-panel-predkosci-3-palce-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zachowaj kod w repozytorium
+        if: github.ref == 'refs/heads/master'
+        run: |
+          if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt)" ]; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/GestureHandler.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+            git commit -m 'feat(player): add draggable three-finger speed panel with settings'
+            git push origin HEAD:master
+          else
+            echo 'Kod juz zawiera panel predkosci.'
+          fi
