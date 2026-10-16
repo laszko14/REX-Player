@@ -181,8 +181,8 @@ jobs:
                             title = {{ Text("Przewijanie {index}: kierunek i czas") }},
                             valueRange = -300f..300f,
                             summary = {{ Text(when {{
-                              {new_var} < 0 -> "Do tyłu: ${{-{new_var}}} s"
-                              {new_var} > 0 -> "Do przodu: ${{{new_var}}} s"
+                              {new_var} < 0 -> "Do tyłu: " + (-{new_var}) + " s"
+                              {new_var} > 0 -> "Do przodu: " + {new_var} + " s"
                               else -> "0 s — bez przewijania"
                             }}) }},
                             onSliderValueChange = {{ preferences.threeFingerSpeedSeekButton{index}.set(it.roundToInt()) }},
@@ -267,3 +267,4 @@ jobs:
           else
             echo "Zmiany zostaly juz zapisane"
           fi
+          
