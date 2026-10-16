@@ -1,0 +1,159 @@
+name: MPVRex - waski panel i auto start v6
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/mpvrex-panel-waski-autostart-v6.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Zmniejsz rzad przewijania i wlacz auto start
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          
+          BASE = Path('app/src/main/kotlin/xyz/mpv/rex')
+          
+          
+          def change_once(path, before, after, label):
+              source = path.read_text(encoding='utf-8')
+              count = source.count(before)
+              if count != 1:
+                  raise RuntimeError(f'{label}: oczekiwano 1 fragmentu, znaleziono {count}: {path}')
+              path.write_text(source.replace(before, after, 1), encoding='utf-8')
+          
+          
+          overlay = BASE / 'ui/player/controls/ThreeFingerSpeedOverlay.kt'
+          prefs = BASE / 'preferences/PlayerPreferences.kt'
+          screen = BASE / 'ui/preferences/PlayerPreferencesScreen.kt'
+          controls = BASE / 'ui/player/controls/PlayerControls.kt'
+          
+          if 'MPVREX_PANEL_V6_AUTO' in controls.read_text(encoding='utf-8'):
+              print('Poprawka v6 jest już w kodzie. Nie nakładam jej drugi raz.')
+              raise SystemExit(0)
+          
+          # Krótszy i równy (20dp) obszar kliknięć obu rzędów.
+          change_once(overlay,
+              '      .padding(horizontal = 2.dp, vertical = 4.dp),',
+              '      .padding(horizontal = 2.dp, vertical = 1.dp),',
+              'Odstep pionowy przyciskow przewijania')
+          change_once(overlay,
+              '    modifier = modifier\n      .clip(RoundedCornerShape(8.dp))',
+              '    modifier = modifier\n      .heightIn(min = 20.dp)\n      .clip(RoundedCornerShape(8.dp))',
+              'Wysokosc dotykowa przyciskow przewijania')
+          change_once(overlay,
+              '        .padding(horizontal = 7.dp, vertical = 3.dp),',
+              '        .padding(horizontal = 7.dp, vertical = 2.dp),',
+              'Odstep obramowania panelu')
+          change_once(overlay,
+              '      verticalArrangement = Arrangement.spacedBy(1.dp),',
+              '      verticalArrangement = Arrangement.spacedBy(0.dp),',
+              'Odstep miedzy rzedami')
+          change_once(overlay,
+              '        modifier = Modifier.heightIn(min = 22.dp),',
+              '        modifier = Modifier.heightIn(min = 20.dp),',
+              'Wysokosc gornej linii')
+          change_once(overlay,
+              '        modifier = Modifier.heightIn(min = 18.dp),',
+              '        modifier = Modifier.heightIn(min = 20.dp),',
+              'Wysokosc dolnej linii')
+          
+          # Nowy przełącznik, domyślnie włączony.
+          flag = '  val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)\n'
+          change_once(prefs, flag,
+              flag + '  val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)\n',
+              'Zapis ustawienia automatycznego otwierania')
+          
+          old = '''              GroupedPreferenceCard(position = GroupPosition.FIRST, highlightKey = R.string.pref_player_gestures) {
+                          SwitchPreference(
+                            value = enabled,
+                            onValueChange = preferences.threeFingerSpeedEnabled::set,
+                            title = { Text("Otwieraj panel dotknięciem trzema palcami") },
+                          )
+                        }
+          '''
+          new = old + '''              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val autoShow by preferences.threeFingerSpeedAutoShow.collectAsState()
+                          SwitchPreference(
+                            value = autoShow,
+                            onValueChange = preferences.threeFingerSpeedAutoShow::set,
+                            title = { Text("Pokazuj panel przy nowym filmie") },
+                            summary = { Text("Automatycznie otwiera panel po rozpoczęciu kolejnego filmu. X zamyka go do następnego filmu.") },
+                          )
+                        }
+          '''
+          change_once(screen, old, new, 'Przelacznik automatycznego pokazywania')
+          
+          anchor = '  val playlistIndex by viewModel.playlistManager.currentIndex.collectAsState()\n'
+          new_code = '''  // MPVREX_PANEL_V6_AUTO: reset only on a new media identity, not on seek/pause/UI toggles.
+            LaunchedEffect(playlistIndex, mediaIdentifier.ifBlank { mediaTitle }) {
+              val mediaKey = mediaIdentifier.ifBlank { mediaTitle }
+              if (mediaKey.isNotBlank() &&
+                playerPreferences.threeFingerSpeedAutoShow.get() &&
+                playerPreferences.threeFingerSpeedEnabled.get()
+              ) {
+                threeFingerSpeedVisible = true
+                threeFingerSpeedInteractionCount++
+              }
+            }
+          '''
+          change_once(controls, anchor, anchor + new_code,
+              'Automatyczne otwieranie przy zmianie filmu')
+          print('Zastosowano v6: nizszy dolny rzad, wyrowname przyciski, auto-show przy nowym filmie.')
+          PY
+
+      - name: Build test APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-waski-panel-auto-start-v6
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Save source changes after successful build
+        if: success() && github.ref == 'refs/heads/master'
+        shell: bash
+        run: |
+          if ! git diff --quiet -- app/src/main/kotlin/xyz/mpv/rex; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+            git commit -m "feat(player): slim seek row and auto-show speed panel for new media"
+            git push
+          else
+            echo "Code already contains the change"
+          fi
