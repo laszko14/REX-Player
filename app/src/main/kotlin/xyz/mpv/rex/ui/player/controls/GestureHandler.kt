@@ -48,6 +48,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -97,6 +98,7 @@ fun GestureHandler(
   viewModel: PlayerViewModel,
   interactionSource: MutableInteractionSource,
   modifier: Modifier = Modifier,
+  onThreeFingerTap: () -> Unit = {},
 ) {
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
@@ -191,6 +193,8 @@ fun GestureHandler(
     }
   }
 
+  val currentThreeFingerTap by rememberUpdatedState(onThreeFingerTap)
+
   // Isolated double-tap state tracking
   var tapCount by remember { mutableStateOf(0) }
   var lastTapTime by remember { mutableStateOf(0L) }
@@ -264,6 +268,32 @@ fun GestureHandler(
   Box(
     modifier = modifier
       .fillMaxSize()
+      .pointerInput(areControlsLocked) {
+        if (areControlsLocked) return@pointerInput
+        awaitEachGesture {
+          val first = awaitFirstDown(requireUnconsumed = false)
+          val startLocations = mutableMapOf(first.id to first.position)
+          val maxMove = 26.dp.toPx()
+          var maximumTouchCount = 1
+          var valid = true
+          var lastUptime = first.uptimeMillis
+          do {
+            val event = awaitPointerEvent()
+            val active = event.changes.count { it.pressed }
+            maximumTouchCount = maxOf(maximumTouchCount, active)
+            event.changes.forEach { change ->
+              val origin = startLocations.getOrPut(change.id) { change.position }
+              if ((change.position - origin).getDistance() > maxMove) valid = false
+              lastUptime = maxOf(lastUptime, change.uptimeMillis)
+            }
+            if (maximumTouchCount > 3 || lastUptime - first.uptimeMillis > 650L) valid = false
+            if (active == 0) {
+              if (valid && maximumTouchCount == 3) currentThreeFingerTap()
+              break
+            }
+          } while (true)
+        }
+      }
       // The subtitle recognizer must sit BEFORE the padding below. The hit
       // boxes are estimated against mpv's full-window height; behind the padding the touch
       // coordinates (and the height) were 16.dp off, which shifted every estimated box.
@@ -300,10 +330,12 @@ fun GestureHandler(
 
           // Track for potential drag
           var isDrag = false
+          var hadMultiplePointers = false
           var wasConsumedByTapGesture = false
 
           do {
             val event = awaitPointerEvent()
+            if (event.changes.count { it.pressed } > 1) hadMultiplePointers = true
             val pointer = event.changes.firstOrNull { it.id == down.id } ?: break
 
             // The touch started on the subtitle and has now become a real drag/pinch: abandon the
@@ -323,7 +355,7 @@ fun GestureHandler(
 
             if (!pointer.pressed) {
               // Pointer lifted - this is a tap if it wasn't a drag
-              if (!isDrag && !wasConsumedByTapGesture) {
+              if (!isDrag && !wasConsumedByTapGesture && !hadMultiplePointers) {
                 val timeSinceLastTap = downTime - lastTapTime
                 val positionChange = sqrt(
                   (downPosition.x - lastTapPosition.x) * (downPosition.x - lastTapPosition.x) +

@@ -781,6 +781,104 @@ object PlayerPreferencesScreen : Screen {
             }
           }
 
+          // Three-finger speed panel
+          item {
+            PreferenceSectionHeader(title = "Panel prędkości (3 palce)")
+          }
+          item {
+            val enabled by preferences.threeFingerSpeedEnabled.collectAsState()
+            val savedSpeeds by preferences.threeFingerSpeedPresets.collectAsState()
+            val seekBack by preferences.threeFingerSpeedSeekBack.collectAsState()
+            val persistent by preferences.threeFingerSpeedPersistent.collectAsState()
+            val hideAfter by preferences.threeFingerSpeedAutoHide.collectAsState()
+            val positionX by preferences.threeFingerSpeedPositionX.collectAsState()
+            val positionY by preferences.threeFingerSpeedPositionY.collectAsState()
+            val presets = xyz.mpv.rex.ui.player.controls.parseThreeFingerSpeedPresets(savedSpeeds)
+
+            fun savePreset(index: Int, value: Float) {
+              val copy = presets.toMutableList()
+              copy[index] = ((value * 4).roundToInt() / 4f).coerceIn(0.25f, 6f)
+              preferences.threeFingerSpeedPresets.set(copy.joinToString(","))
+            }
+
+            GroupedListColumn {
+              GroupedPreferenceCard(position = GroupPosition.FIRST, highlightKey = R.string.pref_player_gestures) {
+                SwitchPreference(
+                  value = enabled,
+                  onValueChange = preferences.threeFingerSpeedEnabled::set,
+                  title = { Text("Otwieraj panel dotknięciem trzema palcami") },
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                SwitchPreference(
+                  value = persistent,
+                  onValueChange = preferences.threeFingerSpeedPersistent::set,
+                  title = { Text("Widoczny aż do zamknięcia X") },
+                  summary = { Text("Wyłącz, aby panel znikał automatycznie po wybranym czasie") },
+                )
+              }
+              if (!persistent) {
+                GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                  SliderPreference(
+                    value = hideAfter.toFloat(),
+                    onValueChange = { preferences.threeFingerSpeedAutoHide.set(it.roundToInt()) },
+                    title = { Text("Automatyczne ukrywanie") },
+                    valueRange = 3f..30f,
+                    summary = { Text("Po ${hideAfter} sekundach") },
+                    onSliderValueChange = { preferences.threeFingerSpeedAutoHide.set(it.roundToInt()) },
+                    sliderValue = hideAfter.toFloat(),
+                  )
+                }
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                SliderPreference(
+                  value = seekBack.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                  title = { Text("Pierwszy przycisk: cofnij film") },
+                  valueRange = 0f..60f,
+                  summary = { Text("${seekBack} sekund (0 = bez cofania)") },
+                  onSliderValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                  sliderValue = seekBack.toFloat(),
+                )
+              }
+              for (index in 0 until 6) {
+                GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                  SliderPreference(
+                    value = presets[index],
+                    onValueChange = { savePreset(index, it) },
+                    title = { Text("Prędkość przycisku ${index + 1}") },
+                    valueRange = 0.25f..6f,
+                    summary = { Text("${presets[index]}x" + if (index == 0) " + cofnięcie filmu" else "") },
+                    onSliderValueChange = { savePreset(index, it) },
+                    sliderValue = presets[index],
+                  )
+                }
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                SliderPreference(
+                  value = positionX,
+                  onValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
+                  title = { Text("Położenie poziome (lewo – prawo)") },
+                  valueRange = 0f..1f,
+                  summary = { Text("${(positionX * 100).roundToInt()}%") },
+                  onSliderValueChange = { preferences.threeFingerSpeedPositionX.set((it * 20).roundToInt() / 20f) },
+                  sliderValue = positionX,
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.LAST, highlightKey = R.string.pref_player_gestures) {
+                SliderPreference(
+                  value = positionY,
+                  onValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },
+                  title = { Text("Położenie pionowe (góra – dół)") },
+                  valueRange = 0f..1f,
+                  summary = { Text("${(positionY * 100).roundToInt()}%. Możesz też przeciągnąć panel podczas filmu") },
+                  onSliderValueChange = { preferences.threeFingerSpeedPositionY.set((it * 20).roundToInt() / 20f) },
+                  sliderValue = positionY,
+                )
+              }
+            }
+          }
+
           // Display Section
           item {
             PreferenceSectionHeader(title = stringResource(R.string.pref_player_display))

@@ -193,6 +193,18 @@ fun PlayerControls(
   val showRemainingTimeInOverlay by playerPreferences.invertDuration.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
+  val threeFingerSpeedEnabled by playerPreferences.threeFingerSpeedEnabled.collectAsState()
+  val threeFingerSpeedPersistent by playerPreferences.threeFingerSpeedPersistent.collectAsState()
+  val threeFingerSpeedAutoHide by playerPreferences.threeFingerSpeedAutoHide.collectAsState()
+  val threeFingerSpeedSeekBack by playerPreferences.threeFingerSpeedSeekBack.collectAsState()
+  var threeFingerSpeedVisible by remember { mutableStateOf(false) }
+  var threeFingerSpeedInteractionCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
+  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount) {
+    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent) {
+      delay(threeFingerSpeedAutoHide.coerceIn(3, 30) * 1000L)
+      threeFingerSpeedVisible = false
+    }
+  }
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -374,6 +386,12 @@ fun PlayerControls(
   GestureHandler(
     viewModel = viewModel,
     interactionSource = interactionSource,
+    onThreeFingerTap = {
+      if (threeFingerSpeedEnabled && !areControlsLocked) {
+        threeFingerSpeedVisible = true
+        threeFingerSpeedInteractionCount++
+      }
+    },
   )
 
   DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
@@ -414,6 +432,7 @@ fun PlayerControls(
         val playerPauseButton = createRef()
         val playerLoadingRef = createRef()
         val seekbar = createRef()
+        val threeFingerSpeedPanelRef = createRef()
         val playbackInfoOverlayRef = createRef()
         val (playerUpdates, playerLockHint) = createRefs()
         val (customLeftButtonsRef, customRightButtonsRef) = createRefs()
@@ -2077,6 +2096,29 @@ fun PlayerControls(
               }
             }
           }
+        }
+
+        if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
+          ThreeFingerSpeedOverlay(
+            preferences = playerPreferences,
+            currentSpeed = playbackSpeed ?: 1f,
+            onClose = { threeFingerSpeedVisible = false },
+            onSelectSpeed = { speed, first ->
+              viewModel.setPlaybackSpeed(speed)
+              if (first && threeFingerSpeedSeekBack > 0) {
+                viewModel.seekBy(-threeFingerSpeedSeekBack)
+              }
+              threeFingerSpeedInteractionCount++
+            },
+            modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
+              start.linkTo(parent.start)
+              end.linkTo(parent.end)
+              top.linkTo(parent.top)
+              bottom.linkTo(parent.bottom)
+              width = Dimension.fillToConstraints
+              height = Dimension.fillToConstraints
+            },
+          )
         }
       }
      }
