@@ -192,6 +192,10 @@
     <string name="pref_player_remember_aspect_ratio_summary">Save the aspect ratio used in the player for subsequent videos</string>
 
     <string name="pref_player_gestures">Gestures</string>
+    <string name="pref_player_display_show_remaining_time">Show remaining time</string>
+    <string name="pref_player_display_show_remaining_time_summary">Display time left instead of total duration on the seekbar and overlay</string>
+    <string name="pref_player_display_show_playback_info_overlay">Show battery &amp; clock overlay</string>
+    <string name="pref_player_display_show_playback_info_overlay_summary">Show time, battery level and current clock when controls are visible</string>
     <string name="pref_player_gestures_brightness">Brightness gestures</string>
     <string name="pref_player_gestures_brightness_sensitivity">Brightness swipe sensitivity</string>
     <string name="pref_player_gestures_brightness_sensitivity_summary">Current: %1$d%% (lower = slower brightness changes)</string>

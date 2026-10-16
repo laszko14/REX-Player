@@ -16,6 +16,7 @@ class PlayerPreferences(
   val orientation = preferenceStore.getEnum("player_orientation", PlayerOrientation.Video)
   val backgroundPlayback = preferenceStore.getEnum("background_playback_mode", BackgroundPlaybackMode.AudioOnly)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
+  val showPlaybackInfoOverlay = preferenceStore.getBoolean("show_playback_info_overlay", true)
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
   val rememberLongPressSpeed = preferenceStore.getBoolean("remember_long_press_speed", true)
   val showDynamicSpeedOverlay = preferenceStore.getBoolean("show_dynamic_speed_overlay", true)

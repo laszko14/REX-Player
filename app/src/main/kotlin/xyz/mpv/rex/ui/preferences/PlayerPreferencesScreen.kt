@@ -788,6 +788,8 @@ object PlayerPreferencesScreen : Screen {
 
           item {
             val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()
+            val showPlaybackInfoOverlay by preferences.showPlaybackInfoOverlay.collectAsState()
+            val invertDuration by preferences.invertDuration.collectAsState()
             val showSystemNavigationBar by preferences.showSystemNavigationBar.collectAsState()
             val reduceMotion by preferences.reduceMotion.collectAsState()
 
@@ -800,6 +802,30 @@ object PlayerPreferencesScreen : Screen {
                   value = showSystemStatusBar,
                   onValueChange = preferences.showSystemStatusBar::set,
                   title = { Text(stringResource(R.string.pref_player_display_show_status_bar)) },
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_player_display_show_remaining_time,
+              ) {
+                SwitchPreference(
+                  value = invertDuration,
+                  onValueChange = preferences.invertDuration::set,
+                  title = { Text(stringResource(R.string.pref_player_display_show_remaining_time)) },
+                  summary = { Text(stringResource(R.string.pref_player_display_show_remaining_time_summary)) },
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_player_display_show_playback_info_overlay,
+              ) {
+                SwitchPreference(
+                  value = showPlaybackInfoOverlay,
+                  onValueChange = preferences.showPlaybackInfoOverlay::set,
+                  title = { Text(stringResource(R.string.pref_player_display_show_playback_info_overlay)) },
+                  summary = { Text(stringResource(R.string.pref_player_display_show_playback_info_overlay_summary)) },
                 )
               }
 

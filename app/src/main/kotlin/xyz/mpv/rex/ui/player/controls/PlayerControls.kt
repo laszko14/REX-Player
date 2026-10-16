@@ -189,6 +189,8 @@ fun PlayerControls(
   val playerTutorialManager = koinInject<PlayerTutorialManager>()
   val enableReleaseToCancel by gesturePreferences.enableReleaseToCancel.collectAsState()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
+  val showPlaybackInfoOverlay by playerPreferences.showPlaybackInfoOverlay.collectAsState()
+  val showRemainingTimeInOverlay by playerPreferences.invertDuration.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
@@ -412,6 +414,7 @@ fun PlayerControls(
         val playerPauseButton = createRef()
         val playerLoadingRef = createRef()
         val seekbar = createRef()
+        val playbackInfoOverlayRef = createRef()
         val (playerUpdates, playerLockHint) = createRefs()
         val (customLeftButtonsRef, customRightButtonsRef) = createRefs()
         val customButtonsPortraitRef = createRef()
@@ -1370,6 +1373,24 @@ fun PlayerControls(
                   )
                 }
               }
+        }
+
+        // Compact information bar; kept below the title and away from 8 custom buttons.
+        AnimatedVisibility(
+          visible = controlsShown && !areControlsLocked && showPlaybackInfoOverlay,
+          enter = fadeIn(),
+          exit = fadeOut(),
+          modifier = Modifier.constrainAs(playbackInfoOverlayRef) {
+            top.linkTo(topLeftControls.bottom, spacing.small)
+            start.linkTo(parent.start)
+            end.linkTo(parent.end)
+          },
+        ) {
+          PlaybackInfoOverlay(
+            positionSeconds = precisePosition,
+            durationSeconds = if (preciseDuration > 0f) preciseDuration else (duration ?: 0).toFloat(),
+            showRemaining = showRemainingTimeInOverlay,
+          )
         }
 
         AnimatedVisibility(
