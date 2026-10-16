@@ -1,0 +1,159 @@
+name: MPVRex - panel predkosci jedna linia
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-panel-jedna-linia.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Zmien panel i skompiluj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Pobierz repozytorium
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Przygotuj JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Przygotuj Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Zainstaluj Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Zamien panel na jeden wąski rząd
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+
+          path = Path('app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt')
+          source = path.read_text(encoding='utf-8')
+          marker = '  BoxWithConstraints(modifier = modifier.fillMaxSize()) {'
+          patched_marker = '// MPVREX_SINGLE_LINE_SPEED_BAR_V3'
+          expected_blob = '0eb9677d26537761f65e266492088239f3a9f77a'
+          actual_blob = subprocess.check_output(['git', 'hash-object', str(path)], text=True).strip()
+
+          if patched_marker in source:
+              print('Waski pasek jest juz zastosowany; nie zmieniam kodu drugi raz.')
+          elif actual_blob != expected_blob:
+              raise SystemExit(f'Plik nakladki zmienil sie od analizy (git blob: {actual_blob}). Przerwano, aby nie nadpisac nowszego kodu.')
+          elif source.count(marker) != 1 or not source.endswith('  }\n}\n'):
+              raise SystemExit('Nieoczekiwana struktura Kotlin; przerwano bez zmiany kodu.')
+          else:
+              head = source.split(marker, 1)[0]
+              # Reuse the existing imports, parsing, settings and composable state. Replace only UI.
+              new_ui = r'''  // MPVREX_SINGLE_LINE_SPEED_BAR_V3
+            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+              val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
+              val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
+              // One compact row: close button and six speed presets. No title or dot slider.
+              val displayWidth = (maxWidth - 12.dp).coerceAtMost(310.dp)
+              val shape = RoundedCornerShape(20.dp)
+
+              Row(
+                modifier = Modifier
+                  .offset {
+                    IntOffset(
+                      (localX * availableWidthPx).roundToInt(),
+                      (localY * availableHeightPx).roundToInt(),
+                    )
+                  }
+                  .width(displayWidth)
+                  .onSizeChanged { panelSize = it }
+                  .clip(shape)
+                  .background(Color(0xCE222228))
+                  .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
+                  // Drag the bar itself to move it; short taps still select speeds.
+                  .pointerInput(availableWidthPx, availableHeightPx) {
+                    detectDragGestures(
+                      onDragEnd = {
+                        preferences.threeFingerSpeedPositionX.set(localX.coerceIn(0f, 1f))
+                        preferences.threeFingerSpeedPositionY.set(localY.coerceIn(0f, 1f))
+                      },
+                      onDrag = { change, drag ->
+                        change.consume()
+                        if (availableWidthPx > 0) {
+                          localX = (localX + drag.x / availableWidthPx).coerceIn(0f, 1f)
+                        }
+                        if (availableHeightPx > 0) {
+                          localY = (localY + drag.y / availableHeightPx).coerceIn(0f, 1f)
+                        }
+                      },
+                    )
+                  }
+                  .padding(horizontal = 7.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+              ) {
+                Icon(
+                  Icons.Default.Close,
+                  contentDescription = "Zamknij panel prędkości",
+                  tint = Color.White,
+                  modifier = Modifier
+                    .size(23.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .clickable(onClick = onClose),
+                )
+                presets.forEachIndexed { index, preset ->
+                  Text(
+                    text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+                    color = if (selected == index) accent else Color.White,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                    modifier = Modifier
+                      .weight(1f)
+                      .clip(RoundedCornerShape(7.dp))
+                      .clickable { onSelectSpeed(preset, index == 0) }
+                      .padding(vertical = 6.dp),
+                  )
+                }
+              }
+            }
+          }
+          '''
+              path.write_text(head + new_ui, encoding='utf-8')
+              print('Gotowe: X + 6 predkosci, tylko jeden kompaktowy rzad.')
+          PY
+
+      - name: Sprawdz i zbuduj APK debug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK dla Nothing Phone 1
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-jedna-linia-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz zmiane na GitHub po udanej kompilacji
+        if: github.ref == 'refs/heads/master'
+        run: |
+          TARGET=app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+          if ! git diff --quiet -- "$TARGET"; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add "$TARGET"
+            git commit -m 'style(player): show compact single-line speed bar'
+            git push origin HEAD:master
+          else
+            echo 'Poprawka jest juz zapisana w repozytorium.'
+          fi
