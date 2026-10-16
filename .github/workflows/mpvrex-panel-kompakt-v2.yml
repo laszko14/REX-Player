@@ -1,0 +1,88 @@
+name: MPVRex - kompaktowy panel predkosci v2
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-panel-kompakt-v2.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Zmniejsz panel i zbuduj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Zmniejsz tylko ThreeFingerSpeedOverlay
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt')
+          if not path.is_file():
+              raise SystemExit('BRAK pliku ThreeFingerSpeedOverlay.kt — nie zmieniam innych plików')
+          src = path.read_text(encoding='utf-8')
+          replacements = [('val displayWidth = (maxWidth - 20.dp).coerceAtMost(700.dp)', 'val displayWidth = (maxWidth - 20.dp).coerceAtMost(340.dp)'), ('.clip(RoundedCornerShape(22.dp))', '.clip(RoundedCornerShape(18.dp))'), ('.background(Color(0xE6262530))', '.background(Color(0xD9222228))'), ('.border(1.dp, Color.White.copy(alpha = 0.24f), RoundedCornerShape(22.dp))', '.border(1.dp, Color.White.copy(alpha = 0.22f), RoundedCornerShape(18.dp))'), ('.padding(horizontal = 12.dp, vertical = 5.dp)', '.padding(horizontal = 10.dp, vertical = 4.dp)'), ('verticalArrangement = Arrangement.spacedBy(2.dp)', 'verticalArrangement = Arrangement.spacedBy(0.dp)'), ('IconButton(onClick = onClose, modifier = Modifier.size(38.dp))', 'IconButton(onClick = onClose, modifier = Modifier.size(28.dp))'), ('Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White)', 'Icon(Icons.Default.Close, contentDescription = "Zamknij panel prędkości", tint = Color.White, modifier = Modifier.size(18.dp))'), ('modifier = Modifier.size(20.dp))', 'modifier = Modifier.size(16.dp))'), ('Text("PRĘDKOŚĆ • przesuń panel", color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp)', 'Text("PRĘDKOŚĆ", color = Color.White.copy(alpha = 0.85f), fontSize = 11.sp)'), ('.padding(vertical = 6.dp)', '.padding(vertical = 2.dp)'), ('text = String.format(Locale.US, "%gx", preset)', 'text = String.format(Locale.US, "%.2f", preset).trimEnd(\'0\').trimEnd(\'.\') + "x"'), ('fontSize = 16.sp', 'fontSize = 14.sp'), ('Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 11.sp)', 'Text("↶ ${seekBackSeconds}s", color = Color.White.copy(alpha = 0.82f), fontSize = 9.sp)'), ('Spacer(modifier = Modifier.height(16.dp))', 'Spacer(modifier = Modifier.height(11.dp))'), ('Canvas(modifier = Modifier.fillMaxWidth().height(17.dp))', 'Canvas(modifier = Modifier.fillMaxWidth().height(10.dp))'), ('Offset(lastX, middleY), 4.dp.toPx())', 'Offset(lastX, middleY), 2.dp.toPx())'), ('Offset(firstX + selected * step, middleY), 4.dp.toPx())', 'Offset(firstX + selected * step, middleY), 2.dp.toPx())'), ('radius = 5.dp.toPx()', 'radius = 3.dp.toPx()')]
+          new = src
+          for old, replacement in replacements:
+              old_count = new.count(old)
+              replacement_count = new.count(replacement)
+              if old_count == 1:
+                  new = new.replace(old, replacement, 1)
+              elif old_count == 0 and replacement_count == 1:
+                  print('Zmiana już istnieje:', old[:65])
+              else:
+                  raise SystemExit(f'Nieoczekiwany kod panelu; {old[:65]!r}, znaleziono {old_count}. Bez zmian.')
+          if new != src:
+              path.write_text(new, encoding='utf-8')
+              print('Zmieniono wyłącznie panel prędkości 3-palce.')
+          else:
+              print('Panel kompaktowy już jest — nie trzeba nakładać poprawki.')
+          PY
+
+      - name: Kompiluj APK debug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-kompaktowy-panel-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz zmiane po udanej kompilacji
+        if: github.ref == 'refs/heads/master'
+        run: |
+          if ! git diff --quiet -- app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+            git commit -m 'style(player): compact three finger speed overlay'
+            git push origin HEAD:master
+          else
+            echo 'Kod juz ma kompaktowy panel.'
+          fi
