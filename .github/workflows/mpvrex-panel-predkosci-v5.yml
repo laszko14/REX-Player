@@ -1,0 +1,402 @@
+name: MPVRex - panel predkosci v5 naprawa
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/mpvrex-panel-predkosci-v5.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  speed-panel-v5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Patch speed panel and seek settings
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # Re-runs only rebuild the current source; do not overwrite already updated UI.
+          _root = Path('app/src/main/kotlin/xyz/mpv/rex')
+          if (
+              'threeFingerSpeedJumpBack' in (_root / 'preferences/PlayerPreferences.kt').read_text(encoding='utf-8')
+              and 'onSeekBy = { delta ->' in (_root / 'ui/player/controls/PlayerControls.kt').read_text(encoding='utf-8')
+              and 'Dolny przycisk 1: cofanie' in (_root / 'ui/preferences/PlayerPreferencesScreen.kt').read_text(encoding='utf-8')
+          ):
+              print('Poprawka v5 jest juz w kodzie. Uruchamiam ponowna kompilacje bez zmian.')
+              raise SystemExit(0)
+
+          def expect_replace(path: Path, old: str, new: str, label: str):
+              text = path.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'Nie znaleziono fragmentu dla: {label} w {path}')
+              text = text.replace(old, new, 1)
+              path.write_text(text, encoding='utf-8')
+
+          # 1) New preferences for three bottom seek buttons.
+          prefs = Path('app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt')
+          prefs_text = prefs.read_text(encoding='utf-8')
+          if 'threeFingerSpeedJumpBack' not in prefs_text:
+              marker = '  val threeFingerSpeedAutoHide = preferenceStore.getInt("three_finger_speed_auto_hide", 5)\n'
+              insert = marker + '  val threeFingerSpeedJumpBack = preferenceStore.getInt("three_finger_speed_jump_back", 10)\n  val threeFingerSpeedJumpForward1 = preferenceStore.getInt("three_finger_speed_jump_forward_1", 10)\n  val threeFingerSpeedJumpForward2 = preferenceStore.getInt("three_finger_speed_jump_forward_2", 30)\n'
+              if marker not in prefs_text:
+                  raise SystemExit('Nie znaleziono miejsca w PlayerPreferences.kt do dodania ustawień przycisków przewijania')
+              prefs_text = prefs_text.replace(marker, insert, 1)
+              prefs.write_text(prefs_text, encoding='utf-8')
+
+          # 2) Replace overlay implementation with slimmer version and 3 extra seek buttons.
+          overlay = Path('app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt')
+          overlay.write_text('''package xyz.mpv.rex.ui.player.controls
+
+          import androidx.compose.foundation.background
+          import androidx.compose.foundation.border
+          import androidx.compose.foundation.clickable
+          import androidx.compose.foundation.gestures.detectDragGestures
+          import androidx.compose.foundation.layout.Arrangement
+          import androidx.compose.foundation.layout.BoxWithConstraints
+          import androidx.compose.foundation.layout.Column
+          import androidx.compose.foundation.layout.Row
+          import androidx.compose.foundation.layout.fillMaxSize
+          import androidx.compose.foundation.layout.heightIn
+          import androidx.compose.foundation.layout.offset
+          import androidx.compose.foundation.layout.padding
+          import androidx.compose.foundation.layout.width
+          import androidx.compose.foundation.shape.RoundedCornerShape
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.Close
+          import androidx.compose.material3.Icon
+          import androidx.compose.material3.MaterialTheme
+          import androidx.compose.material3.Text
+          import androidx.compose.runtime.Composable
+          import androidx.compose.runtime.LaunchedEffect
+          import androidx.compose.runtime.collectAsState
+          import androidx.compose.runtime.getValue
+          import androidx.compose.runtime.mutableFloatStateOf
+          import androidx.compose.runtime.mutableStateOf
+          import androidx.compose.runtime.remember
+          import androidx.compose.runtime.setValue
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.draw.clip
+          import androidx.compose.ui.geometry.Offset
+          import androidx.compose.ui.graphics.Color
+          import androidx.compose.ui.input.pointer.pointerInput
+          import androidx.compose.ui.layout.onSizeChanged
+          import androidx.compose.ui.text.style.TextAlign
+          import androidx.compose.ui.unit.IntOffset
+          import androidx.compose.ui.unit.IntSize
+          import androidx.compose.ui.unit.dp
+          import androidx.compose.ui.unit.sp
+          import xyz.mpv.rex.preferences.PlayerPreferences
+          import xyz.mpv.rex.preferences.preference.collectAsState
+          import java.util.Locale
+          import kotlin.math.abs
+          import kotlin.math.roundToInt
+
+          private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f)
+
+          fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
+            val stored = raw.split(',')
+            return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
+              stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: fallback
+            }
+          }
+
+          @Composable
+          private fun SeekActionChip(
+            label: String,
+            onClick: () -> Unit,
+            modifier: Modifier = Modifier,
+          ) {
+            Text(
+              text = label,
+              color = Color.White.copy(alpha = 0.94f),
+              fontSize = 10.sp,
+              maxLines = 1,
+              textAlign = TextAlign.Center,
+              modifier = modifier
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = onClick)
+                .padding(horizontal = 2.dp, vertical = 4.dp),
+            )
+          }
+
+          @Composable
+          fun ThreeFingerSpeedOverlay(
+            preferences: PlayerPreferences,
+            currentSpeed: Float,
+            onClose: () -> Unit,
+            onSelectSpeed: (Float) -> Unit,
+            onSeekBy: (Int) -> Unit,
+            modifier: Modifier = Modifier,
+          ) {
+            val rawPresets by preferences.threeFingerSpeedPresets.collectAsState()
+            val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
+            val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+            val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+            val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
+            val storedY by preferences.threeFingerSpeedPositionY.collectAsState()
+            val presets = remember(rawPresets) { parseThreeFingerSpeedPresets(rawPresets) }
+            var localX by remember { mutableFloatStateOf(storedX.coerceIn(0f, 1f)) }
+            var localY by remember { mutableFloatStateOf(storedY.coerceIn(0f, 1f)) }
+            var panelSize by remember { mutableStateOf(IntSize.Zero) }
+            val selected = presets.indexOfFirst { abs(it - currentSpeed) < 0.025f }
+            val accent = MaterialTheme.colorScheme.primary
+
+            LaunchedEffect(storedX, storedY) {
+              localX = storedX.coerceIn(0f, 1f)
+              localY = storedY.coerceIn(0f, 1f)
+            }
+
+            BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+              val availableWidthPx = (constraints.maxWidth - panelSize.width).coerceAtLeast(0)
+              val availableHeightPx = (constraints.maxHeight - panelSize.height).coerceAtLeast(0)
+              val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp)
+              val shape = RoundedCornerShape(16.dp)
+
+              Column(
+                modifier = Modifier
+                  .offset {
+                    IntOffset(
+                      (localX * availableWidthPx).roundToInt(),
+                      (localY * availableHeightPx).roundToInt(),
+                    )
+                  }
+                  .width(displayWidth)
+                  .onSizeChanged { panelSize = it }
+                  .clip(shape)
+                  .background(Color(0xCE222228))
+                  .border(1.dp, Color.White.copy(alpha = 0.16f), shape)
+                  .pointerInput(availableWidthPx, availableHeightPx) {
+                    detectDragGestures(
+                      onDragEnd = {
+                        preferences.threeFingerSpeedPositionX.set(localX.coerceIn(0f, 1f))
+                        preferences.threeFingerSpeedPositionY.set(localY.coerceIn(0f, 1f))
+                      },
+                      onDrag = { change, drag ->
+                        change.consume()
+                        if (availableWidthPx > 0) {
+                          localX = (localX + drag.x / availableWidthPx).coerceIn(0f, 1f)
+                        }
+                        if (availableHeightPx > 0) {
+                          localY = (localY + drag.y / availableHeightPx).coerceIn(0f, 1f)
+                        }
+                      },
+                    )
+                  }
+                  .padding(horizontal = 7.dp, vertical = 3.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp),
+              ) {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(2.dp),
+                  modifier = Modifier.heightIn(min = 22.dp),
+                ) {
+                  Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Zamknij panel prędkości",
+                    tint = Color.White,
+                    modifier = Modifier
+                      .padding(start = 1.dp)
+                      .clip(RoundedCornerShape(6.dp))
+                      .clickable(onClick = onClose)
+                      .padding(1.dp)
+                      .width(14.dp),
+                  )
+                  presets.forEachIndexed { index, preset ->
+                    Text(
+                      text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+                      color = if (selected == index) accent else Color.White,
+                      fontSize = 11.sp,
+                      maxLines = 1,
+                      textAlign = TextAlign.Center,
+                      modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(7.dp))
+                        .clickable { onSelectSpeed(preset) }
+                        .padding(vertical = 2.dp),
+                    )
+                  }
+                }
+
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(4.dp),
+                  modifier = Modifier.heightIn(min = 18.dp),
+                ) {
+                  SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, modifier = Modifier.weight(1f))
+                  SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, modifier = Modifier.weight(1f))
+                }
+              }
+            }
+          }
+          ''', encoding='utf-8')
+
+          # 3) Update overlay usage in PlayerControls.kt: 1.5x no longer rewinds, add seek buttons callback.
+          controls = Path('app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt')
+          old_block = '''        if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
+                    ThreeFingerSpeedOverlay(
+                      preferences = playerPreferences,
+                      currentSpeed = playbackSpeed ?: 1f,
+                      onClose = { threeFingerSpeedVisible = false },
+                      onSelectSpeed = { speed, first ->
+                        viewModel.setPlaybackSpeed(speed)
+                        if (first && threeFingerSpeedSeekBack > 0) {
+                          viewModel.seekBy(-threeFingerSpeedSeekBack)
+                        }
+                        threeFingerSpeedInteractionCount++
+                      },
+                      modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        width = Dimension.fillToConstraints
+                        height = Dimension.fillToConstraints
+                      },
+                    )
+                  }
+          '''
+          new_block = '''        if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
+                    ThreeFingerSpeedOverlay(
+                      preferences = playerPreferences,
+                      currentSpeed = playbackSpeed ?: 1f,
+                      onClose = { threeFingerSpeedVisible = false },
+                      onSelectSpeed = { speed ->
+                        viewModel.setPlaybackSpeed(speed)
+                        threeFingerSpeedInteractionCount++
+                      },
+                      onSeekBy = { delta ->
+                        viewModel.seekBy(delta)
+                        threeFingerSpeedInteractionCount++
+                      },
+                      modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
+                        start.linkTo(parent.start)
+                        end.linkTo(parent.end)
+                        top.linkTo(parent.top)
+                        bottom.linkTo(parent.bottom)
+                        width = Dimension.fillToConstraints
+                        height = Dimension.fillToConstraints
+                      },
+                    )
+                  }
+          '''
+          expect_replace(controls, old_block, new_block, 'PlayerControls - nowe callbacki panelu prędkości')
+
+          # 4) Update settings UI: remove rewind from 1.5x and add 3 custom seek buttons.
+          screen = Path('app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt')
+          screen_text = screen.read_text(encoding='utf-8')
+          # Former 1.5x rewind slider is removed; its old state is no longer needed.
+          screen_text = screen_text.replace('            val seekBack by preferences.threeFingerSpeedSeekBack.collectAsState()\n', '')
+          old_summary = '                    summary = { Text("${presets[index]}x" + if (index == 0) " + cofnięcie filmu" else "") },\n'
+          if old_summary in screen_text:
+              screen_text = screen_text.replace(old_summary, '                    summary = { Text("${presets[index]}x") },\n', 1)
+
+          old_seek_slider = '''              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          SliderPreference(
+                            value = seekBack.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                            title = { Text("Pierwszy przycisk: cofnij film") },
+                            valueRange = 0f..60f,
+                            summary = { Text("${seekBack} sekund (0 = bez cofania)") },
+                            onSliderValueChange = { preferences.threeFingerSpeedSeekBack.set(it.roundToInt()) },
+                            sliderValue = seekBack.toFloat(),
+                          )
+                        }
+          '''
+          new_seek_sliders = '''              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
+                          SliderPreference(
+                            value = jumpBack.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
+                            title = { Text("Dolny przycisk 1: cofanie") },
+                            valueRange = 1f..300f,
+                            summary = { Text("-${jumpBack} sekund") },
+                            onSliderValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
+                            sliderValue = jumpBack.toFloat(),
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+                          SliderPreference(
+                            value = jumpForward1.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
+                            title = { Text("Dolny przycisk 2: przewijanie do przodu") },
+                            valueRange = 1f..300f,
+                            summary = { Text("+${jumpForward1} sekund") },
+                            onSliderValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
+                            sliderValue = jumpForward1.toFloat(),
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+                          SliderPreference(
+                            value = jumpForward2.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
+                            title = { Text("Dolny przycisk 3: dalsze przewijanie") },
+                            valueRange = 1f..300f,
+                            summary = { Text("+${jumpForward2} sekund") },
+                            onSliderValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
+                            sliderValue = jumpForward2.toFloat(),
+                          )
+                        }
+          '''
+          if old_seek_slider not in screen_text:
+              raise SystemExit('Nie znaleziono starego suwaka cofania 1.5x w ustawieniach')
+          screen_text = screen_text.replace(old_seek_slider, new_seek_sliders, 1)
+          screen.write_text(screen_text, encoding='utf-8')
+
+          print('Zastosowano poprawki panelu prędkości v4.')
+          PY
+
+      - name: Build debug APK
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Save tested source changes
+        shell: bash
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+            git commit -m "feat(player): add configurable seek buttons to slim speed overlay"
+            git push
+          else
+            echo "No source changes to commit"
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-panel-predkosci-v5-arm64
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
