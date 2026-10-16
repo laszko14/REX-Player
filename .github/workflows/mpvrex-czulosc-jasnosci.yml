@@ -1,0 +1,179 @@
+name: MPVRex - regulacja czulosci jasnosci
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-czulosc-jasnosci.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Dodaj suwak i zbuduj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Pobierz kod REX Player
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Przygotuj Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Przygotuj Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Zainstaluj Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Dodaj regulacje czulosci gestu jasnosci
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          kotlin_root = Path('app/src/main/kotlin/xyz/mpv/rex')
+
+          def patch(relative_path, already_marker, replacements):
+              path = Path(relative_path)
+              original = path.read_text(encoding='utf-8')
+              if already_marker in original:
+                  print(f'Juz zastosowano: {path}')
+                  return
+              updated = original
+              for old, new in replacements:
+                  count = updated.count(old)
+                  if count != 1:
+                      raise RuntimeError(f'{path}: oczekiwano 1 dopasowania, znaleziono {count}: {old[:100]!r}')
+                  updated = updated.replace(old, new, 1)
+              path.write_text(updated, encoding='utf-8')
+              print(f'Poprawiono: {path}')
+
+          patch(
+              kotlin_root / 'preferences/PlayerPreferences.kt',
+              'val brightnessSwipeSensitivity = preferenceStore.getFloat(',
+              [(
+                  '  val brightnessGesture = preferenceStore.getBoolean("gestures_brightness", true)\n',
+                  '  val brightnessGesture = preferenceStore.getBoolean("gestures_brightness", true)\n'
+                  '  val brightnessSwipeSensitivity = preferenceStore.getFloat("brightness_swipe_sensitivity", 0.50f)\n',
+              )],
+          )
+
+          patch(
+              kotlin_root / 'ui/player/controls/GestureHandler.kt',
+              'val baseVerticalGestureSens = 0.0022f',
+              [
+                  (
+                      '  val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()\n',
+                      '  val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()\n'
+                      '  val brightnessSwipeSensitivity by playerPreferences.brightnessSwipeSensitivity.collectAsState()\n',
+                  ),
+                  (
+                      '.pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture) {',
+                      '.pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture, brightnessSwipeSensitivity) {',
+                  ),
+                  (
+                      '          val brightnessGestureSens = 0.0022f\n'
+                      '          val volumeGestureSens = (viewModel.maxVolume * brightnessGestureSens).coerceAtLeast(0.001f)\n'
+                      '          val mpvVolumeGestureSens = (volumeBoostingCap.coerceAtLeast(1) * brightnessGestureSens).coerceAtLeast(0.001f)',
+                      '          val baseVerticalGestureSens = 0.0022f\n'
+                      '          val brightnessGestureSens = baseVerticalGestureSens * brightnessSwipeSensitivity.coerceIn(0.10f, 1.00f)\n'
+                      '          val volumeGestureSens = (viewModel.maxVolume * baseVerticalGestureSens).coerceAtLeast(0.001f)\n'
+                      '          val mpvVolumeGestureSens = (volumeBoostingCap.coerceAtLeast(1) * baseVerticalGestureSens).coerceAtLeast(0.001f)',
+                  ),
+              ],
+          )
+
+          patch(
+              kotlin_root / 'ui/preferences/PlayerPreferencesScreen.kt',
+              'highlightKey = R.string.pref_player_gestures_brightness_sensitivity,',
+              [
+                  (
+                      '            val brightnessGesture by preferences.brightnessGesture.collectAsState()\n',
+                      '            val brightnessGesture by preferences.brightnessGesture.collectAsState()\n'
+                      '            val brightnessSwipeSensitivity by preferences.brightnessSwipeSensitivity.collectAsState()\n',
+                  ),
+                  (
+                      '              GroupedPreferenceCard(\n'
+                      '                position = GroupPosition.MIDDLE,\n'
+                      '                highlightKey = R.string.pref_player_gestures_volume,\n'
+                      '              ) {',
+                      '              GroupedPreferenceCard(\n'
+                      '                position = GroupPosition.MIDDLE,\n'
+                      '                highlightKey = R.string.pref_player_gestures_brightness_sensitivity,\n'
+                      '              ) {\n'
+                      '                SliderPreference(\n'
+                      '                  value = brightnessSwipeSensitivity,\n'
+                      '                  onValueChange = { preferences.brightnessSwipeSensitivity.set(it.toFixed(2)) },\n'
+                      '                  title = { Text(stringResource(R.string.pref_player_gestures_brightness_sensitivity)) },\n'
+                      '                  valueRange = 0.10f..1.00f,\n'
+                      '                  summary = {\n'
+                      '                    Text(\n'
+                      '                      stringResource(\n'
+                      '                        R.string.pref_player_gestures_brightness_sensitivity_summary,\n'
+                      '                        (brightnessSwipeSensitivity * 100).roundToInt(),\n'
+                      '                      ),\n'
+                      '                      color = MaterialTheme.colorScheme.outline,\n'
+                      '                    )\n'
+                      '                  },\n'
+                      '                  onSliderValueChange = { preferences.brightnessSwipeSensitivity.set(it.toFixed(2)) },\n'
+                      '                  sliderValue = brightnessSwipeSensitivity,\n'
+                      '                )\n'
+                      '              }\n\n'
+                      '              GroupedPreferenceCard(\n'
+                      '                position = GroupPosition.MIDDLE,\n'
+                      '                highlightKey = R.string.pref_player_gestures_volume,\n'
+                      '              ) {',
+                  ),
+              ],
+          )
+
+          res = Path('app/src/main/res/values/strings.xml')
+          patch(
+              res,
+              '<string name="pref_player_gestures_brightness_sensitivity">',
+              [(
+                  '    <string name="pref_player_gestures_brightness">Brightness gestures</string>\n',
+                  '    <string name="pref_player_gestures_brightness">Brightness gestures</string>\n'
+                  '    <string name="pref_player_gestures_brightness_sensitivity">Brightness swipe sensitivity</string>\n'
+                  '    <string name="pref_player_gestures_brightness_sensitivity_summary">Current: %1$d%% (lower = slower brightness changes)</string>\n',
+              )],
+          )
+          ET.parse(res)
+          print('OK: XML poprawny; 50% domyslnie, zakres 10-100%; gest glosnosci bez zmian.')
+          PY
+
+      - name: Zbuduj APK dla telefonu
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-jasnosc-suwak-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz zmiany w repozytorium
+        if: github.ref == 'refs/heads/master'
+        run: |
+          if ! git diff --quiet -- app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/GestureHandler.kt app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt app/src/main/res/values/strings.xml; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/GestureHandler.kt app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt app/src/main/res/values/strings.xml
+            git commit -m 'feat(player): adjustable brightness swipe sensitivity'
+            git push origin HEAD:master
+          else
+            echo 'Zmiany juz sa zapisane w repozytorium.'
+          fi
