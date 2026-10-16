@@ -1,0 +1,210 @@
+name: MPVRex - regulacja wygladu panelu v7
+
+"on":
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/mpvrex-wyglad-panelu-v7.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mpvrex-speed-panel-v7-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configure Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Configure Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Apply speed panel settings
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          
+          base = Path('app/src/main/kotlin/xyz/mpv/rex')
+          prefs = base / 'preferences/PlayerPreferences.kt'
+          screen = base / 'ui/preferences/PlayerPreferencesScreen.kt'
+          overlay = base / 'ui/player/controls/ThreeFingerSpeedOverlay.kt'
+          
+          texts = {p: p.read_text(encoding='utf-8') for p in (prefs, screen, overlay)}
+          
+          MARKER = 'MPVREX_SPEED_PANEL_APPEARANCE_V7'
+          if MARKER in texts[overlay]:
+              expected = ['threeFingerSpeedPanelSize', 'threeFingerSpeedPanelTransparency', 'threeFingerSpeedPanelGap']
+              if all(k in texts[prefs] and k in texts[screen] for k in expected):
+                  print('Panel v7 już został dodany. Brak zmian do zapisania.')
+                  raise SystemExit(0)
+              raise SystemExit('Znaleziono niepełną wcześniejszą zmianę v7 — nie nadpisuję jej.')
+          
+          def patch(path, before, after, label):
+              s = texts[path]
+              count = s.count(before)
+              if count != 1:
+                  raise SystemExit(f'Wzorzec {label}: oczekiwano 1 wystąpienia, znaleziono {count}; zatrzymuję bez zapisywania zmian.')
+              texts[path] = s.replace(before, after, 1)
+          
+          # 1. Persistent preferences.
+          anchor = '  val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)\n'
+          patch(prefs, anchor, anchor + '''  // MPVREX_SPEED_PANEL_APPEARANCE_V7
+            val threeFingerSpeedPanelSize = preferenceStore.getInt("three_finger_speed_panel_size_pct", 100)
+            val threeFingerSpeedPanelTransparency = preferenceStore.getInt("three_finger_speed_panel_transparency_pct", 20)
+            val threeFingerSpeedPanelGap = preferenceStore.getInt("three_finger_speed_panel_gap_dp", 2)
+          ''', 'PlayerPreferences - nowe ustawienia')
+          
+          # 2. Sliders in the existing three-finger speed panel settings section.
+          anchor = '''              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val autoShow by preferences.threeFingerSpeedAutoShow.collectAsState()
+                          SwitchPreference(
+                            value = autoShow,
+                            onValueChange = preferences.threeFingerSpeedAutoShow::set,
+                            title = { Text("Pokazuj panel przy nowym filmie") },
+                            summary = { Text("Automatycznie otwiera panel po rozpoczęciu kolejnego filmu. X zamyka go do następnego filmu.") },
+                          )
+                        }
+          '''
+          new_settings = '''              // MPVREX_SPEED_PANEL_APPEARANCE_V7
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val panelSize by preferences.threeFingerSpeedPanelSize.collectAsState()
+                          SliderPreference(
+                            value = panelSize.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedPanelSize.set(it.roundToInt()) },
+                            title = { Text("Rozmiar panelu") },
+                            valueRange = 70f..150f,
+                            summary = { Text("${panelSize}% — ramka, przyciski i cyfry") },
+                            onSliderValueChange = { preferences.threeFingerSpeedPanelSize.set(it.roundToInt()) },
+                            sliderValue = panelSize.toFloat(),
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+                          SliderPreference(
+                            value = transparency.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
+                            title = { Text("Przezroczystość tła panelu") },
+                            valueRange = 0f..100f,
+                            summary = { Text("${transparency}% (0% = pełne tło, 100% = brak tła)") },
+                            onSliderValueChange = { preferences.threeFingerSpeedPanelTransparency.set(it.roundToInt()) },
+                            sliderValue = transparency.toFloat(),
+                          )
+                        }
+                        GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                          val gap by preferences.threeFingerSpeedPanelGap.collectAsState()
+                          SliderPreference(
+                            value = gap.toFloat(),
+                            onValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
+                            title = { Text("Odstępy między przyciskami") },
+                            valueRange = 0f..16f,
+                            summary = { Text("${gap} dp — oba rzędy") },
+                            onSliderValueChange = { preferences.threeFingerSpeedPanelGap.set(it.roundToInt()) },
+                            sliderValue = gap.toFloat(),
+                          )
+                        }
+          '''
+          patch(screen, anchor, anchor + new_settings, 'PlayerPreferencesScreen - suwaki wyglądu')
+          
+          # 3. Appearance states and scaling variables in the overlay.
+          anchor = '''  val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+          '''
+          patch(overlay, anchor, anchor + '''  // MPVREX_SPEED_PANEL_APPEARANCE_V7
+            val panelSizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
+            val transparencyPercent by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+            val panelGap by preferences.threeFingerSpeedPanelGap.collectAsState()
+            val panelScale = panelSizePercent.coerceIn(70, 150) / 100f
+            val gap = panelGap.coerceIn(0, 16).dp
+            val backgroundAlpha = 1f - transparencyPercent.coerceIn(0, 100) / 100f
+          ''', 'ThreeFingerSpeedOverlay - stan wyglądu')
+          
+          # 4. Adapt the existing seek button to the chosen scale.
+          patch(overlay, '''private fun SeekActionChip(
+            label: String,
+            onClick: () -> Unit,
+            modifier: Modifier = Modifier,
+          )''', '''private fun SeekActionChip(
+            label: String,
+            onClick: () -> Unit,
+            scale: Float,
+            modifier: Modifier = Modifier,
+          )''', 'SeekActionChip - parametry')
+          patch(overlay, '    fontSize = 10.sp,', '    fontSize = (10f * scale).sp,', 'SeekActionChip - czcionka')
+          patch(overlay, '      .heightIn(min = 20.dp)\n      .clip(RoundedCornerShape(8.dp))', '''      .heightIn(min = (20f * scale).dp)
+                .clip(RoundedCornerShape((8f * scale).dp))''', 'SeekActionChip - wysokość')
+          patch(overlay, '''      .padding(horizontal = 2.dp, vertical = 1.dp),''', '''      .padding(horizontal = (2f * scale).dp, vertical = (1f * scale).dp),''', 'SeekActionChip - odstępy')
+          
+          # 5. Scale the panel and its typography while keeping the existing layout and gestures.
+          patch(overlay, '''    val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp)
+              val shape = RoundedCornerShape(16.dp)''', '''    val displayWidth = (maxWidth - 12.dp).coerceAtMost(312.dp * panelScale)
+              val shape = RoundedCornerShape((16f * panelScale).dp)''', 'Szerokość i zaokrąglenie')
+          patch(overlay, '''        .background(Color(0xCE222228))''', '''        .background(Color(0xFF222228).copy(alpha = backgroundAlpha))''', 'Przezroczystość tła')
+          patch(overlay, '''        .padding(horizontal = 7.dp, vertical = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp),''', '''        .padding(horizontal = (7f * panelScale).dp, vertical = (2f * panelScale).dp),
+                verticalArrangement = Arrangement.spacedBy(gap / 2f),''', 'Rozmiar i odstęp między rzędami')
+          patch(overlay, '''        horizontalArrangement = Arrangement.spacedBy(2.dp),
+                  modifier = Modifier.heightIn(min = 20.dp),''', '''        horizontalArrangement = Arrangement.spacedBy(gap),
+                  modifier = Modifier.heightIn(min = (20f * panelScale).dp),''', 'Górny rząd')
+          patch(overlay, '''            .width(14.dp),''', '''            .width((14f * panelScale).dp),''', 'Rozmiar X')
+          patch(overlay, '''            fontSize = 11.sp,''', '''            fontSize = (11f * panelScale).sp,''', 'Napisy prędkości')
+          patch(overlay, '''              .padding(vertical = 2.dp),''', '''              .padding(vertical = (2f * panelScale).dp),''', 'Wysokość przycisków prędkości')
+          patch(overlay, '''        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                  modifier = Modifier.heightIn(min = 20.dp),''', '''        horizontalArrangement = Arrangement.spacedBy(gap),
+                  modifier = Modifier.heightIn(min = (20f * panelScale).dp),''', 'Dolny rząd')
+          patch(overlay, '''SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, modifier = Modifier.weight(1f))''', '''SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, scale = panelScale, modifier = Modifier.weight(1f))''', 'Cofanie')
+          patch(overlay, '''SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, modifier = Modifier.weight(1f))''', '''SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, scale = panelScale, modifier = Modifier.weight(1f))''', 'Do przodu 1')
+          patch(overlay, '''SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, modifier = Modifier.weight(1f))''', '''SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, scale = panelScale, modifier = Modifier.weight(1f))''', 'Do przodu 2')
+          
+          # Write only after ALL validations have passed.
+          for p, contents in texts.items():
+              p.write_text(contents, encoding='utf-8')
+              print('Updated:', p)
+          print('Suwaki wyglądu panelu: rozmiar 70–150%, przezroczystość 0–100%, odstępy 0–16 dp.')
+          PY
+
+      - name: Build debug APK and check Kotlin
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-panel-wyglad-v7
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Save source changes after successful build
+        if: success()
+        shell: bash
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/preferences/PlayerPreferencesScreen.kt
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/ThreeFingerSpeedOverlay.kt
+            git commit -m "feat(player): adjustable size opacity and spacing for speed panel"
+            git push
+          else
+            echo "Source already has this patch"
+          fi
