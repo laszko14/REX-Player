@@ -45,14 +45,22 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f)
+private val DEFAULT_SPEED_PANEL_PRESETS = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f, 5.5f)
 
 fun parseThreeFingerSpeedPresets(raw: String): List<Float> {
   val stored = raw.split(',')
   return DEFAULT_SPEED_PANEL_PRESETS.mapIndexed { index, fallback ->
-    stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: fallback
+    val nextFallback = if (index < 6) fallback else {
+      val lastUserSpeed = stored.getOrNull(5)?.trim()?.toFloatOrNull()
+        ?.takeIf { it in 0.25f..6f } ?: DEFAULT_SPEED_PANEL_PRESETS[5]
+      (lastUserSpeed + (index - 5) * 0.5f).coerceAtMost(6f)
+    }
+    stored.getOrNull(index)?.trim()?.toFloatOrNull()?.takeIf { it in 0.25f..6f } ?: nextFallback
   }
 }
+
+private fun formatSignedSeek(seconds: Int): String =
+  if (seconds > 0) "+${seconds}s" else "${seconds}s"
 
 @Composable
 private fun SeekActionChip(
@@ -85,9 +93,10 @@ fun ThreeFingerSpeedOverlay(
   modifier: Modifier = Modifier,
 ) {
   val rawPresets by preferences.threeFingerSpeedPresets.collectAsState()
-  val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
-  val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
-  val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+  // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9
+  val signedSeek1 by preferences.threeFingerSpeedSeekButton1.collectAsState()
+  val signedSeek2 by preferences.threeFingerSpeedSeekButton2.collectAsState()
+  val signedSeek3 by preferences.threeFingerSpeedSeekButton3.collectAsState()
   // MPVREX_SPEED_PANEL_APPEARANCE_V7
   val panelSizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
   val transparencyPercent by preferences.threeFingerSpeedPanelTransparency.collectAsState()
@@ -164,7 +173,7 @@ fun ThreeFingerSpeedOverlay(
             .padding(1.dp)
             .width((14f * panelScale).dp),
         )
-        presets.forEachIndexed { index, preset ->
+        presets.take(6).forEachIndexed { index, preset ->
           Text(
             text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
             color = if (selected == index) accent else Color.White,
@@ -185,9 +194,24 @@ fun ThreeFingerSpeedOverlay(
         horizontalArrangement = Arrangement.spacedBy(gap),
         modifier = Modifier.heightIn(min = (20f * panelScale).dp),
       ) {
-        SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, scale = panelScale, modifier = Modifier.weight(1f))
-        SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, scale = panelScale, modifier = Modifier.weight(1f))
-        SeekActionChip(label = "+${jumpForward2}s", onClick = { onSeekBy(jumpForward2) }, scale = panelScale, modifier = Modifier.weight(1f))
+        // Three additional speeds followed by three independent signed seek buttons.
+        presets.drop(6).take(3).forEachIndexed { index, preset ->
+          Text(
+            text = String.format(Locale.US, "%.2f", preset).trimEnd('0').trimEnd('.') + "x",
+            color = if (selected == index + 6) accent else Color.White,
+            fontSize = (11f * panelScale).sp,
+            maxLines = 1,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+              .weight(1f)
+              .clip(RoundedCornerShape(7.dp))
+              .clickable { onSelectSpeed(preset) }
+              .padding(vertical = (2f * panelScale).dp),
+          )
+        }
+        SeekActionChip(label = formatSignedSeek(signedSeek1), onClick = { if (signedSeek1 != 0) onSeekBy(signedSeek1) }, scale = panelScale, modifier = Modifier.weight(1f))
+        SeekActionChip(label = formatSignedSeek(signedSeek2), onClick = { if (signedSeek2 != 0) onSeekBy(signedSeek2) }, scale = panelScale, modifier = Modifier.weight(1f))
+        SeekActionChip(label = formatSignedSeek(signedSeek3), onClick = { if (signedSeek3 != 0) onSeekBy(signedSeek3) }, scale = panelScale, modifier = Modifier.weight(1f))
       }
     }
   }

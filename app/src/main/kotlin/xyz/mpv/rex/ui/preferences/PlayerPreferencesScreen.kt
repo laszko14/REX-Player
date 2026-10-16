@@ -876,42 +876,57 @@ object PlayerPreferencesScreen : Screen {
                 }
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
-                val jumpBack by preferences.threeFingerSpeedJumpBack.collectAsState()
+                // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9: negative = backwards, positive = forwards.
+                val seek1 by preferences.threeFingerSpeedSeekButton1.collectAsState()
                 SliderPreference(
-                  value = jumpBack.toFloat(),
-                  onValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
-                  title = { Text("Dolny przycišsk 1: cofanie") },
-                  valueRange = 1f..300f,
-                  summary = { Text("-${jumpBack} sekund") },
-                  onSliderValueChange = { preferences.threeFingerSpeedJumpBack.set(it.roundToInt()) },
-                  sliderValue = jumpBack.toFloat(),
+                  value = seek1.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedSeekButton1.set(it.roundToInt()) },
+                  title = { Text("Przewijanie 1: kierunek i czas") },
+                  valueRange = -300f..300f,
+                  summary = { Text(when {
+                    seek1 < 0 -> "Do tyłu: " + (-seek1) + " s"
+                    seek1 > 0 -> "Do przodu: " + seek1 + " s"
+                    else -> "0 s — bez przewijania"
+                  }) },
+                  onSliderValueChange = { preferences.threeFingerSpeedSeekButton1.set(it.roundToInt()) },
+                  sliderValue = seek1.toFloat(),
                 )
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
-                val jumpForward1 by preferences.threeFingerSpeedJumpForward1.collectAsState()
+                // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9: negative = backwards, positive = forwards.
+                val seek2 by preferences.threeFingerSpeedSeekButton2.collectAsState()
                 SliderPreference(
-                  value = jumpForward1.toFloat(),
-                  onValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
-                  title = { Text("Dolny przycišsk 2: przewijanie do przedu") },
-                  valueRange = 1f..300f,
-                  summary = { Text("+${jumpForward1} sekund") },
-                  onSliderValueChange = { preferences.threeFingerSpeedJumpForward1.set(it.roundToInt()) },
-                  sliderValue = jumpForward1.toFloat(),
+                  value = seek2.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedSeekButton2.set(it.roundToInt()) },
+                  title = { Text("Przewijanie 2: kierunek i czas") },
+                  valueRange = -300f..300f,
+                  summary = { Text(when {
+                    seek2 < 0 -> "Do tyłu: " + (-seek2) + " s"
+                    seek2 > 0 -> "Do przodu: " + seek2 + " s"
+                    else -> "0 s — bez przewijania"
+                  }) },
+                  onSliderValueChange = { preferences.threeFingerSpeedSeekButton2.set(it.roundToInt()) },
+                  sliderValue = seek2.toFloat(),
                 )
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
-                val jumpForward2 by preferences.threeFingerSpeedJumpForward2.collectAsState()
+                // MPV_ALPHA_TWO_ROWS_NINE_SPEEDS_V9: negative = backwards, positive = forwards.
+                val seek3 by preferences.threeFingerSpeedSeekButton3.collectAsState()
                 SliderPreference(
-                  value = jumpForward2.toFloat(),
-                  onValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
-                  title = { Text("Dolny przycisk 3: dalsze przewijanie") },
-                  valueRange = 1f..300f,
-                  summary = { Text("+${jumpForward2} sekund") },
-                  onSliderValueChange = { preferences.threeFingerSpeedJumpForward2.set(it.roundToInt()) },
-                  sliderValue = jumpForward2.toFloat(),
+                  value = seek3.toFloat(),
+                  onValueChange = { preferences.threeFingerSpeedSeekButton3.set(it.roundToInt()) },
+                  title = { Text("Przewijanie 3: kierunek i czas") },
+                  valueRange = -300f..300f,
+                  summary = { Text(when {
+                    seek3 < 0 -> "Do tyłu: " + (-seek3) + " s"
+                    seek3 > 0 -> "Do przodu: " + seek3 + " s"
+                    else -> "0 s — bez przewijania"
+                  }) },
+                  onSliderValueChange = { preferences.threeFingerSpeedSeekButton3.set(it.roundToInt()) },
+                  sliderValue = seek3.toFloat(),
                 )
               }
-              for (index in 0 until 6) {
+              for (index in 0 until 9) {
                 GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
                   SliderPreference(
                     value = presets[index],
