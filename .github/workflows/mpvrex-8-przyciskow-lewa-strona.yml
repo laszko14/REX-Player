@@ -1,0 +1,107 @@
+name: MPVRex - 8 przyciskow po lewej (2x4)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths:
+      - '.github/workflows/mpvrex-8-przyciskow-lewa-strona.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Zmien uklad i zbuduj APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Przygotuj Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Przygotuj Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Zainstaluj Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Przenies przyciski na lewa strone
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          file = Path("app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt")
+          source = file.read_text(encoding="utf-8")
+
+          def replace_in_constraint(name, old, new):
+              global source
+              marker = f"modifier = Modifier.constrainAs({name}) {{"
+              if source.count(marker) != 1:
+                  raise RuntimeError(f"Nie znaleziono dokladnie jednego bloku: {name}")
+              start = source.index(marker)
+              end = source.index("            }", start) + len("            }")
+              block = source[start:end]
+              if block.count(old) != 1:
+                  raise RuntimeError(f"Nieoczekiwana zawartosc bloku: {name}: {old}")
+              source = source[:start] + block.replace(old, new, 1) + source[end:]
+
+          if "top.linkTo(customRightButtonsRef.bottom, 6.dp)" in source:
+              print("Uklad 2x4 zostal juz wczesniej zastosowany.")
+          else:
+              replace_in_constraint(
+                  "customLeftButtonsRef",
+                  "top.linkTo(parent.top)\n                bottom.linkTo(parent.bottom)\n                verticalBias = 0.65f",
+                  "top.linkTo(customRightButtonsRef.bottom, 6.dp)",
+              )
+              replace_in_constraint(
+                  "customRightButtonsRef",
+                  "end.linkTo(parent.end, spacing.large)",
+                  "start.linkTo(parent.start, spacing.large)",
+              )
+              replace_in_constraint(
+                  "customRightButtonsRef",
+                  "verticalBias = 0.65f",
+                  "verticalBias = 0.57f",
+              )
+              old_scroll = ".horizontalScroll(rightScrollState, reverseScrolling = true)"
+              if source.count(old_scroll) != 1:
+                  raise RuntimeError("Nie znaleziono przewijania gornego rzedu.")
+              source = source.replace(old_scroll, ".horizontalScroll(rightScrollState)", 1)
+              file.write_text(source, encoding="utf-8")
+              print("Gotowe: gorny rzad = stare prawe 4, dolny = stare lewe 4.")
+          PY
+
+      - name: Zbuduj APK debug
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace
+
+      - name: Udostepnij APK dla telefonu arm64
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPVRex-8-przyciskow-arm64
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Zapisz poprawke w kodzie repozytorium
+        if: github.ref == 'refs/heads/master'
+        run: |
+          if ! git diff --quiet -- app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt; then
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+            git commit -m 'feat(player): show 8 custom buttons in two left-aligned rows'
+            git push origin HEAD:master
+          else
+            echo 'Poprawka juz jest w repozytorium.'
+          fi
