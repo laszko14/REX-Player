@@ -26,6 +26,7 @@ class PlayerPreferences(
   val usePreciseSeeking = preferenceStore.getBoolean("use_precise_seeking", false)
 
   val brightnessGesture = preferenceStore.getBoolean("gestures_brightness", true)
+  val brightnessSwipeSensitivity = preferenceStore.getFloat("brightness_swipe_sensitivity", 0.50f)
   val volumeGesture = preferenceStore.getBoolean("volume_brightness", true)
   val pinchToZoomGesture = preferenceStore.getBoolean("pinch_to_zoom_gesture", true)
   val horizontalSwipeToSeek = preferenceStore.getBoolean("horizontal_swipe_to_seek", true)

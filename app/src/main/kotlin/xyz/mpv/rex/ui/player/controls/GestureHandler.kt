@@ -132,6 +132,7 @@ fun GestureHandler(
   val rememberLongPressSpeed by playerPreferences.rememberLongPressSpeed.collectAsState()
   val showDynamicSpeedOverlay by playerPreferences.showDynamicSpeedOverlay.collectAsState()
   val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()
+  val brightnessSwipeSensitivity by playerPreferences.brightnessSwipeSensitivity.collectAsState()
   val volumeGesture by playerPreferences.volumeGesture.collectAsState()
   val swapVolumeAndBrightness by playerPreferences.swapVolumeAndBrightness.collectAsState()
   val pinchToZoomGesture by playerPreferences.pinchToZoomGesture.collectAsState()
@@ -452,7 +453,7 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture) {
+      .pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture, brightnessSwipeSensitivity) {
         if ((!brightnessGesture && !volumeGesture && multipleSpeedGesture <= 0f) || areControlsLocked) return@pointerInput
 
         awaitEachGesture {
@@ -472,9 +473,10 @@ fun GestureHandler(
           var lastVolumeValue = currentVolume
           var lastMPVVolumeValue = currentMPVVolume ?: 100
           var lastBrightnessValue = currentBrightness
-          val brightnessGestureSens = 0.0022f
-          val volumeGestureSens = (viewModel.maxVolume * brightnessGestureSens).coerceAtLeast(0.001f)
-          val mpvVolumeGestureSens = (volumeBoostingCap.coerceAtLeast(1) * brightnessGestureSens).coerceAtLeast(0.001f)
+          val baseVerticalGestureSens = 0.0022f
+          val brightnessGestureSens = baseVerticalGestureSens * brightnessSwipeSensitivity.coerceIn(0.10f, 1.00f)
+          val volumeGestureSens = (viewModel.maxVolume * baseVerticalGestureSens).coerceAtLeast(0.001f)
+          val mpvVolumeGestureSens = (volumeBoostingCap.coerceAtLeast(1) * baseVerticalGestureSens).coerceAtLeast(0.001f)
 
           // Original speed for long press
           var originalSpeed = playbackSpeed ?: 1f

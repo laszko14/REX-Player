@@ -485,6 +485,7 @@ object PlayerPreferencesScreen : Screen {
 
           item {
             val brightnessGesture by preferences.brightnessGesture.collectAsState()
+            val brightnessSwipeSensitivity by preferences.brightnessSwipeSensitivity.collectAsState()
             val volumeGesture by preferences.volumeGesture.collectAsState()
             val pinchToZoomGesture by preferences.pinchToZoomGesture.collectAsState()
             val panAndZoomEnabled by preferences.panAndZoomEnabled.collectAsState()
@@ -507,6 +508,29 @@ object PlayerPreferencesScreen : Screen {
                   value = brightnessGesture,
                   onValueChange = preferences.brightnessGesture::set,
                   title = { Text(stringResource(R.string.pref_player_gestures_brightness)) },
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_player_gestures_brightness_sensitivity,
+              ) {
+                SliderPreference(
+                  value = brightnessSwipeSensitivity,
+                  onValueChange = { preferences.brightnessSwipeSensitivity.set(it.toFixed(2)) },
+                  title = { Text(stringResource(R.string.pref_player_gestures_brightness_sensitivity)) },
+                  valueRange = 0.10f..1.00f,
+                  summary = {
+                    Text(
+                      stringResource(
+                        R.string.pref_player_gestures_brightness_sensitivity_summary,
+                        (brightnessSwipeSensitivity * 100).roundToInt(),
+                      ),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                  onSliderValueChange = { preferences.brightnessSwipeSensitivity.set(it.toFixed(2)) },
+                  sliderValue = brightnessSwipeSensitivity,
                 )
               }
 
