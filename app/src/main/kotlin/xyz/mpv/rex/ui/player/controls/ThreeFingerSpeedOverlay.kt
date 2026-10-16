@@ -67,9 +67,10 @@ private fun SeekActionChip(
     maxLines = 1,
     textAlign = TextAlign.Center,
     modifier = modifier
+      .heightIn(min = 20.dp)
       .clip(RoundedCornerShape(8.dp))
       .clickable(onClick = onClick)
-      .padding(horizontal = 2.dp, vertical = 4.dp),
+      .padding(horizontal = 2.dp, vertical = 1.dp),
   )
 }
 
@@ -136,13 +137,13 @@ fun ThreeFingerSpeedOverlay(
             },
           )
         }
-        .padding(horizontal = 7.dp, vertical = 3.dp),
-      verticalArrangement = Arrangement.spacedBy(1.dp),
+        .padding(horizontal = 7.dp, vertical = 2.dp),
+      verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = Modifier.heightIn(min = 22.dp),
+        modifier = Modifier.heightIn(min = 20.dp),
       ) {
         Icon(
           Icons.Default.Close,
@@ -174,7 +175,7 @@ fun ThreeFingerSpeedOverlay(
       Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier.heightIn(min = 18.dp),
+        modifier = Modifier.heightIn(min = 20.dp),
       ) {
         SeekActionChip(label = "-${jumpBack}s", onClick = { onSeekBy(-jumpBack) }, modifier = Modifier.weight(1f))
         SeekActionChip(label = "+${jumpForward1}s", onClick = { onSeekBy(jumpForward1) }, modifier = Modifier.weight(1f))

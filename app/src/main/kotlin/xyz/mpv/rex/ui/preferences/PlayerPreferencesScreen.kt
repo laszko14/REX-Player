@@ -809,6 +809,15 @@ object PlayerPreferencesScreen : Screen {
                 )
               }
               GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
+                val autoShow by preferences.threeFingerSpeedAutoShow.collectAsState()
+                SwitchPreference(
+                  value = autoShow,
+                  onValueChange = preferences.threeFingerSpeedAutoShow::set,
+                  title = { Text("Pokazuj panel przy nowym filmie") },
+                  summary = { Text("Automatycznie otwiera panel po rozpoczęciu kolejnego filmu. X zamyka go do następnego filmu.") },
+                )
+              }
+              GroupedPreferenceCard(position = GroupPosition.MIDDLE, highlightKey = R.string.pref_player_gestures) {
                 SwitchPreference(
                   value = persistent,
                   onValueChange = preferences.threeFingerSpeedPersistent::set,

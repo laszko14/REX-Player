@@ -248,6 +248,17 @@ fun PlayerControls(
   val mediaIdentifier by viewModel.mediaIdentifier.collectAsState()
   val playlistItems by viewModel.playlistManager.playlist.collectAsState()
   val playlistIndex by viewModel.playlistManager.currentIndex.collectAsState()
+  // MPVREX_PANEL_V6_AUTO: reset only on a new media identity, not on seek/pause/UI toggles.
+  LaunchedEffect(playlistIndex, mediaIdentifier.ifBlank { mediaTitle }) {
+    val mediaKey = mediaIdentifier.ifBlank { mediaTitle }
+    if (mediaKey.isNotBlank() &&
+      playerPreferences.threeFingerSpeedAutoShow.get() &&
+      playerPreferences.threeFingerSpeedEnabled.get()
+    ) {
+      threeFingerSpeedVisible = true
+      threeFingerSpeedInteractionCount++
+    }
+  }
   var isSeeking by remember { mutableStateOf(false) }
   var dragStartValue by remember { mutableStateOf(-1f) }
   var isCloseToStart by remember { mutableStateOf(false) }
