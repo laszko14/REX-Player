@@ -179,3 +179,45 @@ fun MpvAlphaDarkBoldPreview() {
 fun MpvAlphaPortraitPreview() {
     TypographyScene(bright = true, outlined = true, bold = true, portrait = true)
 }
+
+/** v24: side-by-side production text at six font-face thresholds and outline stops. */
+@PreviewTest
+@Preview(name = "21 six boldness levels no outline", widthDp = 900, heightDp = 440)
+@Composable
+fun MpvAlphaV24SixBoldnessLevels() {
+    val weights = listOf(0, 20, 40, 60, 75, 100)
+    Box(Modifier.fillMaxSize().background(
+        Brush.linearGradient(listOf(Color(0xFF93B9D8), Color(0xFF26311E))))) {
+        Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Pogrubienie: bez obrysu (produkcja ContrastVideoLabel)", color = Color.White)
+            weights.forEach { level ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(level.toString() + "%", modifier = Modifier.width(75.dp), color = Color.White)
+                    ContrastVideoLabel("1.25x  2x  ▶▶▶  Głos", Color.White, 22.sp,
+                        fontWeightForReadability(level), outlined = false)
+                }
+            }
+        }
+    }
+}
+
+@PreviewTest
+@Preview(name = "22 controlled outline levels", widthDp = 900, heightDp = 440)
+@Composable
+fun MpvAlphaV24OutlineLevels() {
+    val outlineLevels = listOf(0, 20, 40, 60, 80, 100)
+    Box(Modifier.fillMaxSize().background(
+        Brush.linearGradient(listOf(Color(0xFF82ABD8), Color(0xFF25251F))))) {
+        Column(Modifier.padding(22.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Text("Kontur: max 1.05 dp, bez nadmiernego halo", color = Color.White)
+            outlineLevels.forEach { level ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(level.toString() + "%", modifier = Modifier.width(75.dp), color = Color.White)
+                    ContrastVideoLabel("1.25x  2x  ▶▶▶  Głos", Color.White, 22.sp,
+                        fontWeightForReadability(60), outlined = level > 0,
+                        outlineWidthDp = outlineWidthDpForReadability(level))
+                }
+            }
+        }
+    }
+}

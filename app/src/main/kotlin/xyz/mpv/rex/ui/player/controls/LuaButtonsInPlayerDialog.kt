@@ -62,7 +62,14 @@ import java.util.UUID
  * Appearance and script editing use separate tabs so neither wastes space.
  */
 @Composable
-fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onDismiss: () -> Unit) {
+fun LuaButtonsInPlayerDialog(
+    prefs: PlayerPreferences,
+    engineStatus: String,
+    onDismiss: () -> Unit,
+    hiddenDuringDrag: Boolean = false,
+    manualMinimized: Boolean = false,
+    onManualMinimize: (Boolean) -> Unit = {},
+) {
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
     val savedTab by prefs.luaEditorLastTab.collectAsState()
     val tab = savedTab.coerceIn(0, 2)
@@ -74,7 +81,13 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
         modifier = Modifier.fillMaxSize(),
         contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.BottomCenter,
     ) {
-            Surface(
+            if (!hiddenDuringDrag && manualMinimized) {
+                TextButton(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onClick = { onManualMinimize(false) },
+                ) { Text("Pokaż ustawienia Lua") }
+            }
+            if (!hiddenDuringDrag && !manualMinimized) Surface(
                 modifier = Modifier
                     .fillMaxWidth(if (landscape) 0.53f else 0.96f)
                     .fillMaxHeight(if (landscape) 0.96f else 0.46f)
@@ -100,6 +113,7 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f),
                         )
+                        TextButton(onClick = { onManualMinimize(true) }) { Text("Schowaj") }
                         TextButton(onClick = onDismiss) { Text("✕") }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -121,7 +135,8 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                     }
                     HorizontalDivider()
                     Text(
-                        "Przytrzymaj guzik po lewej i przeciągnij: zajęte pole = zamiana, puste = przeniesienie.",
+                        "Przytrzymaj guzik i przeciągnij między 30 polami z lewej oraz 8 z prawej. " +
+                            "Ustawienia schowają się do puszczenia guzika.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -149,7 +164,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    // 35 existing slots and the eight optional top-left slots are editable here.
+    // 30 left + 8 right, five archived legacy slots remain editable (no lost codes).
     val listState = rememberLazyListState()
 
     if (selectedIndex !in 0 until LUA_SLOT_COUNT) {
@@ -170,11 +185,19 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             .padding(horizontal = 9.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text((index + 1).toString() + ".", style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.width(28.dp),
+                        Text(when {
+                                index >= LUA_EXTRA_START -> "P${index - LUA_EXTRA_START + 1}."
+                                index >= LUA_MAIN_SLOT_COUNT -> "ARCH${index - LUA_MAIN_SLOT_COUNT + 1}."
+                                else -> "L${index + 1}."
+                            }, style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(47.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(button?.title ?: if (index >= LUA_EXTRA_START) "Dodatkowe pole 4×2" else "Pusty przycisk",
+                            Text(button?.title ?: when {
+                                index >= LUA_EXTRA_START -> "Prawe pole 4×2"
+                                index >= LUA_MAIN_SLOT_COUNT -> "Archiwum v23 (niewidoczne)"
+                                else -> "Pusty przycisk"
+                            },
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
@@ -218,10 +241,14 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista $LUA_SLOT_COUNT przycisków") }
             Text(
                 "Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT" +
-                    if (index >= LUA_EXTRA_START) " • górny panel 4×2" else "",
+                    when {
+                        index >= LUA_EXTRA_START -> " • prawa strona 4×2"
+                        index >= LUA_MAIN_SLOT_COUNT -> " • archiwum v23, nie na ekranie"
+                        else -> " • lewa strona"
+                    },
                 style = MaterialTheme.typography.titleMedium,
             )
-            if (old != null && index < LUA_MAIN_SLOT_COUNT) {
+            if (old != null && index < LUA_EXTRA_START) {
                 val freeExtra = (LUA_EXTRA_START until LUA_SLOT_COUNT)
                     .firstOrNull { slots[it] == null }
                 if (freeExtra != null) {
@@ -235,7 +262,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Przenieś do górnych 8 pól") }
+                    ) { Text("Przenieś do prawych 8 pól") }
                 }
             }
             OutlinedTextField(

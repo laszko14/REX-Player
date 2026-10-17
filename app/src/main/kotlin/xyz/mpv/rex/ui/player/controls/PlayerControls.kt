@@ -282,6 +282,8 @@ fun PlayerControls(
   val customButtons by viewModel.customButtons.collectAsState()
   val luaEngineStatus by viewModel.customButtonManager.luaStatus.collectAsState()
   var luaSettingsVisible by remember { mutableStateOf(false) }
+  var luaDragActive by remember { mutableStateOf(false) }
+  var luaManualMinimized by remember { mutableStateOf(false) }
   val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
   val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
   val luaAlwaysVisible by playerPreferences.luaButtonAlwaysVisible.collectAsState()
@@ -868,13 +870,14 @@ fun PlayerControls(
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier
-            .offset(x = luaPositionX.coerceIn(0, 240).dp, y = (luaPositionY.coerceIn(0, 240) + 20).dp)
+            .offset(y = (luaPositionY.coerceIn(0, 240) + 20).dp)
             .constrainAs(customLeftButtonsRef) {
               start.linkTo(parent.start, spacing.large)
+              end.linkTo(parent.end, spacing.large)
               // Do not anchor to the AnimatedVisibility topLeftControls here:
               // its bottom jumps to the top as the UI auto-hides.
               top.linkTo(parent.top, luaTopControlsBottom + 4.dp)
-              width = Dimension.preferredWrapContent
+              width = Dimension.fillToConstraints
               height = Dimension.wrapContent
             },
         ) {
@@ -884,6 +887,8 @@ fun PlayerControls(
             playbackSpeed = playbackSpeed ?: 1f,
             showAllButtons = areButtonsVisible || luaSettingsVisible,
             editMode = luaSettingsVisible,
+            leftOffsetDp = luaPositionX,
+            onDragStateChange = { luaDragActive = it },
             onButtonClick = { id ->
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.callCustomButton(id)
@@ -2001,9 +2006,14 @@ fun PlayerControls(
     if (luaSettingsVisible) {
       LuaButtonsInPlayerDialog(
         prefs = playerPreferences,
+        hiddenDuringDrag = luaDragActive,
+        manualMinimized = luaManualMinimized,
+        onManualMinimize = { luaManualMinimized = it },
         engineStatus = luaEngineStatus,
         onDismiss = {
           luaSettingsVisible = false
+          luaDragActive = false
+          luaManualMinimized = false
           resetControlsTimestamp = System.currentTimeMillis()
           viewModel.showControls()
         },

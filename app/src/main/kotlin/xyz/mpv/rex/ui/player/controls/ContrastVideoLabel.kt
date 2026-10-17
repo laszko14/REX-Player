@@ -34,7 +34,9 @@ internal fun ContrastVideoLabel(
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
     val outlineColor = if (color.luminance() >= 0.5f) Color.Black else Color.White
-    val widthDp = (outlineWidthDp ?: if (outlined) 1.2f else 0f).coerceIn(0f, 2.4f)
+    // v23 used up to 2.4dp (stroke diameter 4.8dp): it overwhelmed 11sp
+    // labels and looked like displaced glyphs. Cap the clean round outline.
+    val widthDp = (outlineWidthDp ?: if (outlined) 0.65f else 0f).coerceIn(0f, 1.05f)
     val outlineWidth = with(LocalDensity.current) { widthDp.dp.toPx() }
     Box(contentAlignment = Alignment.Center) {
         if (outlineWidth > 0f) {
@@ -61,10 +63,16 @@ internal fun ContrastVideoLabel(
     }
 }
 
-/** Slider mapping shared by Lua and HUD: 0%=regular (400), 60%=bold (700), 100%=black (900). */
-internal fun fontWeightForReadability(percent: Int): FontWeight =
-    FontWeight(400 + 5 * percent.coerceIn(0, 100))
+/** Deliberately discrete real font faces rather than near-identical 5-point steps. */
+internal fun fontWeightForReadability(percent: Int): FontWeight = when (percent.coerceIn(0, 100)) {
+    in 0..19 -> FontWeight.Normal
+    in 20..39 -> FontWeight.Medium
+    in 40..59 -> FontWeight.SemiBold
+    in 60..74 -> FontWeight.Bold
+    in 75..89 -> FontWeight.ExtraBold
+    else -> FontWeight.Black
+}
 
-/** 50% precisely preserves the previous 1.2dp outline. */
+/** Smooth 0..1.05dp radius: no excessive glow at the maximum. */
 internal fun outlineWidthDpForReadability(percent: Int): Float =
-    percent.coerceIn(0, 100) * 0.024f
+    percent.coerceIn(0, 100) * 0.0105f

@@ -127,8 +127,8 @@ object AlphaHudPreferencesScreen : Screen {
         HudIntSlider("Siła kontrastowego obrysu", outlinePercent, 0, 100, "%") {
           prefs.hudOutlinePercent.set(it)
         }
-        Text("0% obrysu wyłącza kontur, 50% odpowiada poprzedniej opcji włączonej. " +
-          "40% pogrubienia to wcześniejszy domyślny HUD, 60% odpowiada Bold. " +
+        Text("0% obrysu wyłącza kontur, 100% daje czysty obrys bez halo. " +
+          "40% pogrubienia to SemiBold, 60% to Bold, 90% to Black. " +
           "Kolory napisów pozostają bez zmian.")
         Row(modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.spacedBy(8.dp)) {
