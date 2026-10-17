@@ -201,18 +201,6 @@ fun PlayerControls(
   val showRemainingTimeInOverlay by playerPreferences.invertDuration.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
-  val threeFingerSpeedEnabled by playerPreferences.threeFingerSpeedEnabled.collectAsState()
-  val threeFingerSpeedPersistent by playerPreferences.threeFingerSpeedPersistent.collectAsState()
-  val threeFingerSpeedAutoHide by playerPreferences.threeFingerSpeedAutoHide.collectAsState()
-  val threeFingerSpeedSeekBack by playerPreferences.threeFingerSpeedSeekBack.collectAsState()
-  var threeFingerSpeedVisible by remember { mutableStateOf(false) }
-  var threeFingerSpeedInteractionCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount) {
-    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent) {
-      delay(threeFingerSpeedAutoHide.coerceIn(3, 30) * 1000L)
-      threeFingerSpeedVisible = false
-    }
-  }
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -248,17 +236,6 @@ fun PlayerControls(
   val mediaIdentifier by viewModel.mediaIdentifier.collectAsState()
   val playlistItems by viewModel.playlistManager.playlist.collectAsState()
   val playlistIndex by viewModel.playlistManager.currentIndex.collectAsState()
-  // MPVREX_PANEL_V6_AUTO: reset only on a new media identity, not on seek/pause/UI toggles.
-  LaunchedEffect(playlistIndex, mediaIdentifier.ifBlank { mediaTitle }) {
-    val mediaKey = mediaIdentifier.ifBlank { mediaTitle }
-    if (mediaKey.isNotBlank() &&
-      playerPreferences.threeFingerSpeedAutoShow.get() &&
-      playerPreferences.threeFingerSpeedEnabled.get()
-    ) {
-      threeFingerSpeedVisible = true
-      threeFingerSpeedInteractionCount++
-    }
-  }
   var isSeeking by remember { mutableStateOf(false) }
   var dragStartValue by remember { mutableStateOf(-1f) }
   var isCloseToStart by remember { mutableStateOf(false) }
@@ -406,9 +383,9 @@ fun PlayerControls(
     viewModel = viewModel,
     interactionSource = interactionSource,
     onThreeFingerTap = {
-      if (threeFingerSpeedEnabled && !areControlsLocked) {
-        threeFingerSpeedVisible = true
-        threeFingerSpeedInteractionCount++
+      if (!areControlsLocked) {
+        viewModel.showControls()
+        resetControlsTimestamp = System.currentTimeMillis()
       }
     },
   )
@@ -451,11 +428,9 @@ fun PlayerControls(
         val playerPauseButton = createRef()
         val playerLoadingRef = createRef()
         val seekbar = createRef()
-        val threeFingerSpeedPanelRef = createRef()
         val playbackInfoOverlayRef = createRef()
         val (playerUpdates, playerLockHint) = createRefs()
-        val (customLeftButtonsRef, customRightButtonsRef) = createRefs()
-        val customButtonsPortraitRef = createRef()
+        val customLeftButtonsRef = createRef()
         val floatingABLoop = createRef()
         val floatingFrameNav = createRef()
 
@@ -841,202 +816,32 @@ fun PlayerControls(
         }
       }
 
+        // One unified grid of existing and new Lua buttons, in portrait and landscape.
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.constrainAs(customLeftButtonsRef) {
-                start.linkTo(parent.start, spacing.large)
-                top.linkTo(customRightButtonsRef.bottom, 6.dp)
-                width = Dimension.preferredWrapContent
-                height = Dimension.wrapContent
-            }
+          visible = areButtonsVisible && !areControlsLocked && customButtons.isNotEmpty(),
+          enter = fadeIn(),
+          exit = fadeOut(),
+          modifier = Modifier.constrainAs(customLeftButtonsRef) {
+            start.linkTo(parent.start, spacing.large)
+            top.linkTo(topLeftControls.bottom, 4.dp)
+            width = Dimension.wrapContent
+            height = Dimension.wrapContent
+          },
         ) {
-            val leftScrollState = rememberScrollState()
-            LaunchedEffect(leftScrollState.isScrollInProgress) {
-                if (leftScrollState.isScrollInProgress) {
-                    while (leftScrollState.isScrollInProgress) {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        delay(1000)
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(vertical = 6.dp)
-                    .horizontalScroll(leftScrollState)
-            ) {
-                customButtons.filter { it.isLeft }.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    val customButtonShape = RoundedCornerShape(14.dp)
-                    Surface(
-                        shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(customButtonShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-        }
-
-        AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.constrainAs(customRightButtonsRef) {
-                start.linkTo(parent.start, spacing.large)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-                verticalBias = 0.57f
-                width = Dimension.preferredWrapContent
-                height = Dimension.wrapContent
-            }
-        ) {
-            val rightScrollState = rememberScrollState()
-            LaunchedEffect(rightScrollState.isScrollInProgress) {
-                if (rightScrollState.isScrollInProgress) {
-                    while (rightScrollState.isScrollInProgress) {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        delay(1000)
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(vertical = 6.dp)
-                    .horizontalScroll(rightScrollState)
-            ) {
-                customButtons.filter { !it.isLeft }.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    val customButtonShape = RoundedCornerShape(14.dp)
-                    Surface(
-                        shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(customButtonShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-        }
-        
-        AnimatedVisibility(
-            visible = areButtonsVisible && isPortrait && !threeFingerSpeedEnabled,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.constrainAs(customButtonsPortraitRef) {
-                start.linkTo(parent.start, spacing.large)
-                end.linkTo(parent.end, spacing.large)
-                bottom.linkTo(seekbar.top, spacing.medium)
-                width = Dimension.fillToConstraints
-                height = Dimension.wrapContent
-            }
-        ) {
-            val portraitScrollState = rememberScrollState()
-            LaunchedEffect(portraitScrollState.isScrollInProgress) {
-                if (portraitScrollState.isScrollInProgress) {
-                    while (portraitScrollState.isScrollInProgress) {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        delay(1000)
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(vertical = 6.dp)
-                    .horizontalScroll(portraitScrollState)
-            ) {
-                customButtons.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    val customButtonShape = RoundedCornerShape(14.dp)
-                    Surface(
-                        shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(customButtonShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
+          LuaButtonGrid(
+            preferences = playerPreferences,
+            buttons = customButtons,
+            playbackSpeed = playbackSpeed ?: 1f,
+            onButtonClick = { id ->
+              resetControlsTimestamp = System.currentTimeMillis()
+              viewModel.callCustomButton(id)
+            },
+            onButtonLongClick = { id ->
+              haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+              resetControlsTimestamp = System.currentTimeMillis()
+              viewModel.callCustomButtonLongPress(id)
+            },
+          )
         }
 
         AnimatedVisibility(
@@ -2117,29 +1922,6 @@ fun PlayerControls(
           }
         }
 
-        if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
-          LuaButtonPanel(
-            preferences = playerPreferences,
-            buttons = customButtons,
-            onClose = { threeFingerSpeedVisible = false },
-            onButtonClick = { id ->
-              viewModel.callCustomButton(id)
-              threeFingerSpeedInteractionCount++
-            },
-            onButtonLongClick = { id ->
-              viewModel.callCustomButtonLongPress(id)
-              threeFingerSpeedInteractionCount++
-            },
-            modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {
-              start.linkTo(parent.start)
-              end.linkTo(parent.end)
-              top.linkTo(parent.top)
-              bottom.linkTo(parent.bottom)
-              width = Dimension.fillToConstraints
-              height = Dimension.fillToConstraints
-            },
-          )
-        }
       }
      }
     }
