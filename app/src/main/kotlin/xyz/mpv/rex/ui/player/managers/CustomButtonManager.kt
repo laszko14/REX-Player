@@ -50,6 +50,7 @@ class CustomButtonManager(
     private var isMpvReady = false
     private var scriptPath: String? = null
     private var scriptGeneration: String? = null
+    private var scriptClientName: String? = null
 
     fun onMpvInitialized() {
         isMpvReady = true
@@ -112,7 +113,7 @@ class CustomButtonManager(
                 }
 
                 val scriptContent = buildString {
-                    append("local user_button_generation = '$scriptToken'\n")
+                    append("-- MPV Alpha button client; unique script name per rebuild\n")
                     val jsonString = playerPreferences.customButtons.get()
                     if (jsonString.isNotBlank()) {
                         try {
@@ -151,10 +152,12 @@ class CustomButtonManager(
                     val scriptsDir = File(context.filesDir, "scripts")
                     if (!scriptsDir.exists()) scriptsDir.mkdirs()
 
-                    val file = File(scriptsDir, "custombuttons.lua")
+                    val clientName = "alpha_lua_$scriptToken"
+                    val file = File(scriptsDir, "$clientName.lua")
                     file.writeText(scriptContent)
                     scriptPath = file.absolutePath
                     scriptGeneration = scriptToken
+                    scriptClientName = clientName
 
                     if (isMpvReady) {
                         if (!loadScript(file)) {
@@ -204,7 +207,6 @@ class CustomButtonManager(
     private fun loadScript(file: File): Boolean {
         runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
         return runCatching {
-            scriptGeneration?.let { MPVLib.setPropertyString(ACTIVE_SCRIPT_GENERATION, it) }
             MPVLib.command("load-script", file.absolutePath)
             true
         }.getOrElse {
@@ -215,12 +217,16 @@ class CustomButtonManager(
 
     fun callButton(id: String) {
         val safeId = id.replace("-", "_")
-        MPVLib.command("script-message", "call_button_$safeId")
+        val client = scriptClientName ?: return
+        runCatching { MPVLib.command("script-message-to", client, "call_button_$safeId") }
+            .onFailure { Log.e(TAG, "Lua click failed: $id", it) }
     }
 
     fun callButtonLongPress(id: String) {
         val safeId = id.replace("-", "_")
-        MPVLib.command("script-message", "call_button_long_$safeId")
+        val client = scriptClientName ?: return
+        runCatching { MPVLib.command("script-message-to", client, "call_button_long_$safeId") }
+            .onFailure { Log.e(TAG, "Lua long press failed: $id", it) }
     }
 
     private fun StringBuilder.processButton(
@@ -245,7 +251,6 @@ class CustomButtonManager(
                 append(
                     """
                     function button_${safeId}()
-                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
                         ${command}
                     end
                     mp.register_script_message('call_button_${safeId}', button_${safeId})
@@ -258,7 +263,6 @@ class CustomButtonManager(
                 append(
                     """
                     function button_long_${safeId}()
-                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
                         ${longPressCommand}
                     end
                     mp.register_script_message('call_button_long_${safeId}', button_long_${safeId})
