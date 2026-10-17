@@ -61,7 +61,7 @@ internal fun HudBarContent(
 ) {
   with(model) {
     FlowRow(
-        modifier = panelModifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
+        modifier = modifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
         horizontalArrangement = Arrangement.spacedBy(gap),
         verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
       ) {
