@@ -175,57 +175,34 @@ internal fun PlaybackInfoOverlay(
       .background(background)
       .padding(contentPadding)
 
-    FlowRow(
-      modifier = panelModifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
-      horizontalArrangement = Arrangement.spacedBy(gap),
-      verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
-    ) {
-      if (showBattery) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.BatteryFull, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = lowBatteryColor)
-          ContrastVideoLabel((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
-            (if (isCharging) " ⚡" else ""),
-            color = lowBatteryColor, fontSize = fontSize,
-            fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
-        }
-      }
-      if (showClock) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.AccessTime, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = clockColor)
-          ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
-            fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
-        }
-      }
-      if (showAdjustedRemaining) {
-        ContrastVideoLabel(
-          text = adjustedTimeLabel,
-          color = adjustedRemainingColor, fontSize = fontSize,
-          fontWeight = textWeight, outlined = highContrastText, maxLines = 1,
-        )
-      }
-      if (showRemaining) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.HourglassBottom, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = remainingColor)
-          ContrastVideoLabel(originalTimeLabel, color = remainingColor,
-            fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
-        }
-      }
-      if (showSpeed) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.PlayArrow, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = speedColor)
-          ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
-            color = speedColor, fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
-        }
-      }
-
-    }
+    HudBarContent(
+      model = HudBarModel(
+      showBattery = showBattery,
+      showClock = showClock,
+      showAdjustedRemaining = showAdjustedRemaining,
+      showRemaining = showRemaining,
+      showSpeed = showSpeed,
+      batteryPercent = batteryPercent,
+      isCharging = isCharging,
+      clockText = clockText,
+      adjustedTimeLabel = adjustedTimeLabel,
+      originalTimeLabel = originalTimeLabel,
+      playbackSpeed = playbackSpeed,
+      lowBatteryColor = lowBatteryColor,
+      clockColor = clockColor,
+      adjustedRemainingColor = adjustedRemainingColor,
+      remainingColor = remainingColor,
+      speedColor = speedColor,
+      fontSize = fontSize,
+      iconSize = iconSize,
+      innerGap = innerGap,
+      textWeight = textWeight,
+      highContrastText = highContrastText,
+      gap = gap,
+      factor = factor,
+      ),
+      modifier = panelModifier,
+      maxWidth = maxWidth,
+    )
   }
 }
