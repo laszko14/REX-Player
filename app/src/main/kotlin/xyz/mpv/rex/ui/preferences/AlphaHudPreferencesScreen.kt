@@ -34,7 +34,7 @@ import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlin.math.roundToInt
 
-/** Polish preferences for the compact battery, clock, remaining time and speed HUD. */
+/** Polish preferences for battery, clock, network Mb/s, remaining time and speed HUD. */
 @Serializable
 object AlphaHudPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -48,6 +48,7 @@ object AlphaHudPreferencesScreen : Screen {
     val showSpeed by prefs.hudShowSpeed.collectAsState()
     val showRemaining by prefs.hudShowRemaining.collectAsState()
     val showClock by prefs.hudShowClock.collectAsState()
+    val showNetworkSpeed by prefs.hudShowNetworkSpeed.collectAsState()
     val showBattery by prefs.hudShowBattery.collectAsState()
     val realTimeRemaining by prefs.hudRealTimeRemaining.collectAsState()
     val scale by prefs.hudScalePercent.collectAsState()
@@ -60,6 +61,7 @@ object AlphaHudPreferencesScreen : Screen {
     val speedColor by prefs.hudSpeedColor.collectAsState()
     val remainingColor by prefs.hudRemainingColor.collectAsState()
     val clockColor by prefs.hudClockColor.collectAsState()
+    val networkSpeedColor by prefs.hudNetworkSpeedColor.collectAsState()
     val batteryColor by prefs.hudBatteryColor.collectAsState()
     val backgroundColor by prefs.hudBackgroundColor.collectAsState()
 
@@ -75,7 +77,7 @@ object AlphaHudPreferencesScreen : Screen {
           .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        Text("Pasek: bateria • godzina • pozostały czas • prędkość. " +
+        Text("Pasek: bateria • godzina • internet (Mb/s) • pozostały czas • prędkość. " +
           "Wszystkie zmiany zapisują się automatycznie.")
         HudToggle("Włącz HUD Alpha", enabled) { prefs.showPlaybackInfoOverlay.set(it) }
         HudToggle("Zawsze widoczny (także bez kontrolek)", always) {
@@ -90,6 +92,10 @@ object AlphaHudPreferencesScreen : Screen {
         Text("Wyświetlane informacje")
         HudToggle("Poziom baterii", showBattery) { prefs.hudShowBattery.set(it) }
         HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
+        HudToggle("Prędkość pobierania internetu (Mb/s)", showNetworkSpeed) {
+          prefs.hudShowNetworkSpeed.set(it)
+        }
+        Text("Transfer pobierania całego telefonu, aktualizowany co sekundę — nie test prędkości łącza.")
         HudToggle("Czas pozostały", showRemaining) { prefs.hudShowRemaining.set(it) }
         HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
         HudToggle("Pozostały czas w rzeczywistości (uwzględnij prędkość)",
@@ -132,6 +138,9 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudBatteryColor.set(it)
         }
         HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
+        HudHexInput("Prędkość internetu", networkSpeedColor) {
+          prefs.hudNetworkSpeedColor.set(it)
+        }
         HudHexInput("Pozostały czas", remainingColor) { prefs.hudRemainingColor.set(it) }
         HudHexInput("Prędkość", speedColor) { prefs.hudSpeedColor.set(it) }
         HudHexInput("Tło", backgroundColor) { prefs.hudBackgroundColor.set(it) }
@@ -147,6 +156,7 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudSpeedColor.set("#60E2F2")
           prefs.hudRemainingColor.set("#FFFFFF")
           prefs.hudClockColor.set("#E2E8F0")
+          prefs.hudNetworkSpeedColor.set("#A7F3D0")
           prefs.hudBatteryColor.set("#4ADE80")
           prefs.hudBackgroundColor.set("#10151C")
           prefs.hudEditMode.set(false)
