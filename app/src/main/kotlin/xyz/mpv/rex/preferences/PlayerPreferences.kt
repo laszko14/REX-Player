@@ -28,6 +28,12 @@ class PlayerPreferences(
   val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
   val luaButtonHighContrastText = preferenceStore.getBoolean("lua_button_high_contrast_text", false)
   val luaButtonBoldText = preferenceStore.getBoolean("lua_button_bold_text", false)
+  // New continuous settings preserve the old switches on first upgrade.
+  // Original regular=400 / bold=700 and no outline / 1.2dp are exact fallbacks.
+  val luaButtonFontWeightPercent = preferenceStore.getInt(
+    "lua_button_font_weight_percent", if (luaButtonBoldText.get()) 60 else 0)
+  val luaButtonOutlinePercent = preferenceStore.getInt(
+    "lua_button_outline_percent", if (luaButtonHighContrastText.get()) 50 else 0)
   val luaButtonPositionX = preferenceStore.getInt("lua_button_position_x_dp", 0)
   val luaButtonPositionY = preferenceStore.getInt("lua_button_position_y_dp", 100)
   val luaButtonCornerRadius = preferenceStore.getInt("lua_button_corner_dp", 7)
@@ -72,6 +78,11 @@ class PlayerPreferences(
   val hudBackgroundOpacity = preferenceStore.getInt("alpha_hud_background_opacity", 70)
   val hudHighContrastText = preferenceStore.getBoolean("alpha_hud_high_contrast_text", false)
   val hudBoldText = preferenceStore.getBoolean("alpha_hud_bold_text", false)
+  // Existing HUD starts at SemiBold=600. Legacy bold means 700; outline on means 1.2dp.
+  val hudFontWeightPercent = preferenceStore.getInt(
+    "alpha_hud_font_weight_percent", if (hudBoldText.get()) 60 else 40)
+  val hudOutlinePercent = preferenceStore.getInt(
+    "alpha_hud_outline_percent", if (hudHighContrastText.get()) 50 else 0)
   val hudCornerRadiusDp = preferenceStore.getInt("alpha_hud_corner_radius_dp", 10)
   val hudPositionX = preferenceStore.getFloat("alpha_hud_position_x", 1f)
   val hudPositionY = preferenceStore.getFloat("alpha_hud_position_y", 0.03f)

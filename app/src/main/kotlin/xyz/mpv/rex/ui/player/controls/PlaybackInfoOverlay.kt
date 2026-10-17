@@ -72,8 +72,8 @@ internal fun PlaybackInfoOverlay(
   val itemGapDp by preferences.hudItemGapDp.collectAsState()
   val paddingDp by preferences.hudPaddingDp.collectAsState()
   val backgroundOpacity by preferences.hudBackgroundOpacity.collectAsState()
-  val highContrastText by preferences.hudHighContrastText.collectAsState()
-  val boldText by preferences.hudBoldText.collectAsState()
+  val fontWeightPercent by preferences.hudFontWeightPercent.collectAsState()
+  val outlinePercent by preferences.hudOutlinePercent.collectAsState()
   val radiusDp by preferences.hudCornerRadiusDp.collectAsState()
   val storedX by preferences.hudPositionX.collectAsState()
   val storedY by preferences.hudPositionY.collectAsState()
@@ -127,7 +127,7 @@ internal fun PlaybackInfoOverlay(
   val fontSize = (16f * factor).sp
   val iconSize = (18f * factor).dp
   val innerGap = (3f * factor).dp
-  val textWeight = if (boldText) FontWeight.Bold else FontWeight.SemiBold
+  val textWeight = fontWeightForReadability(fontWeightPercent)
   val gap = itemGapDp.coerceIn(0, 64).dp
   val contentPadding = paddingDp.coerceIn(0, 40).dp
   val background = hudColor(backgroundHex, Color(0xFF10151C))
@@ -197,9 +197,10 @@ internal fun PlaybackInfoOverlay(
       iconSize = iconSize,
       innerGap = innerGap,
       textWeight = textWeight,
-      highContrastText = highContrastText,
+      highContrastText = outlinePercent > 0,
       gap = gap,
       factor = factor,
+      outlineWidthDp = outlineWidthDpForReadability(outlinePercent) * factor,
       ),
       modifier = panelModifier,
       maxWidth = maxWidth,

@@ -82,8 +82,8 @@ fun LuaButtonGrid(
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
     val buttonHeight by preferences.luaButtonHeight.collectAsState()
     val fontSize by preferences.luaButtonFontSize.collectAsState()
-    val highContrastText by preferences.luaButtonHighContrastText.collectAsState()
-    val boldText by preferences.luaButtonBoldText.collectAsState()
+    val fontWeightPercent by preferences.luaButtonFontWeightPercent.collectAsState()
+    val outlinePercent by preferences.luaButtonOutlinePercent.collectAsState()
     val positionY by preferences.luaButtonPositionY.collectAsState()
     val cornerRadius by preferences.luaButtonCornerRadius.collectAsState()
     val borderOpacity by preferences.luaButtonBorderOpacity.collectAsState()
@@ -272,8 +272,9 @@ fun LuaButtonGrid(
                                     ),
                                     textAlign = TextAlign.Center,
                                     fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
-                                    fontWeight = if (boldText) FontWeight.Bold else FontWeight.Normal,
-                                    outlined = highContrastText,
+                                    fontWeight = fontWeightForReadability(fontWeightPercent),
+                                    outlined = outlinePercent > 0,
+                                    outlineWidthDp = outlineWidthDpForReadability(outlinePercent) * factor,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )

@@ -27,14 +27,17 @@ internal fun ContrastVideoLabel(
     fontSize: TextUnit,
     fontWeight: FontWeight,
     outlined: Boolean,
+    // null retains the appearance of old screenshot tests/callers.
+    outlineWidthDp: Float? = null,
     textAlign: TextAlign? = null,
     maxLines: Int = 1,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
     val outlineColor = if (color.luminance() >= 0.5f) Color.Black else Color.White
-    val outlineWidth = with(LocalDensity.current) { 1.2.dp.toPx() }
+    val widthDp = (outlineWidthDp ?: if (outlined) 1.2f else 0f).coerceIn(0f, 2.4f)
+    val outlineWidth = with(LocalDensity.current) { widthDp.dp.toPx() }
     Box(contentAlignment = Alignment.Center) {
-        if (outlined) {
+        if (outlineWidth > 0f) {
             Text(
                 text = text,
                 color = outlineColor,
@@ -57,3 +60,11 @@ internal fun ContrastVideoLabel(
         )
     }
 }
+
+/** Slider mapping shared by Lua and HUD: 0%=regular (400), 60%=bold (700), 100%=black (900). */
+internal fun fontWeightForReadability(percent: Int): FontWeight =
+    FontWeight(400 + 5 * percent.coerceIn(0, 100))
+
+/** 50% precisely preserves the previous 1.2dp outline. */
+internal fun outlineWidthDpForReadability(percent: Int): Float =
+    percent.coerceIn(0, 100) * 0.024f
