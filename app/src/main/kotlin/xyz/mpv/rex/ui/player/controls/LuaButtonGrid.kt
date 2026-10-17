@@ -60,6 +60,7 @@ fun LuaButtonGrid(
     val buttonColor by preferences.luaButtonBaseColor.collectAsState()
     val activeColor by preferences.luaButtonActiveColor.collectAsState()
     val textColor by preferences.luaButtonTextColor.collectAsState()
+    val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
     val factor = scale.coerceIn(70, 150) / 100f
     val width = (buttonWidth.coerceIn(30, 140) * factor).dp
     val height = (buttonHeight.coerceIn(22, 80) * factor).dp
@@ -86,7 +87,7 @@ fun LuaButtonGrid(
                         val active = value != null && abs(playbackSpeed - value) < 0.015f
                         Text(
                             text = button.label,
-                            color = if (active) Color(0xFF071426) else Color(textColor),
+                            color = Color(if (active) activeTextColor else textColor),
                             textAlign = TextAlign.Center,
                             fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
                             maxLines = 1,
