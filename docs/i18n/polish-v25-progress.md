@@ -63,3 +63,10 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Po wydzieleniu dawnych angielskich literałów cztery testy odwoływały się do nieużywanego już pola `title`. Testy sprawdzają teraz zasób oraz dotychczasowy ekran i pozycję docelową; zachowano sprawdzanie wyszukiwania po angielsku.
 - Dodano regresję polskich zapytań („rozdzielczość”, „niedosłyszących”, „dwukrotnego dotknięcia”).
 - Serwer Web Share zachowuje angielski wariant bez kontekstu Androida, używany w testach JVM; przy rzeczywistym kontekście korzysta z języka aplikacji.
+
+## Etap 4 — rzeczywiste podglądy ustawień
+
+- Dodano dziesięć scen produkcyjnych ekranów Compose: po dwa warianty Gestów, Wyglądu, Odtwarzania, Dźwięku i Przycisków Lua.
+- Szerokość 360 dp, czcionka 100%/130%, wysokie widoki dla opcji poniżej pierwszego ekranu.
+- Sceny nie korzystają z danych użytkownika ani rzeczywistych plików: osobna pamięć preferencji, nieaktywny rejestr zewnętrznych aktywności i DAO, kontekst językowy polski.
+- To nie są atrapy przerysowane ręcznie: fixture wywołuje `Screen.Content()` dla każdego ekranu. Wynik renderowania i inspekcji PNG zostanie zapisany oddzielnie.
