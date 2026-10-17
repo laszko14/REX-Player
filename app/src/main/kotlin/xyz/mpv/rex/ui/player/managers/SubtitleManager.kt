@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.player.managers
 
+import xyz.mpv.rex.R
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -98,7 +99,7 @@ class SubtitleManager(
 
         val fileName = uri.lastPathSegment ?: "subtitle"
         if (!isValidSubtitleFile(fileName)) {
-            if (!silent) onShowToast("Invalid subtitle file")
+            if (!silent) onShowToast(context.getString(R.string.audit_invalid_subtitle_file))
             return
         }
 
@@ -142,14 +143,14 @@ class SubtitleManager(
 
                 if (!silent) {
                     withContext(Dispatchers.Main) {
-                        onShowToast("Subtitle added: ${fileName.take(30)}")
+                        onShowToast(context.getString(R.string.audit_subtitle_added, fileName.take(30)))
                     }
                 }
             }.onFailure { e ->
                 Log.e(TAG, "Failed to add subtitle", e)
                 if (!silent) {
                     withContext(Dispatchers.Main) {
-                        onShowToast("Failed to load subtitle")
+                        onShowToast(context.getString(R.string.audit_failed_to_load_subtitle))
                     }
                 }
             }
@@ -180,7 +181,7 @@ class SubtitleManager(
                 
                 MPVLib.command("sub-remove", id.toString())
                 withContext(Dispatchers.Main) {
-                    onShowToast("Subtitle removed")
+                    onShowToast(context.getString(R.string.audit_subtitle_removed))
                 }
             }.onFailure {
                 Log.e(TAG, "Failed to remove subtitle", it)
@@ -238,7 +239,7 @@ class SubtitleManager(
                 }
                 .onFailure {
                     Log.e(TAG, "Failed to fetch TV details", it)
-                    onShowToast("Failed to load series details")
+                    onShowToast(context.getString(R.string.audit_failed_to_load_series_details))
                 }
             _isFetchingTvDetails.value = false
         }
@@ -257,7 +258,7 @@ class SubtitleManager(
                 }
                 .onFailure {
                     Log.e(TAG, "Failed to fetch episodes", it)
-                    onShowToast("Failed to load episodes")
+                    onShowToast(context.getString(R.string.audit_failed_to_load_episodes))
                 }
             _isFetchingEpisodes.value = false
         }
@@ -278,7 +279,7 @@ class SubtitleManager(
                 }
                 .onFailure {
                     Log.e(TAG, "Subtitle search failed", it)
-                    onShowToast("Search failed")
+                    onShowToast(context.getString(R.string.audit_search_failed))
                 }
             _isSearchingSub.value = false
         }
@@ -293,7 +294,7 @@ class SubtitleManager(
                 }
                 .onFailure {
                     Log.e(TAG, "Subtitle download failed", it)
-                    onShowToast("Download failed")
+                    onShowToast(context.getString(R.string.audit_download_failed))
                 }
             _isDownloadingSub.value = false
         }

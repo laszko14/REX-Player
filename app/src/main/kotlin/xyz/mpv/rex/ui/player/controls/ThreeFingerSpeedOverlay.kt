@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -164,7 +166,7 @@ fun ThreeFingerSpeedOverlay(
       ) {
         Icon(
           Icons.Default.Close,
-          contentDescription = "Zamknij panel prędkości",
+          contentDescription = stringResource(R.string.audit_close_speed_panel),
           tint = Color.White,
           modifier = Modifier
             .padding(start = 1.dp)

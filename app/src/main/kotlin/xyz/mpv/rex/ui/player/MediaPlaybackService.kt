@@ -356,7 +356,7 @@ class MediaPlaybackService :
   fun updateMediaSession() {
     try {
       // Ensure we have valid media title
-      val title = mediaTitle.ifBlank { "Unknown Video" }
+      val title = mediaTitle.ifBlank { getString(R.string.audit_unknown_video) }
       
       // Update metadata
       val duration = runCatching { 
@@ -572,7 +572,7 @@ class MediaPlaybackService :
 
     return NotificationCompat
       .Builder(this, NOTIFICATION_CHANNEL_ID)
-      .setContentTitle(mediaTitle.ifBlank { "Unknown Video" })
+      .setContentTitle(mediaTitle.ifBlank { getString(R.string.audit_unknown_video) })
       .setContentText(mediaArtist.ifBlank { getString(R.string.notification_playing) })
       .setSmallIcon(R.drawable.ic_launcher_foreground)
       .setLargeIcon(thumbnail)

@@ -89,7 +89,7 @@ class WebShareServer(
         mimeType = getMimeType(item.displayName),
       )
     }
-    val html = WebShareHtmlTemplate.renderHtml(items, token)
+    val html = WebShareHtmlTemplate.renderHtml(items, token, context = context)
     return newFixedLengthResponse(Response.Status.OK, "text/html; charset=UTF-8", html)
   }
 

@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.cards
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Folder
@@ -34,7 +36,7 @@ fun NetworkFolderCard(
     thumbnailIcon = {
       Icon(
         Icons.Filled.Folder,
-        contentDescription = "Folder",
+        contentDescription = stringResource(R.string.audit_folder),
         modifier = Modifier.size(64.dp).scale(1.2f),
         tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
       )

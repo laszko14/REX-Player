@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls.components.sheets
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -65,7 +67,7 @@ fun RexEqualizerSheet(onDismissRequest: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
       ) {
-        Text("KOREKTOR DŹWIĘKU", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(stringResource(R.string.audit_audio_equalizer), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Switch(checked = enabled, onCheckedChange = preferences.rexEqEnabled::set)
       }
 
@@ -105,7 +107,7 @@ fun RexEqualizerSheet(onDismissRequest: () -> Unit) {
         }
       }
 
-      Text("WZMOCNIENIE GŁOŚNOŚCI   +${volumeBoost} dB", style = MaterialTheme.typography.labelMedium)
+      Text(stringResource(R.string.audit_volume_boost, volumeBoost), style = MaterialTheme.typography.labelMedium)
       Slider(
         value = volumeBoost.toFloat(),
         valueRange = 0f..10f,
@@ -114,7 +116,7 @@ fun RexEqualizerSheet(onDismissRequest: () -> Unit) {
         onValueChange = { preferences.rexEqBoost.set(it.roundToInt().coerceIn(0, 10)) },
       )
       Text(
-        "Wzmocnienie powyżej 0 dB może powodować przesterowanie. Filtry Lua pozostają niezależne.",
+        stringResource(R.string.audit_boost_above_0_db_may_cause_clipping_lua_filters_remain_independent),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
       )
@@ -124,10 +126,10 @@ fun RexEqualizerSheet(onDismissRequest: () -> Unit) {
           preferences.rexEqBands.set("0,0,0,0,0")
           preferences.rexEqBoost.set(0)
         }) {
-          Text("Wyzeruj")
+          Text(stringResource(R.string.audit_reset_to_zero))
         }
         Button(onClick = onDismissRequest) {
-          Text("Zamknij")
+          Text(stringResource(R.string.audit_close))
         }
       }
     }

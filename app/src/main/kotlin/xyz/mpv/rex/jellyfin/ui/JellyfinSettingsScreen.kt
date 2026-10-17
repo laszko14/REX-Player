@@ -1,5 +1,7 @@
 package xyz.mpv.rex.jellyfin.ui
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -98,25 +100,25 @@ object JellyfinSettingsScreen : Screen {
       ) {
         Card(modifier = Modifier.fillMaxWidth()) {
           Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Jellyfin Server", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.audit_jellyfin_server), style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
               value = serverUrl,
               onValueChange = { serverUrl = it },
-              label = { Text("Server URL (e.g. https://jellyfin.example.com)") },
+              label = { Text(stringResource(R.string.audit_server_url_e_g_https_jellyfin_example_com)) },
               modifier = Modifier.fillMaxWidth(),
               singleLine = true,
             )
             OutlinedTextField(
               value = username,
               onValueChange = { username = it },
-              label = { Text("Username") },
+              label = { Text(stringResource(R.string.audit_username)) },
               modifier = Modifier.fillMaxWidth(),
               singleLine = true,
             )
             OutlinedTextField(
               value = password,
               onValueChange = { password = it },
-              label = { Text("Password") },
+              label = { Text(stringResource(R.string.audit_password)) },
               modifier = Modifier.fillMaxWidth(),
               singleLine = true,
               visualTransformation = PasswordVisualTransformation(),
@@ -130,11 +132,11 @@ object JellyfinSettingsScreen : Screen {
               Button(
                 onClick = {
                   if (serverUrl.isBlank() || username.isBlank()) {
-                    status = "Server URL and username required"
+                    status = context.getString(R.string.audit_server_url_and_username_are_required)
                     return@Button
                   }
                   if (serverUrl.lowercase().startsWith("http://")) {
-                    status = "Warning: Using insecure HTTP — credentials transmitted in plaintext. Consider using HTTPS."
+                    status = context.getString(R.string.audit_warning_http_transmits_credentials_in_plain_text_consider_using_https)
                   } else {
                     status = null
                   }
@@ -146,38 +148,38 @@ object JellyfinSettingsScreen : Screen {
                       val token = resp.accessToken
                       val uid = resp.user?.id
                       if (token.isNullOrBlank() || uid.isNullOrBlank()) {
-                        status = "Authentication response missing token/user"
+                        status = context.getString(R.string.audit_authentication_response_is_missing_the_token_or_user)
                       } else {
                         prefs.serverUrl = normalized
                         prefs.userId = uid
                         prefs.accessToken = token
                         prefs.username = username.trim()
                         configured = true
-                        status = "Connected as $username"
+                        status = context.getString(R.string.audit_connected_as, username)
                       }
                     }.onFailure { e ->
-                      status = "Failed: ${e.message}"
+                      status = context.getString(R.string.audit_failed, e.message)
                     }
                     loading = false
                   }
                 },
                 enabled = !loading,
               ) {
-                if (loading) CircularProgressIndicator(modifier = Modifier.height(18.dp)) else Text("Sign in")
+                if (loading) CircularProgressIndicator(modifier = Modifier.height(18.dp)) else Text(stringResource(R.string.audit_sign_in))
               }
               if (configured) {
                 Button(onClick = {
                   prefs.clearCredentials()
                   configured = false
-                  status = "Disconnected"
+                  status = context.getString(R.string.audit_disconnected)
                 }) {
-                  Text("Sign out")
+                  Text(stringResource(R.string.audit_sign_out))
                 }
               }
             }
             status?.let { Text(it, color = MaterialTheme.colorScheme.secondary) }
             if (configured) {
-              Text("Host: ${prefs.serverHost() ?: "-"}  User: ${prefs.username ?: "-"}", style = MaterialTheme.typography.bodySmall)
+              Text(stringResource(R.string.audit_host_user, prefs.serverHost() ?: "-", prefs.username ?: "-"), style = MaterialTheme.typography.bodySmall)
             }
           }
         }
@@ -190,8 +192,8 @@ object JellyfinSettingsScreen : Screen {
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Column {
-                Text("Enable remote target", style = MaterialTheme.typography.titleSmall)
-                Text("Appear in Jellyfin Play on list", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+                Text(stringResource(R.string.audit_enable_remote_playback_target), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.audit_appear_in_the_jellyfin_play_on_list), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
               }
               Switch(
                 checked = enableRemote,
@@ -211,7 +213,7 @@ object JellyfinSettingsScreen : Screen {
             OutlinedTextField(
               value = deviceName,
               onValueChange = { if (it.length <= 32) deviceName = it },
-              label = { Text("Device name") },
+              label = { Text(stringResource(R.string.audit_device_name)) },
               placeholder = { Text(android.os.Build.MODEL) },
               modifier = Modifier.fillMaxWidth(),
               singleLine = true,
@@ -228,27 +230,27 @@ object JellyfinSettingsScreen : Screen {
                   if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
                 }
               }) {
-                Text("Save device name")
+                Text(stringResource(R.string.audit_save_device_name))
               }
               Button(onClick = {
                 deviceName = ""
                 prefs.deviceName = ""
               }) {
-                Text("Reset")
+                Text(stringResource(R.string.audit_reset))
               }
             }
             Button(onClick = {
               val intent = Intent(context, JellyfinRemoteService::class.java).apply { action = JellyfinRemoteService.ACTION_START }
               if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
             }, enabled = configured) {
-              Text("Register now")
+              Text(stringResource(R.string.audit_register_now))
             }
-            Text("Registers mpvRex as remote player via /Sessions/Capabilities and opens WebSocket. Check logcat JellyfinRemote.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
+            Text(stringResource(R.string.audit_registers_mpvrex_as_a_remote_player_via_sessions_capabilities_and_opens_web), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.outline)
           }
         }
 
         Text(
-          "When Jellyfin launches mpvRex via external player, the item is identified from /Videos/{id}/stream. No filename matching is used. Progress is reported every ~10s and immediately on pause/stop/exit.",
+          stringResource(R.string.audit_when_jellyfin_launches_mpvrex_as_an_external_player_the_item_is_identified_),
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.outline,
         )

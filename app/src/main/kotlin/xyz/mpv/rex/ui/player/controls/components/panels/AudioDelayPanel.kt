@@ -339,7 +339,7 @@ private fun AudioDelayContent(
             tint = MaterialTheme.colorScheme.primary,
           )
           Text(
-            text = "A/V Sync Assistant",
+            text = stringResource(R.string.audit_a_v_sync_assistant),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
           )

@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.player.managers
 
+import xyz.mpv.rex.R
 import android.content.Context
 import android.util.Log
 import xyz.mpv.rex.preferences.AdvancedPreferences
@@ -48,7 +49,7 @@ class CustomButtonManager(
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
     val customButtons = _customButtons.asStateFlow()
-    private val _luaStatus = MutableStateFlow("Oczekiwanie na silnik MPV")
+    private val _luaStatus = MutableStateFlow(context.getString(R.string.audit_waiting_for_mpv))
     val luaStatus = _luaStatus.asStateFlow()
 
     private var setupJob: Job? = null
@@ -62,14 +63,14 @@ class CustomButtonManager(
         scope.launch(Dispatchers.IO) {
             repeat(25) {
                 if (isScriptLoaded()) {
-                    _luaStatus.value = "Lua gotowe — oryginalne przyciski"
+                    _luaStatus.value = context.getString(R.string.audit_lua_ready_original_buttons)
                     runStartupActions()
                     return@launch
                 }
                 delay(180L)
             }
             if (advancedPreferences.enableLuaScripts.get()) {
-                _luaStatus.value = "Lua: oczekiwanie na potwierdzenie (przyciski mogą działać)"
+                _luaStatus.value = context.getString(R.string.audit_lua_awaiting_confirmation_buttons_may_work)
             }
         }
     }
@@ -81,7 +82,7 @@ class CustomButtonManager(
                 val uiButtons = mutableListOf<CustomButtonState>()
                 if (!advancedPreferences.enableLuaScripts.get()) {
                     _customButtons.value = uiButtons
-                    _luaStatus.value = "Skrypty Lua wyłączone"
+                    _luaStatus.value = context.getString(R.string.audit_lua_scripts_disabled)
                     return@launch
                 }
 
@@ -150,10 +151,10 @@ class CustomButtonManager(
                     })
                 _customButtons.value = uiButtons
                 _luaStatus.value = when {
-                    !advancedPreferences.enableLuaScripts.get() -> "Skrypty Lua wyłączone"
-                    !isMpvReady -> "Czekam na MPV"
-                    isScriptLoaded() -> "Lua gotowe — oryginalne przyciski"
-                    else -> "Lua: oczekiwanie na potwierdzenie"
+                    !advancedPreferences.enableLuaScripts.get() -> context.getString(R.string.audit_lua_scripts_disabled)
+                    !isMpvReady -> context.getString(R.string.audit_waiting_for_mpv_to_start)
+                    isScriptLoaded() -> context.getString(R.string.audit_lua_ready_original_buttons)
+                    else -> context.getString(R.string.audit_lua_awaiting_confirmation)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting up custom buttons", e)
@@ -213,7 +214,7 @@ class CustomButtonManager(
             val value = speed.groupValues[1].toFloatOrNull() ?: return false
             if (value !in 0.1f..8f) return false
             MPVLib.setPropertyFloat("speed", value)
-            showFeedback("Predkosc: " + value + "x")
+            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value))
             return true
         }
         val speedCommand = Regex("""^mp\.commandv\s*\(\s*['"]set['"]\s*,\s*['"]speed['"]\s*,\s*['"]?([0-9]+(?:\.[0-9]+)?)['"]?\s*\)$""")
@@ -222,14 +223,14 @@ class CustomButtonManager(
             val value = speedCommand.groupValues[1].toFloatOrNull() ?: return false
             if (value !in 0.1f..8f) return false
             MPVLib.setPropertyFloat("speed", value)
-            showFeedback("Predkosc: " + value + "x")
+            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value))
             return true
         }
         val seek = Regex("""^mp\.commandv\s*\(\s*['"]seek['"]\s*,\s*['"]?([+-]?[0-9]+(?:\.[0-9]+)?)['"]?\s*,\s*['"](relative|absolute)['"]\s*\)$""")
             .matchEntire(source)
         if (seek != null) {
             MPVLib.command("seek", seek.groupValues[1], seek.groupValues[2])
-            showFeedback("Przewijanie: " + seek.groupValues[1] + "s")
+            showFeedback(context.getString(R.string.audit_lua_seek_feedback, seek.groupValues[1]))
             return true
         }
         return false
@@ -242,7 +243,7 @@ class CustomButtonManager(
     private fun runAction(id: String, longPress: Boolean) {
         val code = actionCode(id, longPress)
         if (code.isNullOrBlank()) {
-            showFeedback("Lua: brak przypisanej akcji")
+            showFeedback(context.getString(R.string.audit_lua_no_action_assigned))
             return
         }
         try {
@@ -251,11 +252,11 @@ class CustomButtonManager(
             Log.e(TAG, "Native button error", e)
         }
         if (!advancedPreferences.enableLuaScripts.get()) {
-            showFeedback("Włącz Lua w ustawieniach zaawansowanych")
+            showFeedback(context.getString(R.string.audit_enable_lua_in_advanced_settings))
             return
         }
         if (!isMpvReady) {
-            showFeedback("Lua: MPV jeszcze się uruchamia")
+            showFeedback(context.getString(R.string.audit_lua_mpv_is_still_starting))
             return
         }
         runCatching {
@@ -264,16 +265,16 @@ class CustomButtonManager(
             // immediate user-data acknowledgement is NOT an execution failure.
             MPVLib.command("script-message", "mpv_alpha_eval", code)
             _luaStatus.value = if (isScriptLoaded()) {
-                "Lua gotowe — oryginalne przyciski"
+                context.getString(R.string.audit_lua_ready_original_buttons)
             } else {
-                "Lua: polecenie wysłane (bez potwierdzenia wykonania)"
+                context.getString(R.string.audit_lua_command_sent_execution_not_confirmed)
             }
             // Real Lua parse/runtime errors are surfaced by the bridge itself.
             // Do not show an alarming OSD for a missing readiness flag.
         }.onFailure { e ->
-            _luaStatus.value = "BŁĄD Lua: " + e.message
+            _luaStatus.value = context.getString(R.string.audit_lua_error, e.message)
             Log.e(TAG, "Lua bridge dispatch error", e)
-            showFeedback("Błąd wywołania Lua")
+            showFeedback(context.getString(R.string.audit_lua_dispatch_error))
         }
     }
 

@@ -1542,7 +1542,7 @@ class PlayerActivity :
 
             withContext(Dispatchers.Main) {
               MPVLib.command("load-script", targetFile.absolutePath)
-              viewModel.showToast("Loaded script: $scriptName")
+              viewModel.showToast(getString(R.string.audit_script_loaded, scriptName))
             }
           }
         }
@@ -1551,7 +1551,7 @@ class PlayerActivity :
         withContext(Dispatchers.Main) {
           android.widget.Toast.makeText(
             this@PlayerActivity,
-            "Failed to load script: ${e.message}",
+            getString(R.string.audit_script_load_failed, e.message),
             android.widget.Toast.LENGTH_LONG
           ).show()
         }

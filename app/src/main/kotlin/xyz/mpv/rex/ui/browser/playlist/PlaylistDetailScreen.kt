@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.browser.playlist
 
+import androidx.compose.ui.res.pluralStringResource
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -251,7 +252,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
           }
         } else {
           BrowserTopBar(
-            title = playlist?.name ?: "Playlist",
+            title = playlist?.name ?: stringResource(R.string.audit_playlist),
             isInSelectionMode = selectionManager.isInSelectionMode,
             selectedCount = selectionManager.selectedCount,
             totalCount = videos.size,
@@ -299,7 +300,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
               if (playlist?.isM3uPlaylist != true) {
                 add(SelectionOverflowAction(
                   icon = Icons.Filled.Share,
-                  label = "Share",
+                  label = stringResource(R.string.audit_share),
                   onClick = {
                     val videosToShare = selectionManager.getSelectedItems().map { it.video }
                     MediaUtils.shareVideos(context, videosToShare)
@@ -312,11 +313,11 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                 if (isCurrentThumbnail) {
                   add(SelectionOverflowAction(
                     icon = Icons.Filled.Image,
-                    label = "Reset playlist thumbnail",
+                    label = stringResource(R.string.audit_reset_playlist_thumbnail),
                     onClick = {
                       coroutineScope.launch {
                         viewModel.setPlaylistThumbnail(null)
-                        Toast.makeText(context, "Reset thumbnail to first video", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.audit_thumbnail_reset_to_first_video), Toast.LENGTH_SHORT).show()
                         selectionManager.clear()
                       }
                     },
@@ -324,12 +325,12 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                 } else {
                   add(SelectionOverflowAction(
                     icon = Icons.Filled.Image,
-                    label = "Set as playlist thumbnail",
+                    label = stringResource(R.string.audit_set_as_playlist_thumbnail),
                     onClick = {
                       if (selected != null) {
                         coroutineScope.launch {
                           viewModel.setPlaylistThumbnail(selected.video.path)
-                          Toast.makeText(context, "Playlist thumbnail updated", Toast.LENGTH_SHORT).show()
+                          Toast.makeText(context, context.getString(R.string.audit_playlist_thumbnail_updated), Toast.LENGTH_SHORT).show()
                           selectionManager.clear()
                         }
                       }
@@ -450,7 +451,7 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                          text = "Play",
+                          text = stringResource(R.string.audit_play),
                           style = MaterialTheme.typography.labelLarge,
                           fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         )
@@ -484,12 +485,12 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
               tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-              text = "No videos found",
+              text = stringResource(R.string.audit_no_videos_found),
               style = MaterialTheme.typography.titleMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-              text = "Try a different search term",
+              text = stringResource(R.string.audit_try_a_different_search_term),
               style = MaterialTheme.typography.bodyMedium,
               color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -510,10 +511,10 @@ data class PlaylistDetailScreen(val playlistId: Int) : Screen {
               val result = viewModel.refreshM3UPlaylist()
               result
                 .onSuccess {
-                  Toast.makeText(context, "Playlist refreshed successfully", Toast.LENGTH_SHORT).show()
+                  Toast.makeText(context, context.getString(R.string.audit_playlist_refreshed_successfully), Toast.LENGTH_SHORT).show()
                 }
                 .onFailure { error ->
-                  Toast.makeText(context, "Failed to refresh: ${error.message}", Toast.LENGTH_LONG).show()
+                  Toast.makeText(context, context.getString(R.string.audit_refresh_failed, error.message), Toast.LENGTH_LONG).show()
                 }
             } else {
               viewModel.refreshNow()
@@ -690,7 +691,7 @@ private fun RemoveFromPlaylistDialog(
 ) {
   if (!isOpen) return
 
-  val itemText = if (itemCount == 1) "video" else "videos"
+  val itemText = pluralStringResource(R.plurals.audit_video_noun, itemCount)
 
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
@@ -713,11 +714,7 @@ private fun RemoveFromPlaylistDialog(
           shape = MaterialTheme.shapes.extraLarge,
         ) {
           Text(
-            text = stringResource(
-              R.string.remove_from_playlist_confirm,
-              itemText,
-              if (itemCount == 1) "file" else "files"
-            ),
+            text = pluralStringResource(R.plurals.audit_remove_playlist_confirmation, itemCount),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSecondaryContainer,

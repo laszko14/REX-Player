@@ -1,5 +1,6 @@
 package xyz.mpv.rex.feature.webshare
 
+import xyz.mpv.rex.R
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -50,7 +51,7 @@ class WebShareActivity : ComponentActivity() {
     val isRunning = WebShareManager.state.value.isRunning
 
     if (incomingUris.isEmpty() && !isRunning) {
-      Toast.makeText(this, "No active Web Share session", Toast.LENGTH_SHORT).show()
+      Toast.makeText(this, getString(R.string.audit_no_active_web_share_session), Toast.LENGTH_SHORT).show()
       finish()
       return
     }

@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.managers
 
+import xyz.mpv.rex.R
+import android.content.Context
 import android.net.Uri
 import android.util.Log
 import `is`.xyz.mpv.MPVLib
@@ -20,6 +22,7 @@ import xyz.mpv.rex.ui.player.TrackSelector
  * and duration synchronization for external audio.
  */
 class TrackManager(
+  private val context: Context,
   private val subtitlesPreferences: SubtitlesPreferences,
   private val playbackManager: PlaybackManager,
   private val scope: CoroutineScope,
@@ -60,7 +63,7 @@ class TrackManager(
         val path =
           resolveUri(uri)
             ?: return@launch withContext(Dispatchers.Main) {
-              if (!silent) onShowToast("Failed to load audio file: Invalid URI")
+              if (!silent) onShowToast(context.getString(R.string.audit_failed_to_load_audio_file_invalid_uri))
             }
 
         synchronized(_externalAudioTracks) {
@@ -81,13 +84,13 @@ class TrackManager(
 
         if (!silent) {
           withContext(Dispatchers.Main) {
-            onShowToast("Audio track added")
+            onShowToast(context.getString(R.string.audit_audio_track_added))
           }
         }
       }.onFailure { e ->
         if (!silent) {
           withContext(Dispatchers.Main) {
-            onShowToast("Failed to load audio: ${e.message}")
+            onShowToast(context.getString(R.string.audit_load_audio_failed, e.message))
           }
         }
         Log.e(TAG, "Error adding audio", e)

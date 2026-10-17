@@ -362,9 +362,9 @@ object CodecInformationScreen : Screen {
 
             item {
               PreferenceSectionHeader(
-                title = if (selectedFilter == CodecFilter.VIDEO) "Video Decoders"
-                else if (selectedFilter == CodecFilter.AUDIO) "Audio Decoders"
-                else "Available Decoders (${filteredCodecs.size})"
+                title = if (selectedFilter == CodecFilter.VIDEO) stringResource(R.string.audit_video_decoders)
+                else if (selectedFilter == CodecFilter.AUDIO) stringResource(R.string.audit_audio_decoders)
+                else stringResource(R.string.audit_available_decoders, filteredCodecs.size)
               )
             }
 

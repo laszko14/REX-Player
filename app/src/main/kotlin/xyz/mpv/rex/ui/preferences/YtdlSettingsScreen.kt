@@ -135,7 +135,7 @@ object YtdlSettingsScreen : Screen {
                 TopAppBar(
                     title = {
                         Text(
-                            text = "yt- dlp",
+                            text = "yt-dlp",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.primary,
@@ -154,7 +154,7 @@ object YtdlSettingsScreen : Screen {
                         IconButton(onClick = { refreshStatus() }) {
                             Icon(
                                 Icons.Outlined.Refresh,
-                                contentDescription = "Refresh",
+                                contentDescription = stringResource(R.string.audit_refresh),
                                 tint = MaterialTheme.colorScheme.primary,
                             )
                         }
@@ -197,7 +197,7 @@ object YtdlSettingsScreen : Screen {
                                     onInstall = {
                                         showUpdateDialog = true
                                         isUpdating = true
-                                        updateLogs = "Installing yt-dlp into companion add-on...\n"
+                                        updateLogs = context.getString(R.string.audit_installing_yt_dlp_into_companion_add_on)
                                         updateSuccess = null
                                         scope.launch {
                                             val success = ytDlClient.runInstall { logMsg ->
@@ -211,7 +211,7 @@ object YtdlSettingsScreen : Screen {
                                     onCheckUpdate = { nightly ->
                                         showUpdateDialog = true
                                         isUpdating = true
-                                        updateLogs = if (nightly) "Updating yt-dlp to nightly channel...\n" else "Checking for yt-dlp updates...\n"
+                                        updateLogs = if (nightly) context.getString(R.string.audit_updating_yt_dlp_to_nightly_channel) else context.getString(R.string.audit_checking_for_yt_dlp_updates)
                                         updateSuccess = null
                                         scope.launch {
                                             val success = ytDlClient.runUpdate(nightly) { logMsg ->
@@ -229,7 +229,7 @@ object YtdlSettingsScreen : Screen {
 
                     // Section 2: Quality & Codec Preferences
                     item {
-                        PreferenceSectionHeader(title = "Stream Quality")
+                        PreferenceSectionHeader(title = stringResource(R.string.audit_stream_quality))
                     }
 
                     item {
@@ -254,12 +254,12 @@ object YtdlSettingsScreen : Screen {
                                                 "1080" -> "Full HD (1080p)"
                                                 "720" -> "HD (720p)"
                                                 "480" -> "SD (480p)"
-                                                "audio_only" -> "Audio Only"
-                                                else -> "Auto / Best"
+                                                "audio_only" -> context.getString(R.string.audit_audio_only)
+                                                else -> context.getString(R.string.audit_auto_best)
                                             }
                                         )
                                     },
-                                    title = { Text("Preferencja rozdzielczości") },
+                                    title = { Text(stringResource(R.string.audit_resolution_preference)) },
                                     summary = {
                                         val label = when (quality) {
                                             "2160" -> "4K (2160p)"
@@ -267,8 +267,8 @@ object YtdlSettingsScreen : Screen {
                                             "1080" -> "Full HD (1080p)"
                                             "720" -> "HD (720p)"
                                             "480" -> "SD (480p)"
-                                            "audio_only" -> "Audio Only"
-                                            else -> "Auto / Best"
+                                            "audio_only" -> stringResource(R.string.audit_audio_only)
+                                            else -> stringResource(R.string.audit_auto_best)
                                         }
                                         Text(label, color = MaterialTheme.colorScheme.outline)
                                     },
@@ -282,8 +282,8 @@ object YtdlSettingsScreen : Screen {
                                 SwitchPreference(
                                     value = geoBypass,
                                     onValueChange = { preferences.geoBypass.set(it) },
-                                    title = { Text("Geo- Bypass") },
-                                    summary = { Text("W miarę możliwości obejście ograniczeń geograficznych dotyczących wideo", color = MaterialTheme.colorScheme.outline) },
+                                    title = { Text(stringResource(R.string.audit_geo_bypass)) },
+                                    summary = { Text(stringResource(R.string.audit_bypass_geographic_video_restrictions_where_possible), color = MaterialTheme.colorScheme.outline) },
                                 )
                             }
 
@@ -294,8 +294,8 @@ object YtdlSettingsScreen : Screen {
                                 SwitchPreference(
                                     value = preferNightly,
                                     onValueChange = { preferences.preferNightly.set(it) },
-                                    title = { Text("Prefer Nightly Channel") },
-                                    summary = { Text("Otrzymuj cięcia-krawędzi yt- dlp nocny ekstraktor poprawki", color = MaterialTheme.colorScheme.outline) },
+                                    title = { Text(stringResource(R.string.audit_prefer_nightly_channel)) },
+                                    summary = { Text(stringResource(R.string.audit_receive_the_latest_yt_dlp_extractor_fixes_from_nightly_builds), color = MaterialTheme.colorScheme.outline) },
                                 )
                             }
                         }
@@ -303,7 +303,7 @@ object YtdlSettingsScreen : Screen {
 
                     // Section 3: Web Platform & URL Routing
                     item {
-                        PreferenceSectionHeader(title = "URL & Platform Routing")
+                        PreferenceSectionHeader(title = stringResource(R.string.audit_url_and_platform_routing))
                     }
 
                     item {
@@ -318,10 +318,10 @@ object YtdlSettingsScreen : Screen {
                                 SwitchPreference(
                                     value = autoDetectWebPages,
                                     onValueChange = { preferences.autoDetectWebPages.set(it) },
-                                    title = { Text("Autowykrywanie stron internetowych") },
+                                    title = { Text(stringResource(R.string.audit_auto_detect_web_pages)) },
                                     summary = {
                                         Text(
-                                            "Proaktywne sondowanie nieznanych adresów URL, aby śledzić strony HTML poprzez yt- dlp",
+                                            stringResource(R.string.audit_probe_unknown_urls_to_route_web_pages_through_yt_dlp),
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     },
@@ -336,10 +336,10 @@ object YtdlSettingsScreen : Screen {
                                     value = customDomains,
                                     onValueChange = { preferences.customDomains.set(it) },
                                     textToValue = { it },
-                                    title = { Text("Domeny obsługiwane przez użytkownika") },
+                                    title = { Text(stringResource(R.string.audit_custom_supported_domains)) },
                                     summary = {
                                         Text(
-                                            customDomains.ifBlank { "None (uses default web video platforms)" },
+                                            customDomains.ifBlank { stringResource(R.string.audit_none_uses_default_web_video_platforms) },
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     },
@@ -347,8 +347,8 @@ object YtdlSettingsScreen : Screen {
                                         OutlinedTextField(
                                             value = value,
                                             onValueChange = onValueChange,
-                                            label = { Text("Domeny (oddzielone przecinkami lub przestrzenią)") },
-                                            placeholder = { Text("np. example.com, archive.org, peertube.su") },
+                                            label = { Text(stringResource(R.string.audit_domains_comma_or_space_separated)) },
+                                            placeholder = { Text(stringResource(R.string.audit_e_g_example_com_archive_org_peertube_su)) },
                                             modifier = Modifier.fillMaxWidth(),
                                         )
                                     }
@@ -359,7 +359,7 @@ object YtdlSettingsScreen : Screen {
 
                     // Section 4: Network & Custom Format
                     item {
-                        PreferenceSectionHeader(title = "Network & Advanced")
+                        PreferenceSectionHeader(title = stringResource(R.string.audit_network_and_advanced))
                     }
 
                     item {
@@ -376,10 +376,10 @@ object YtdlSettingsScreen : Screen {
                                     value = customFormat,
                                     onValueChange = { preferences.customFormat.set(it) },
                                     textToValue = { it },
-                                    title = { Text("Własny wybór formatów") },
+                                    title = { Text(stringResource(R.string.audit_custom_format_selector)) },
                                     summary = {
                                         Text(
-                                            customFormat.ifBlank { "Default (uses resolution preference)" },
+                                            customFormat.ifBlank { stringResource(R.string.audit_default_uses_resolution_preference) },
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     },
@@ -387,8 +387,8 @@ object YtdlSettingsScreen : Screen {
                                         OutlinedTextField(
                                             value = value,
                                             onValueChange = onValueChange,
-                                            label = { Text("selektor formatu yt- dlp") },
-                                            placeholder = { Text("np. bestvideo + bestaudio / best") },
+                                            label = { Text(stringResource(R.string.audit_yt_dlp_format_selector)) },
+                                            placeholder = { Text(stringResource(R.string.audit_e_g_bestvideo_bestaudio_best)) },
                                             modifier = Modifier.fillMaxWidth(),
                                         )
                                     }
@@ -406,7 +406,7 @@ object YtdlSettingsScreen : Screen {
                                     title = { Text("Proxy") },
                                     summary = {
                                         Text(
-                                            proxy.ifBlank { "None (direct connection)" },
+                                            proxy.ifBlank { stringResource(R.string.audit_none_direct_connection) },
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     },
@@ -414,8 +414,8 @@ object YtdlSettingsScreen : Screen {
                                         OutlinedTextField(
                                             value = value,
                                             onValueChange = onValueChange,
-                                            label = { Text("Proxy URL") },
-                                            placeholder = { Text("http: / / user: pass @ host: port lub socks5: / /...") },
+                                            label = { Text(stringResource(R.string.audit_proxy_url)) },
+                                            placeholder = { Text(stringResource(R.string.audit_http_user_pass_host_port_or_socks5)) },
                                             modifier = Modifier.fillMaxWidth(),
                                         )
                                     }
@@ -430,10 +430,10 @@ object YtdlSettingsScreen : Screen {
                                     value = customUserAgent,
                                     onValueChange = { preferences.customUserAgent.set(it) },
                                     textToValue = { it },
-                                    title = { Text("Własny User- Agent") },
+                                    title = { Text(stringResource(R.string.audit_custom_user_agent)) },
                                     summary = {
                                         Text(
-                                            customUserAgent.ifBlank { "Default" },
+                                            customUserAgent.ifBlank { stringResource(R.string.audit_default) },
                                             color = MaterialTheme.colorScheme.outline,
                                         )
                                     },
@@ -441,7 +441,7 @@ object YtdlSettingsScreen : Screen {
                                         OutlinedTextField(
                                             value = value,
                                             onValueChange = onValueChange,
-                                            label = { Text("Nagłówek agenta użytkownika") },
+                                            label = { Text(stringResource(R.string.audit_user_agent_header)) },
                                             modifier = Modifier.fillMaxWidth(),
                                         )
                                     }
@@ -452,7 +452,7 @@ object YtdlSettingsScreen : Screen {
 
                     // Section 4: Live Extraction Tester
                     item {
-                        PreferenceSectionHeader(title = "Extractor Diagnostic Tool")
+                        PreferenceSectionHeader(title = stringResource(R.string.audit_extractor_diagnostics))
                     }
 
                     item {
@@ -466,12 +466,12 @@ object YtdlSettingsScreen : Screen {
                             ) {
                                 Column(modifier = Modifier.padding(16.dp)) {
                                     Text(
-                                        text = "Ekstrakcja testowego URL",
+                                        text = stringResource(R.string.audit_test_url_extraction),
                                         style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
                                     )
                                     Text(
-                                        text = "Wklej adres URL wideo, aby sprawdzić rozdzielczość IPC bezpośrednio z add- on.",
+                                        text = stringResource(R.string.audit_paste_a_video_url_to_test_resolution_through_the_add_on),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -481,8 +481,8 @@ object YtdlSettingsScreen : Screen {
                                     OutlinedTextField(
                                         value = testUrl,
                                         onValueChange = { testUrl = it },
-                                        label = { Text("URL wideo") },
-                                        placeholder = { Text("https: / / www.youtube.com / watch? v =...") },
+                                        label = { Text(stringResource(R.string.audit_video_url)) },
+                                        placeholder = { Text(stringResource(R.string.audit_https_www_youtube_com_watch_v)) },
                                         singleLine = true,
                                         modifier = Modifier.fillMaxWidth(),
                                         enabled = isAddonInstalled && !isTestingExtraction,
@@ -513,11 +513,11 @@ object YtdlSettingsScreen : Screen {
                                                 color = MaterialTheme.colorScheme.onPrimary,
                                             )
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Rozwiązanie za pośrednictwem Addon...")
+                                            Text(stringResource(R.string.audit_resolving_through_add_on))
                                         } else {
                                             Icon(Icons.Outlined.PlayArrow, contentDescription = null)
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Ekstrakcja testowa")
+                                            Text(stringResource(R.string.audit_test_extraction))
                                         }
                                     }
 
@@ -530,19 +530,19 @@ object YtdlSettingsScreen : Screen {
                                         ) {
                                             Column(modifier = Modifier.padding(12.dp)) {
                                                 Text(
-                                                    text = if (res.isSuccess) "Extraction Succeeded" else "Extraction Failed",
+                                                    text = if (res.isSuccess) stringResource(R.string.audit_extraction_succeeded) else stringResource(R.string.audit_extraction_failed),
                                                     fontWeight = FontWeight.Bold,
                                                     style = MaterialTheme.typography.titleSmall,
                                                     color = if (res.isSuccess) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onErrorContainer,
                                                 )
                                                 Spacer(modifier = Modifier.height(4.dp))
                                                 if (res.isSuccess) {
-                                                    Text("Title: ${res.title ?: "N/A"}", fontSize = 12.sp)
-                                                    Text("Duration: ${res.durationSeconds}s", fontSize = 12.sp)
-                                                    Text("DASH Separate Audio: ${if (res.isDASH) "Yes" else "No"}", fontSize = 12.sp)
-                                                    Text("Headers Passed: ${res.httpHeaders.size}", fontSize = 12.sp)
+                                                    Text(stringResource(R.string.audit_extraction_title, res.title ?: stringResource(R.string.audit_not_available)), fontSize = 12.sp)
+                                                    Text(stringResource(R.string.audit_extraction_duration, res.durationSeconds), fontSize = 12.sp)
+                                                    Text(stringResource(R.string.audit_extraction_dash, if (res.isDASH) stringResource(R.string.audit_yes) else stringResource(R.string.audit_no)), fontSize = 12.sp)
+                                                    Text(stringResource(R.string.audit_extraction_headers, res.httpHeaders.size), fontSize = 12.sp)
                                                 } else {
-                                                    Text("Error: ${res.errorMessage ?: "Unknown error"}", fontSize = 12.sp)
+                                                    Text(stringResource(R.string.audit_error, res.errorMessage ?: stringResource(R.string.audit_unknown_error)), fontSize = 12.sp)
                                                 }
                                             }
                                         }
@@ -570,13 +570,13 @@ object YtdlSettingsScreen : Screen {
                             if (isUpdating) {
                                 CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text("Uruchomienie zadania Y- dlp...")
+                                Text(stringResource(R.string.audit_running_yt_dlp_task))
                             } else {
                                 val icon = if (updateSuccess == true) Icons.Outlined.CheckCircle else Icons.Outlined.Warning
                                 val tint = if (updateSuccess == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
                                 Icon(icon, contentDescription = null, tint = tint)
                                 Spacer(modifier = Modifier.width(12.dp))
-                                Text(if (updateSuccess == true) "Task Completed" else "Task Result")
+                                Text(if (updateSuccess == true) stringResource(R.string.audit_task_completed) else stringResource(R.string.audit_task_result))
                             }
                         }
                     },
@@ -590,7 +590,7 @@ object YtdlSettingsScreen : Screen {
                                 .verticalScroll(scrollState)
                         ) {
                             Text(
-                                text = updateLogs.ifBlank { "Waiting for logs..." },
+                                text = updateLogs.ifBlank { stringResource(R.string.audit_waiting_for_logs) },
                                 fontFamily = FontFamily.Monospace,
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -602,7 +602,7 @@ object YtdlSettingsScreen : Screen {
                             onClick = { showUpdateDialog = false },
                             enabled = !isUpdating,
                         ) {
-                            Text("Zamknij")
+                            Text(stringResource(R.string.audit_close))
                         }
                     }
                 )
@@ -632,7 +632,7 @@ object YtdlSettingsScreen : Screen {
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
-                        text = "Add- on Nie zainstalowano",
+                        text = stringResource(R.string.audit_add_on_not_installed),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onErrorContainer,
@@ -642,7 +642,7 @@ object YtdlSettingsScreen : Screen {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Dodatek yt-dlp zapewnia natywny procesor Python i Y- dlp w pakiecie bez głowy. Nie ma ikony wyrzutni i działa bezpiecznie w tle.",
+                    text = stringResource(R.string.audit_the_yt_dlp_add_on_bundles_python_and_yt_dlp_it_runs_in_the_background_witho),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -663,7 +663,7 @@ object YtdlSettingsScreen : Screen {
                     ) {
                         Icon(Icons.Outlined.Download, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Pobierz add- on")
+                        Text(stringResource(R.string.audit_download_add_on))
                     }
 
                     OutlinedButton(
@@ -708,12 +708,12 @@ object YtdlSettingsScreen : Screen {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "Dodatek yt-dlp",
+                                text = stringResource(R.string.audit_yt_dlp_add_on),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = if (isInstalled) "Status: Connected & Ready" else "Status: Connected • yt-dlp Missing",
+                                text = if (isInstalled) stringResource(R.string.audit_status_connected_and_ready) else stringResource(R.string.audit_status_connected_yt_dlp_missing),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (isInstalled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary,
                                 fontWeight = FontWeight.SemiBold,
@@ -741,15 +741,15 @@ object YtdlSettingsScreen : Screen {
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Column {
-                                Text("rdzeń it- dlp", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                                Text(stringResource(R.string.audit_yt_dlp_core), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                                 Text(
-                                    text = status.version.takeIf { !it.isNullOrBlank() } ?: "Checking...",
+                                    text = status.version.takeIf { !it.isNullOrBlank() } ?: stringResource(R.string.audit_checking),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                 )
                             }
                             Column {
-                                Text("Kanał", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
+                                Text(stringResource(R.string.audit_channel), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                                 Text(
                                     text = status.channel.takeIf { !it.isNullOrBlank() } ?: "STABLE",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -759,7 +759,7 @@ object YtdlSettingsScreen : Screen {
                             Column {
                                 Text("Git commit", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.outline)
                                 Text(
-                                    text = status.shortCommitHash.takeIf { !it.isNullOrBlank() } ?: "Release",
+                                    text = status.shortCommitHash.takeIf { !it.isNullOrBlank() } ?: stringResource(R.string.audit_release),
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontWeight = FontWeight.Bold,
                                 )
@@ -779,7 +779,7 @@ object YtdlSettingsScreen : Screen {
                         ) {
                             Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Sprawdź aktualizacje")
+                            Text(stringResource(R.string.audit_check_for_updates))
                         }
 
                         Row(
@@ -792,7 +792,7 @@ object YtdlSettingsScreen : Screen {
                             ) {
                                 Icon(Icons.Outlined.SystemUpdate, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Dobranoc.")
+                                Text(stringResource(R.string.audit_nightly))
                             }
 
                             OutlinedButton(
@@ -801,13 +801,13 @@ object YtdlSettingsScreen : Screen {
                             ) {
                                 Icon(Icons.Outlined.CloudDownload, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("Ponownie zainstaluj")
+                                Text(stringResource(R.string.audit_reinstall))
                             }
                         }
                     }
                 } else {
                     Text(
-                        text = "Towarzysz add- on jest aktywny, ale scrapper yt- dlp musi być pobrany, aby umożliwić strumieniowanie w sieci.",
+                        text = stringResource(R.string.audit_the_companion_add_on_is_active_download_yt_dlp_to_enable_web_streaming),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -820,7 +820,7 @@ object YtdlSettingsScreen : Screen {
                     ) {
                         Icon(Icons.Outlined.CloudDownload, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Install yt- dlp")
+                        Text(stringResource(R.string.audit_install_yt_dlp))
                     }
                 }
             }

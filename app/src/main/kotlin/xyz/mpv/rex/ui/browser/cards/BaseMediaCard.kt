@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.cards
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
@@ -220,7 +222,7 @@ fun BaseMediaCard(
                         ) {
                             Icon(
                                 Icons.Filled.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.audit_selected),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.padding(3.dp),
                             )
@@ -361,7 +363,7 @@ fun BaseMediaCard(
                         ) {
                             Icon(
                                 Icons.Filled.Check,
-                                contentDescription = "Selected",
+                                contentDescription = stringResource(R.string.audit_selected),
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.padding(2.5.dp),
                             )

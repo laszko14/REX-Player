@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -87,18 +89,18 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
         } else {
             LuaFontReadabilitySettings(prefs, compact)
         }
-        LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
-        LuaOptionSlider("Szerokość przycisku", width, 30, 140, " dp", compact = compact) { prefs.luaButtonWidth.set(it) }
-        LuaOptionSlider("Wysokość przycisku", height, 22, 80, " dp", compact = compact) { prefs.luaButtonHeight.set(it) }
-        LuaOptionSlider("Wielkość czcionki", font, 8, 22, " sp", compact = compact) { prefs.luaButtonFontSize.set(it) }
-        LuaOptionSlider("Skala całej siatki", scale, 70, 150, "%", compact = compact) { prefs.threeFingerSpeedPanelSize.set(it) }
-        LuaOptionSlider("Odstęp między kolumnami", columnGap, 0, 24, " dp", compact = compact) { prefs.luaButtonColumnGap.set(it) }
-        LuaOptionSlider("Odstęp między rzędami", rowGap, 0, 24, " dp", compact = compact) { prefs.luaButtonRowGap.set(it) }
-        LuaOptionSlider("Przesunięcie w prawo", posX, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionX.set(it) }
-        LuaOptionSlider("Przesunięcie w dół", posY, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
-        LuaOptionSlider("Przezroczystość tła", transparent, 0, 100, "%", compact = compact) { prefs.threeFingerSpeedPanelTransparency.set(it) }
-        LuaOptionSlider("Zaokrąglenie rogów", radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
-        LuaOptionSlider("Obramowanie", border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_button_width), width, 30, 140, " dp", compact = compact) { prefs.luaButtonWidth.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_button_height), height, 22, 80, " dp", compact = compact) { prefs.luaButtonHeight.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_font_size), font, 8, 22, " sp", compact = compact) { prefs.luaButtonFontSize.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_grid_scale), scale, 70, 150, "%", compact = compact) { prefs.threeFingerSpeedPanelSize.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_column_spacing), columnGap, 0, 24, " dp", compact = compact) { prefs.luaButtonColumnGap.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_row_spacing), rowGap, 0, 24, " dp", compact = compact) { prefs.luaButtonRowGap.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_right_offset), posX, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionX.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_downward_offset), posY, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_background_transparency), transparent, 0, 100, "%", compact = compact) { prefs.threeFingerSpeedPanelTransparency.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_corner_radius), radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_border), border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
         OutlinedButton(
             onClick = {
                 prefs.luaPanelColumns.set(5)
@@ -125,7 +127,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonAlwaysVisible.set(false)
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Przywróć ustawienia domyślne") }
+        ) { Text(stringResource(R.string.audit_restore_defaults)) }
     }
 }
 
@@ -149,11 +151,11 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Domyślnie zawsze widoczne",
+                    stringResource(R.string.audit_always_visible_by_default),
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    "Wyłącz, aby po schowaniu kontrolek pozostawały tylko wskazane guziki.",
+                    stringResource(R.string.audit_disable_to_keep_only_selected_buttons_visible_when_controls_are_hidden),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -166,21 +168,21 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
 
         LuaFontReadabilitySettings(prefs, compact)
         LuaPalette(
-            "Kolor czcionki",
+            stringResource(R.string.audit_text_color),
             fontColor,
             prefs.luaButtonTextColor::set,
             LUA_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
-            "Kolor czcionki aktywnej prędkości",
+            stringResource(R.string.audit_active_speed_text_color),
             activeTextColor,
             prefs.luaButtonActiveTextColor::set,
             LUA_ACTIVE_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
-            "Kolor tła przycisków",
+            stringResource(R.string.audit_button_background_color),
             baseColor,
             prefs.luaButtonBaseColor::set,
             listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
@@ -188,7 +190,7 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
             compact,
         )
         LuaPalette(
-            "Kolor aktywnego przycisku",
+            stringResource(R.string.audit_active_button_color),
             activeColor,
             prefs.luaButtonActiveColor::set,
             listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
@@ -196,7 +198,7 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
             compact,
         )
         LuaOptionSlider(
-            "Przezroczystość aktywnego przycisku",
+            stringResource(R.string.audit_active_button_transparency),
             activeTransparency, 0, 100, "%", compact = compact,
         ) { prefs.luaButtonActiveTransparency.set(it) }
     }
@@ -212,31 +214,30 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
 private fun LuaFontReadabilitySettings(prefs: PlayerPreferences, compact: Boolean) {
     val weight by prefs.luaButtonFontWeightPercent.collectAsState()
     val outline by prefs.luaButtonOutlinePercent.collectAsState()
-    LuaOptionSlider("Pogrubienie czcionki", weight, 0, 100, "%", compact = compact) {
+    LuaOptionSlider(stringResource(R.string.audit_font_weight), weight, 0, 100, "%", compact = compact) {
         prefs.luaButtonFontWeightPercent.set(it)
     }
-    LuaOptionSlider("Siła kontrastowego obrysu", outline, 0, 100, "%", compact = compact) {
+    LuaOptionSlider(stringResource(R.string.audit_contrast_outline_strength), outline, 0, 100, "%", compact = compact) {
         prefs.luaButtonOutlinePercent.set(it)
     }
     if (!compact) {
         Text(
-            "0% = czcionka normalna i brak obrysu; 60% = Bold, 90% = Black. " +
-                "100% kontrastu = cienki, wyraźny kontur bez halo. Kolory pozostają bez zmian.",
+            stringResource(R.string.audit_lua_readability_help),
             style = MaterialTheme.typography.labelSmall,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedButton(onClick = {
                 prefs.luaButtonFontWeightPercent.set(0)
                 prefs.luaButtonOutlinePercent.set(0)
-            }) { Text("Naturalny") }
+            }) { Text(stringResource(R.string.audit_natural)) }
             OutlinedButton(onClick = {
                 prefs.luaButtonFontWeightPercent.set(60)
                 prefs.luaButtonOutlinePercent.set(50)
-            }) { Text("Czytelny") }
+            }) { Text(stringResource(R.string.audit_readable)) }
             OutlinedButton(onClick = {
                 prefs.luaButtonFontWeightPercent.set(90)
                 prefs.luaButtonOutlinePercent.set(85)
-            }) { Text("Mocny") }
+            }) { Text(stringResource(R.string.audit_strong)) }
         }
     }
 }
@@ -256,7 +257,7 @@ fun LuaButtonIndividualAppearance(
 
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 8.dp)) {
         Text(
-            "Indywidualne ustawienia: " + button.title,
+            stringResource(R.string.audit_lua_individual_settings, button.title),
             style = MaterialTheme.typography.titleSmall,
         )
         Row(
@@ -264,9 +265,9 @@ fun LuaButtonIndividualAppearance(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Zawsze widoczny", style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.audit_always_visible), style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    "Pozostaje na filmie, gdy inne przyciski znikają.",
+                    stringResource(R.string.audit_stays_visible_over_the_video_when_other_buttons_disappear),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -277,13 +278,13 @@ fun LuaButtonIndividualAppearance(
             )
         }
         Text(
-            if (button.alwaysVisible == null) "Widoczność: domyślna (globalna)"
-            else "Widoczność: ustawiona tylko dla tego guzika",
+            if (button.alwaysVisible == null) stringResource(R.string.audit_visibility_global_default)
+            else stringResource(R.string.audit_visibility_set_for_this_button_only),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         LuaPalette(
-            "Tło przycisku",
+            stringResource(R.string.audit_button_background),
             button.backgroundColor ?: globalBg,
             { onChange(button.copy(backgroundColor = it)) },
             listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
@@ -291,14 +292,14 @@ fun LuaButtonIndividualAppearance(
             compact,
         )
         LuaPalette(
-            "Kolor czcionki",
+            stringResource(R.string.audit_text_color),
             button.textColor ?: globalFg,
             { onChange(button.copy(textColor = it)) },
             LUA_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
-            "Tło aktywnej prędkości",
+            stringResource(R.string.audit_active_speed_background),
             button.activeBackgroundColor ?: globalActiveBg,
             { onChange(button.copy(activeBackgroundColor = it)) },
             listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
@@ -306,7 +307,7 @@ fun LuaButtonIndividualAppearance(
             compact,
         )
         LuaPalette(
-            "Kolor czcionki aktywnej prędkości",
+            stringResource(R.string.audit_active_speed_text_color),
             button.activeTextColor ?: globalActiveFg,
             { onChange(button.copy(activeTextColor = it)) },
             LUA_ACTIVE_TEXT_PALETTE,
@@ -325,7 +326,7 @@ fun LuaButtonIndividualAppearance(
                 )
             },
             modifier = Modifier.fillMaxWidth(),
-        ) { Text("Przywróć domyślne ustawienia tego przycisku") }
+        ) { Text(stringResource(R.string.audit_restore_this_button_to_defaults)) }
     }
 }
 
@@ -433,7 +434,7 @@ private fun LuaPalette(
         }
         if (palette.size > 14) {
             OutlinedButton(onClick = { expanded = !expanded }) {
-                Text(if (expanded) "Pokaż mniej kolorów" else "Więcej kolorów (" + palette.size + ")")
+                Text(if (expanded) stringResource(R.string.audit_show_fewer_colors) else stringResource(R.string.audit_lua_more_colors, palette.size))
             }
         }
         Row(
@@ -447,14 +448,14 @@ private fun LuaPalette(
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.labelMedium,
-                label = { Text("Kolor HEX", style = MaterialTheme.typography.labelSmall) },
+                label = { Text(stringResource(R.string.audit_hex_color), style = MaterialTheme.typography.labelSmall) },
                 placeholder = { Text(shownHex) },
                 isError = hexDraft.isNotBlank() && candidate == null,
             )
             OutlinedButton(
                 onClick = { candidate?.let(onSelect) },
                 enabled = candidate != null && candidate != selected,
-            ) { Text("Ustaw") }
+            ) { Text(stringResource(R.string.audit_apply)) }
         }
     }
 }
@@ -476,24 +477,24 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
     val activeColor by prefs.luaButtonActiveColor.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text("Najczęściej używane", style = MaterialTheme.typography.titleSmall)
-        LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = true, onChange = prefs.luaPanelColumns::set)
-        LuaOptionSlider("Szerokość", width, 30, 140, " dp", compact = true, onChange = prefs.luaButtonWidth::set)
-        LuaOptionSlider("Wysokość", height, 22, 80, " dp", compact = true, onChange = prefs.luaButtonHeight::set)
-        LuaOptionSlider("Skala siatki", scale, 70, 150, "%", compact = true, onChange = prefs.threeFingerSpeedPanelSize::set)
-        LuaOptionSlider("Odstęp poziomy", columnGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonColumnGap::set)
-        LuaOptionSlider("Odstęp pionowy", rowGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonRowGap::set)
-        LuaOptionSlider("Pozycja X", posX, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionX::set)
-        LuaOptionSlider("Pozycja Y", posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
-        LuaOptionSlider("Przezroczystość tła", alpha, 0, 100, "%", compact = true,
+        Text(stringResource(R.string.audit_frequently_used), style = MaterialTheme.typography.titleSmall)
+        LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", compact = true, onChange = prefs.luaPanelColumns::set)
+        LuaOptionSlider(stringResource(R.string.audit_width), width, 30, 140, " dp", compact = true, onChange = prefs.luaButtonWidth::set)
+        LuaOptionSlider(stringResource(R.string.audit_height), height, 22, 80, " dp", compact = true, onChange = prefs.luaButtonHeight::set)
+        LuaOptionSlider(stringResource(R.string.audit_grid_scaling), scale, 70, 150, "%", compact = true, onChange = prefs.threeFingerSpeedPanelSize::set)
+        LuaOptionSlider(stringResource(R.string.audit_horizontal_spacing), columnGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonColumnGap::set)
+        LuaOptionSlider(stringResource(R.string.audit_vertical_spacing), rowGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonRowGap::set)
+        LuaOptionSlider(stringResource(R.string.audit_x_position), posX, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionX::set)
+        LuaOptionSlider(stringResource(R.string.audit_y_position), posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
+        LuaOptionSlider(stringResource(R.string.audit_background_transparency), alpha, 0, 100, "%", compact = true,
             onChange = prefs.threeFingerSpeedPanelTransparency::set)
         LuaFontReadabilitySettings(prefs, compact = true)
-        LuaQuickColorRow("Czcionka", textColor, prefs.luaButtonTextColor::set,
+        LuaQuickColorRow(stringResource(R.string.audit_text), textColor, prefs.luaButtonTextColor::set,
             LUA_TEXT_PALETTE.take(8))
-        LuaQuickColorRow("Aktywny przycisk", activeColor, prefs.luaButtonActiveColor::set,
+        LuaQuickColorRow(stringResource(R.string.audit_active_button), activeColor, prefs.luaButtonActiveColor::set,
             listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
                 0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()))
-        Text("Pozostałe kolory i ustawienia znajdziesz w zakładce Wygląd.",
+        Text(stringResource(R.string.audit_more_colors_and_settings_are_available_in_the_appearance_tab),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.labelSmall)
     }
@@ -543,14 +544,14 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
     val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        LuaAppearanceSection("Rozmiar i układ", initiallyOpen = true) {
-            LuaOptionSlider("Kolumny", cols, 1, 8, "", true, prefs.luaPanelColumns::set)
-            LuaOptionSlider("Szerokość", width, 30, 140, " dp", true, prefs.luaButtonWidth::set)
-            LuaOptionSlider("Wysokość", height, 22, 80, " dp", true, prefs.luaButtonHeight::set)
-            LuaOptionSlider("Rozmiar czcionki", font, 8, 22, " sp", true, prefs.luaButtonFontSize::set)
-            LuaOptionSlider("Skala", scale, 70, 150, "%", true, prefs.threeFingerSpeedPanelSize::set)
-            LuaOptionSlider("Odstęp kolumn", columnGap, 0, 24, " dp", true, prefs.luaButtonColumnGap::set)
-            LuaOptionSlider("Odstęp rzędów", rowGap, 0, 24, " dp", true, prefs.luaButtonRowGap::set)
+        LuaAppearanceSection(stringResource(R.string.audit_size_and_layout), initiallyOpen = true) {
+            LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", true, prefs.luaPanelColumns::set)
+            LuaOptionSlider(stringResource(R.string.audit_width), width, 30, 140, " dp", true, prefs.luaButtonWidth::set)
+            LuaOptionSlider(stringResource(R.string.audit_height), height, 22, 80, " dp", true, prefs.luaButtonHeight::set)
+            LuaOptionSlider(stringResource(R.string.audit_font_size), font, 8, 22, " sp", true, prefs.luaButtonFontSize::set)
+            LuaOptionSlider(stringResource(R.string.audit_scale), scale, 70, 150, "%", true, prefs.threeFingerSpeedPanelSize::set)
+            LuaOptionSlider(stringResource(R.string.audit_spacing_between_columns), columnGap, 0, 24, " dp", true, prefs.luaButtonColumnGap::set)
+            LuaOptionSlider(stringResource(R.string.audit_spacing_between_rows), rowGap, 0, 24, " dp", true, prefs.luaButtonRowGap::set)
             OutlinedButton(onClick = {
                 prefs.luaPanelColumns.set(5)
                 prefs.luaButtonWidth.set(52)
@@ -559,13 +560,13 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.threeFingerSpeedPanelSize.set(100)
                 prefs.luaButtonColumnGap.set(2)
                 prefs.luaButtonRowGap.set(2)
-            }) { Text("Resetuj rozmiary i odstępy") }
+            }) { Text(stringResource(R.string.audit_reset_sizes_and_spacing)) }
         }
-        LuaAppearanceSection("Pozycja i widoczność") {
-            LuaOptionSlider("Pozycja X", posX, 0, 240, " dp", true, prefs.luaButtonPositionX::set)
-            LuaOptionSlider("Pozycja Y", posY, 0, 240, " dp", true, prefs.luaButtonPositionY::set)
+        LuaAppearanceSection(stringResource(R.string.audit_position_and_visibility)) {
+            LuaOptionSlider(stringResource(R.string.audit_x_position), posX, 0, 240, " dp", true, prefs.luaButtonPositionX::set)
+            LuaOptionSlider(stringResource(R.string.audit_y_position), posY, 0, 240, " dp", true, prefs.luaButtonPositionY::set)
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                Text("Domyślnie zawsze widoczne", modifier = Modifier.weight(1f),
+                Text(stringResource(R.string.audit_always_visible_by_default), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium)
                 Switch(checked = alwaysVisible, onCheckedChange = prefs.luaButtonAlwaysVisible::set)
             }
@@ -573,13 +574,13 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.luaButtonPositionX.set(0)
                 prefs.luaButtonPositionY.set(100)
                 prefs.luaButtonAlwaysVisible.set(false)
-            }) { Text("Resetuj pozycję") }
+            }) { Text(stringResource(R.string.audit_reset_position)) }
         }
-        LuaAppearanceSection("Kolory i czytelność czcionki") {
+        LuaAppearanceSection(stringResource(R.string.audit_text_colors_and_readability)) {
             LuaFontReadabilitySettings(prefs, compact = true)
-            LuaPalette("Zwykła czcionka", fontColor, prefs.luaButtonTextColor::set,
+            LuaPalette(stringResource(R.string.audit_normal_text), fontColor, prefs.luaButtonTextColor::set,
                 LUA_TEXT_PALETTE, compact = true)
-            LuaPalette("Czcionka aktywnej prędkości", activeFont,
+            LuaPalette(stringResource(R.string.audit_active_speed_text), activeFont,
                 prefs.luaButtonActiveTextColor::set, LUA_ACTIVE_TEXT_PALETTE, compact = true)
             OutlinedButton(onClick = {
                 prefs.luaButtonTextColor.set(0xFFFFFFFF.toInt())
@@ -588,40 +589,40 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.luaButtonBoldText.set(false)
                 prefs.luaButtonFontWeightPercent.set(0)
                 prefs.luaButtonOutlinePercent.set(0)
-            }) { Text("Resetuj wygląd czcionki") }
+            }) { Text(stringResource(R.string.audit_reset_text_appearance)) }
         }
-        LuaAppearanceSection("Kolory tła") {
-            LuaPalette("Tło zwykłego przycisku", baseColor, prefs.luaButtonBaseColor::set,
+        LuaAppearanceSection(stringResource(R.string.audit_background_colors)) {
+            LuaPalette(stringResource(R.string.audit_normal_button_background), baseColor, prefs.luaButtonBaseColor::set,
                 listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
                     0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()), true)
-            LuaPalette("Tło aktywnego przycisku", activeColor, prefs.luaButtonActiveColor::set,
+            LuaPalette(stringResource(R.string.audit_active_button_background), activeColor, prefs.luaButtonActiveColor::set,
                 listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
                     0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()), true)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
-                LuaAppearancePreview("Zwykły", baseColor, fontColor, transparency)
-                LuaAppearancePreview("Aktywny", activeColor, activeFont, activeTransparency)
+                LuaAppearancePreview(stringResource(R.string.audit_normal), baseColor, fontColor, transparency)
+                LuaAppearancePreview(stringResource(R.string.audit_active), activeColor, activeFont, activeTransparency)
             }
             OutlinedButton(onClick = {
                 prefs.luaButtonBaseColor.set(0xFF252631.toInt())
                 prefs.luaButtonActiveColor.set(0xFF92BBFF.toInt())
-            }) { Text("Resetuj kolory tła") }
+            }) { Text(stringResource(R.string.audit_reset_background_colors)) }
         }
-        LuaAppearanceSection("Przezroczystość i obramowanie") {
-            LuaOptionSlider("Tło zwykłe", transparency, 0, 100, "%", true,
+        LuaAppearanceSection(stringResource(R.string.audit_transparency_and_border)) {
+            LuaOptionSlider(stringResource(R.string.audit_normal_background), transparency, 0, 100, "%", true,
                 prefs.threeFingerSpeedPanelTransparency::set)
-            LuaOptionSlider("Tło aktywne", activeTransparency, 0, 100, "%", true,
+            LuaOptionSlider(stringResource(R.string.audit_active_background), activeTransparency, 0, 100, "%", true,
                 prefs.luaButtonActiveTransparency::set)
-            LuaOptionSlider("Obramowanie", border, 0, 100, "%", true,
+            LuaOptionSlider(stringResource(R.string.audit_border), border, 0, 100, "%", true,
                 prefs.luaButtonBorderOpacity::set)
-            LuaOptionSlider("Zaokrąglenie", corner, 0, 24, " dp", true,
+            LuaOptionSlider(stringResource(R.string.audit_rounding), corner, 0, 24, " dp", true,
                 prefs.luaButtonCornerRadius::set)
             OutlinedButton(onClick = {
                 prefs.threeFingerSpeedPanelTransparency.set(20)
                 prefs.luaButtonActiveTransparency.set(0)
                 prefs.luaButtonBorderOpacity.set(20)
                 prefs.luaButtonCornerRadius.set(7)
-            }) { Text("Resetuj przezroczystość i ramkę") }
+            }) { Text(stringResource(R.string.audit_reset_transparency_and_border)) }
         }
     }
 }

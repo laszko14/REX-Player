@@ -516,7 +516,7 @@ object SubtitlesPreferencesScreen : Screen {
 
           // === ONLINE SUBTITLE SECTION ===
           item {
-            PreferenceSectionHeader(title = "Subtitle Search")
+            PreferenceSectionHeader(title = stringResource(R.string.audit_subtitle_search))
           }
 
           item {
@@ -560,7 +560,7 @@ object SubtitlesPreferencesScreen : Screen {
                 highlightKey = listOf("Subtitle Sources", R.string.pref_subtitle_search_title),
               ) {
                 MultiChoicePreference(
-                  title = { Text("Źródła podtytułu") },
+                  title = { Text(stringResource(R.string.audit_subtitle_sources)) },
                   summary = {
                     val summaryText = if (wyzieSources.isEmpty() || wyzieSources.contains("all")) {
                       "All"
@@ -611,7 +611,7 @@ object SubtitlesPreferencesScreen : Screen {
                     horizontalArrangement = Arrangement.SpaceBetween
                   ) {
                     Text(
-                      text = "Zaawansowane filtry wyszukiwania",
+                      text = stringResource(R.string.audit_advanced_search_filters),
                       style = MaterialTheme.typography.labelLarge,
                       color = MaterialTheme.colorScheme.primary,
                       fontWeight = FontWeight.Bold
@@ -628,14 +628,14 @@ object SubtitlesPreferencesScreen : Screen {
                       SwitchPreference(
                         value = wyzieHearingImpaired,
                         onValueChange = { preferences.wyzieHearingImpaired.set(it) },
-                        title = { Text("Przyjazny z zaburzeniami serca") },
-                        summary = { Text("Pokaż tylko napisy zoptymalizowane do słuchu") }
+                        title = { Text(stringResource(R.string.audit_hearing_impaired_friendly)) },
+                        summary = { Text(stringResource(R.string.audit_only_show_subtitles_adapted_for_people_with_hearing_loss)) }
                       )
 
                       PreferenceDivider()
 
                       MultiChoicePreference(
-                        title = { Text("Preferowane formaty") },
+                        title = { Text(stringResource(R.string.audit_preferred_formats)) },
                         summary = {
                           val summaryText = if (wyzieFormats.isEmpty() || wyzieFormats.contains("all")) {
                             "All"
@@ -653,7 +653,7 @@ object SubtitlesPreferencesScreen : Screen {
                       PreferenceDivider()
 
                       MultiChoicePreference(
-                        title = { Text("Preferowane kody") },
+                        title = { Text(stringResource(R.string.audit_preferred_codecs)) },
                         summary = {
                           val summaryText = if (wyzieEncodings.isEmpty() || wyzieEncodings.contains("all")) {
                             "All"
@@ -704,7 +704,7 @@ object SubtitlesPreferencesScreen : Screen {
                               }
                             }.onFailure { e ->
                               withContext(Dispatchers.Main) {
-                                android.widget.Toast.makeText(context, "Error: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                android.widget.Toast.makeText(context, context.getString(R.string.audit_error, e.message), android.widget.Toast.LENGTH_SHORT).show()
                               }
                             }
                           }
@@ -806,7 +806,7 @@ object SubtitlesPreferencesScreen : Screen {
                     verticalAlignment = Alignment.CenterVertically
                   ) {
                     Text(
-                      text = "Tłumaczenie:",
+                      text = stringResource(R.string.audit_powered_by),
                       style = MaterialTheme.typography.bodySmall,
                       color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

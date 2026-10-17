@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.preferences
 
+import androidx.compose.ui.res.pluralStringResource
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
@@ -476,12 +477,8 @@ object AdvancedPreferencesScreen : Screen {
                         stringResource(R.string.pref_advanced_no_scripts_enabled), 
                         color = MaterialTheme.colorScheme.outline
                       )
-                      selectedScripts.size == 1 -> Text(
-                        "1 skrypt włączony",
-                        color = MaterialTheme.colorScheme.outline
-                      )
                       else -> Text(
-                        "${selectedScripts.size} scripts enabled",
+                        pluralStringResource(R.plurals.audit_enabled_script_count, selectedScripts.size, selectedScripts.size),
                         color = MaterialTheme.colorScheme.outline
                       )
                     }

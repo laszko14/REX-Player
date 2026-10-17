@@ -88,7 +88,7 @@ fun VideoQualitySheet(
       item {
         QualityCard(
           label = stringResource(R.string.video_quality_auto),
-          subtitle = "Default / Extractor Choice",
+          subtitle = stringResource(R.string.audit_default_extractor_choice),
           badge = "AUTO",
           isSelected = isAutoSelected,
           onClick = {

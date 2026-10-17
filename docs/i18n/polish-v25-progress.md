@@ -28,3 +28,10 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Zachowano identyfikatory zasobów, komplet parametrów formatowania i znaczniki tekstu.
 - Zweryfikowano osobno niezmieniane nazwy własne, technologie, symbole, formaty i wspólne polsko-angielskie słowa (np. „port”, „folder”).
 - Walidacja zasobów przeszła. Wydzielanie napisów z Kotlina oraz sprawdzenie wyglądu są w toku; nie jest to jeszcze walidacja APK.
+
+## Etap 2b — Kotlin/Compose
+
+- Wydzielono 438 tekstów i 8 zasobów liczby mnogiej w 57 plikach produkcyjnych. Domyślne zasoby pozostają angielskie; polskie odpowiedniki są w `values-pl/ui_audit.xml`. Pozostałe języki nadal korzystają ze swoich zasobów lub poprawnego języka domyślnego.
+- Uwzględniono HUD, Lua, ustawienia, napisy, odtwarzacz/OSD, powiadomienia, yt-dlp, Jellyfin, przeglądarkę, listy odtwarzania i komunikaty udostępniania.
+- Niezależny przegląd wskazał dodatkowe komunikaty audio, skryptów i udostępniania, odmianę potwierdzenia usunięcia z listy i spacje w dołączanych etykietach; poprawki wprowadzono przed kompilacją.
+- Kontrola zasobów, referencji oraz białych znaków przeszła. Teksty strony Web Share są korygowane osobno. Wyniki renderowania i kompilacji będą zapisane po ich zakończeniu.

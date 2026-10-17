@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.cards
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -91,7 +93,7 @@ fun FolderCard(
     thumbnailIcon = {
       Icon(
         customIcon ?: Icons.Filled.Folder,
-        contentDescription = "Folder",
+        contentDescription = stringResource(R.string.audit_folder),
         modifier = if (isGridMode) {
           Modifier.fillMaxWidth().aspectRatio(thumbnailAspectRatio).scale(1.2f)
         } else {

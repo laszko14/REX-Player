@@ -630,7 +630,7 @@ object PlayerPreferencesScreen : Screen {
                   summary = {
                     val sensitivityPercent = (horizontalSwipeSensitivity * 1000).toInt()
                     Text(
-                      "Current: ${sensitivityPercent}/100 (${if (sensitivityPercent < 30) "Low" else if (sensitivityPercent < 55) "Medium" else "High"})",
+                      stringResource(R.string.audit_current_sensitivity, sensitivityPercent, if (sensitivityPercent < 30) stringResource(R.string.audit_low) else if (sensitivityPercent < 55) stringResource(R.string.audit_medium) else stringResource(R.string.audit_high)),
                       color = MaterialTheme.colorScheme.outline,
                     )
                   },
@@ -813,7 +813,7 @@ object PlayerPreferencesScreen : Screen {
               onClick = { backstack.add(AlphaHudPreferencesScreen) },
               modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
-              Text("HUD Alpha — rozmiar, odstępy, pozycja, kolory")
+              Text(stringResource(R.string.audit_hud_alpha_size_spacing_position_colors))
             }
           }
 

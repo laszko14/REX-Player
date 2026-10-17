@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -85,7 +87,7 @@ fun LuaButtonsInPlayerDialog(
                 TextButton(
                     modifier = Modifier.align(Alignment.BottomCenter),
                     onClick = { onManualMinimize(false) },
-                ) { Text("Pokaż ustawienia Lua") }
+                ) { Text(stringResource(R.string.audit_show_lua_settings)) }
             }
             if (!hiddenDuringDrag && !manualMinimized) Surface(
                 modifier = Modifier
@@ -108,35 +110,34 @@ fun LuaButtonsInPlayerDialog(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            "Przyciski Lua",
+                            stringResource(R.string.audit_lua_buttons),
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f),
                         )
-                        TextButton(onClick = { onManualMinimize(true) }) { Text("Schowaj") }
+                        TextButton(onClick = { onManualMinimize(true) }) { Text(stringResource(R.string.audit_hide)) }
                         TextButton(onClick = onDismiss) { Text("✕") }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         FilterChip(
                             selected = tab == 0,
                             onClick = { prefs.luaEditorLastTab.set(0) },
-                            label = { Text("Szybkie") },
+                            label = { Text(stringResource(R.string.audit_quick)) },
                         )
                         FilterChip(
                             selected = tab == 1,
                             onClick = { prefs.luaEditorLastTab.set(1) },
-                            label = { Text("Wygląd") },
+                            label = { Text(stringResource(R.string.audit_appearance)) },
                         )
                         FilterChip(
                             selected = tab == 2,
                             onClick = { prefs.luaEditorLastTab.set(2) },
-                            label = { Text("Kody ($LUA_SLOT_COUNT)") },
+                            label = { Text(stringResource(R.string.audit_lua_code_count, LUA_SLOT_COUNT)) },
                         )
                     }
                     HorizontalDivider()
                     Text(
-                        "Przytrzymaj guzik i przeciągnij między 30 polami z lewej oraz 8 z prawej. " +
-                            "Ustawienia schowają się do puszczenia guzika.",
+                        stringResource(R.string.audit_lua_drag_help),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -194,18 +195,19 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Column(modifier = Modifier.weight(1f)) {
                             Text(button?.title ?: when {
-                                index >= LUA_EXTRA_START -> "Prawe pole 4×2"
-                                index >= LUA_MAIN_SLOT_COUNT -> "Archiwum v23 (niewidoczne)"
-                                else -> "Pusty przycisk"
+                                index >= LUA_EXTRA_START -> stringResource(R.string.audit_right_4_2_slot)
+                                index >= LUA_MAIN_SLOT_COUNT -> stringResource(R.string.audit_v23_archive_hidden)
+                                else -> stringResource(R.string.audit_empty_button)
                             },
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
-                            val summary = if (button == null) "Wolne miejsce" else
-                                (if (button.enabled) "ON" else "OFF") +
-                                    " · Klik " + (if (button.content.isNotBlank()) "✓" else "—") +
-                                    " · Długie " + (if (button.longPressContent.isNotBlank()) "✓" else "—") +
-                                    " · Start " + (if (button.onStartup.isNotBlank()) "✓" else "—")
+                            val summary = if (button == null) stringResource(R.string.audit_empty_slot) else
+                                stringResource(R.string.audit_lua_slot_summary,
+                                    if (button.enabled) stringResource(R.string.audit_on) else stringResource(R.string.audit_off),
+                                    if (button.content.isNotBlank()) "✓" else "—",
+                                    if (button.longPressContent.isNotBlank()) "✓" else "—",
+                                    if (button.onStartup.isNotBlank()) "✓" else "—")
                             Text(summary, style = MaterialTheme.typography.labelSmall,
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -238,13 +240,13 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             modifier = modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista $LUA_SLOT_COUNT przycisków") }
+            OutlinedButton(onClick = { selectedIndex = -1 }) { Text(stringResource(R.string.audit_lua_button_list, LUA_SLOT_COUNT)) }
             Text(
-                "Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT" +
+                stringResource(R.string.audit_lua_button_index, index + 1, LUA_SLOT_COUNT) +
                     when {
-                        index >= LUA_EXTRA_START -> " • prawa strona 4×2"
-                        index >= LUA_MAIN_SLOT_COUNT -> " • archiwum v23, nie na ekranie"
-                        else -> " • lewa strona"
+                        index >= LUA_EXTRA_START -> stringResource(R.string.audit_right_side_4_2)
+                        index >= LUA_MAIN_SLOT_COUNT -> stringResource(R.string.audit_v23_archive_off_screen)
+                        else -> stringResource(R.string.audit_left_side)
                     },
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -262,16 +264,16 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text("Przenieś do prawych 8 pól") }
+                    ) { Text(stringResource(R.string.audit_move_to_the_8_right_slots)) }
                 }
             }
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(), label = { Text("Nazwa przycisku") },
+                modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.audit_button_name)) },
                 singleLine = true,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Włączony", modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.audit_enabled), modifier = Modifier.weight(1f))
                 Switch(checked = enabled, onCheckedChange = { enabled = it })
             }
             if (old != null) {
@@ -280,7 +282,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                     onClick = { individualOpen = !individualOpen },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(if (individualOpen) "Zwiń widoczność i kolory ▲" else "Widoczność i kolory tego guzika ▼")
+                    Text(if (individualOpen) stringResource(R.string.audit_collapse_visibility_and_colors) else stringResource(R.string.audit_this_button_s_visibility_and_colors))
                 }
                 if (individualOpen) {
                     LuaButtonIndividualAppearance(
@@ -292,23 +294,23 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                 }
             } else {
                 Text(
-                    "Zapisz przycisk, aby wybrać indywidualną widoczność i kolory.",
+                    stringResource(R.string.audit_save_the_button_to_set_its_visibility_and_colors),
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
             OutlinedTextField(
                 value = clickCode, onValueChange = { clickCode = it },
-                modifier = Modifier.fillMaxWidth(), label = { Text("Kod Lua — kliknięcie") },
+                modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.audit_lua_code_tap)) },
                 minLines = 2, maxLines = 5,
             )
             OutlinedTextField(
                 value = longCode, onValueChange = { longCode = it },
-                modifier = Modifier.fillMaxWidth(), label = { Text("Kod Lua — przytrzymanie") },
+                modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.audit_lua_code_long_press)) },
                 minLines = 2, maxLines = 5,
             )
             OutlinedTextField(
                 value = startCode, onValueChange = { startCode = it },
-                modifier = Modifier.fillMaxWidth(), label = { Text("Kod Lua — po uruchomieniu") },
+                modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.audit_lua_code_on_startup)) },
                 minLines = 2, maxLines = 5,
             )
             Button(
@@ -329,24 +331,24 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                 },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
-            ) { Text("Zapisz Lua") }
+            ) { Text(stringResource(R.string.audit_save_lua)) }
             if (old != null) {
                 var confirmRemoval by remember(index) { mutableStateOf(false) }
                 FilledTonalButton(onClick = { confirmRemoval = true }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Usuń przycisk")
+                    Text(stringResource(R.string.audit_delete_button))
                 }
                 if (confirmRemoval) {
                     AlertDialog(
                         onDismissRequest = { confirmRemoval = false },
-                        title = { Text("Usunąć ten przycisk?") },
-                        text = { Text("Zwolnisz miejsce " + (index + 1) + ". Inne przyciski pozostaną na swoich pozycjach.") },
+                        title = { Text(stringResource(R.string.audit_delete_this_button)) },
+                        text = { Text(stringResource(R.string.audit_lua_remove_help, index + 1)) },
                         confirmButton = {
                             TextButton(onClick = { confirmRemoval = false; write(null) }) {
-                                Text("Usuń")
+                                Text(stringResource(R.string.audit_delete))
                             }
                         },
                         dismissButton = {
-                            TextButton(onClick = { confirmRemoval = false }) { Text("Anuluj") }
+                            TextButton(onClick = { confirmRemoval = false }) { Text(stringResource(R.string.audit_cancel)) }
                         },
                     )
                 }

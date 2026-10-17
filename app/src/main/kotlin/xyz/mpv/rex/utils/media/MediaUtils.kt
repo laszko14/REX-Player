@@ -435,7 +435,7 @@ object MediaUtils : KoinComponent {
         Intent(Intent.ACTION_SEND_MULTIPLE).apply {
           type = "video/*"
           putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
-          putExtra(Intent.EXTRA_SUBJECT, "Sharing ${uris.size} videos")
+          putExtra(Intent.EXTRA_SUBJECT, context.resources.getQuantityString(R.plurals.audit_sharing_video_count, uris.size, uris.size))
           val clip = android.content.ClipData.newRawUri(videos.first().displayName, uris.first())
           uris.drop(1).forEach { u -> clip.addItem(android.content.ClipData.Item(u)) }
           clipData = clip
@@ -446,7 +446,7 @@ object MediaUtils : KoinComponent {
     context.startActivity(
       Intent.createChooser(
         intent,
-        if (uris.size == 1) "Share video" else "Share ${uris.size} videos",
+        context.resources.getQuantityString(R.plurals.audit_share_video_count, uris.size, uris.size),
       ),
     )
   }

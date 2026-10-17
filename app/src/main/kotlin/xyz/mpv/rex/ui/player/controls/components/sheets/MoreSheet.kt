@@ -697,7 +697,7 @@ fun AestheticsTab() {
       horizontalArrangement = Arrangement.SpaceBetween,
     ) {
       Text(
-        "Widoczność wszystkich elementów odtwarzacza",
+        stringResource(R.string.audit_visibility_of_all_player_controls),
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.weight(1f),
       )
@@ -710,14 +710,13 @@ fun AestheticsTab() {
       steps = 99,
     )
     Text(
-      "0% — niewidoczne: Play, pasek czasu, HUD, Lua i pozostałe przyciski. " +
-        "100% — zwykła pełna widoczność. Film i napisy nie zmieniają się.",
+      stringResource(R.string.audit_overlay_visibility_help),
       style = MaterialTheme.typography.bodySmall,
       color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
       TextButton(onClick = { playerPreferences.playerOverlayOpacityPercent.set(100) }) {
-        Text("Przywróć 100%")
+        Text(stringResource(R.string.audit_restore_100))
       }
     }
 

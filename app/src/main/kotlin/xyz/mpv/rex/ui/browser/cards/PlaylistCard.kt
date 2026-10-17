@@ -1,5 +1,8 @@
 package xyz.mpv.rex.ui.browser.cards
 
+import androidx.compose.ui.res.pluralStringResource
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -234,7 +237,7 @@ fun PlaylistCard(
         )
         Icon(
           imageVector = iconVector,
-          contentDescription = "Playlist",
+          contentDescription = stringResource(R.string.audit_playlist),
           modifier = Modifier
             .align(Alignment.Center)
             .size(iconSize),
@@ -264,7 +267,7 @@ fun PlaylistCard(
             )
             Spacer(modifier = Modifier.width(3.dp))
             Text(
-              text = if (itemCount == 1) "1 item" else "$itemCount items",
+              text = pluralStringResource(R.plurals.audit_item_count, itemCount, itemCount),
               style = MaterialTheme.typography.labelSmall,
               fontWeight = FontWeight.Medium,
             )
@@ -288,7 +291,7 @@ fun PlaylistCard(
       )
 
       MediaMetadataChip(
-        text = if (itemCount == 1) "1 item" else "$itemCount items",
+        text = pluralStringResource(R.plurals.audit_item_count, itemCount, itemCount),
       )
 
       if (uiSettings.showDateChip && playlist.updatedAt > 0) {
