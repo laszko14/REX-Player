@@ -40,6 +40,8 @@ class CustomButtonManager(
         val id: String,
         val label: String,
         val isLeft: Boolean,
+        val textColor: String? = null,
+        val backgroundColor: String? = null,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
@@ -122,7 +124,7 @@ class CustomButtonManager(
                                 if (btn != null && btn.enabled) {
                                     val safeId = btn.id.replace("-", "_")
                                     val isLeft = index < 4
-                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
+                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, btn.textColor, btn.backgroundColor, uiButtons)
                                 }
                             }
                         } catch (e: Exception) {
@@ -132,7 +134,7 @@ class CustomButtonManager(
                                 customButtonsList.forEachIndexed { index, btn ->
                                     val safeId = btn.id.replace("-", "_")
                                     val isLeft = index < 4
-                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
+                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, btn.textColor, btn.backgroundColor, uiButtons)
                                 }
                             } catch (e2: Exception) {
                                 Log.e(TAG, "Failed to parse custom buttons JSON", e2)
@@ -231,10 +233,12 @@ class CustomButtonManager(
         longPressCommand: String,
         onStartup: String,
         isLeft: Boolean,
+        textColor: String?,
+        backgroundColor: String?,
         uiList: MutableList<CustomButtonState>
     ) {
         if (label.isNotBlank()) {
-            uiList.add(CustomButtonState(originalId, label, isLeft))
+            uiList.add(CustomButtonState(originalId, label, isLeft, textColor, backgroundColor))
 
             if (onStartup.isNotBlank()) {
                 append(onStartup)
