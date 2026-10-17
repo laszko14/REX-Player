@@ -84,10 +84,30 @@ jobs:
       - name: Android SDK 36
         run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
+      - name: Sprawdz, czy zatwierdzono baze dotychczasowych problemow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files --error-unmatch app/lint-baseline.xml
+          test -s app/lint-baseline.xml
+          echo "Lint baseline jest zapisany w repozytorium. Nowe problemy beda wykrywane."
+
       - name: Build, testy jednostkowe i Android Lint
         run: |
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
+
+      - name: Zapisz raport Lint przy bledzie
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpv-alpha-lint-raport
+          path: |
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.xml
+            app/build/reports/lint-results-debug.txt
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Wyslij tylko jeden APK arm64-v8a
         uses: actions/upload-artifact@v4
