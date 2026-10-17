@@ -59,20 +59,6 @@ object LuaOverlayPreferencesScreen : Screen {
         val backstack = LocalBackStack.current
         val prefs = koinInject<PlayerPreferences>()
         val advanced = koinInject<AdvancedPreferences>()
-        val luaEnabled by advanced.enableLuaScripts.collectAsState()
-        val panelEnabled by prefs.threeFingerSpeedEnabled.collectAsState()
-        val autoShow by prefs.threeFingerSpeedAutoShow.collectAsState()
-        val persistent by prefs.threeFingerSpeedPersistent.collectAsState()
-        val hideAfter by prefs.threeFingerSpeedAutoHide.collectAsState()
-        val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
-        val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
-        val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
-        val columns by prefs.luaPanelColumns.collectAsState()
-        val highlightHex by prefs.luaActiveSpeedHighlightColor.collectAsState()
-        val highlightTransparency by prefs.luaActiveSpeedHighlightTransparency.collectAsState()
-        var highlightDraft by remember { mutableStateOf(highlightHex) }
-        LaunchedEffect(highlightHex) { highlightDraft = highlightHex }
-
         Scaffold(topBar = {
             TopAppBar(title = { Text("Nakładka Lua") }, navigationIcon = {
                 IconButton(onClick = backstack::removeLastOrNull) {
@@ -100,123 +86,156 @@ object LuaOverlayPreferencesScreen : Screen {
                 Text("Odstępy między guzikami: w edytorze nowej nakładki zostaw puste miejsca " +
                      "(np. P9 albo P11). Panel zachowa te przerwy, a puste miejsca za " +
                      "ostatnim guzikiem nie powiększą okna.")
-                ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
-                    advanced.enableLuaScripts.set(it)
-                }
-                ToggleLine("Włącz nakładkę (gest trzech palców)", panelEnabled) {
-                    prefs.threeFingerSpeedEnabled.set(it)
-                }
-                ToggleLine("Pokaż panel po uruchomieniu filmu", autoShow) {
-                    prefs.threeFingerSpeedAutoShow.set(it)
-                }
-                ToggleLine("Pozostań widoczny do zamknięcia X", persistent) {
-                    prefs.threeFingerSpeedPersistent.set(it)
-                }
-                if (!persistent) {
-                    LuaNumberSlider("Automatyczne ukrywanie", hideAfter, 3, 30, " s") {
-                        prefs.threeFingerSpeedAutoHide.set(it)
-                    }
-                }
-                LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
-                    prefs.luaPanelColumns.set(it)
-                }
-                LuaNumberSlider("Wielkość panelu", scale, 70, 150, "%") {
-                    prefs.threeFingerSpeedPanelSize.set(it)
-                }
-                LuaNumberSlider("Przezroczystość tła", transparency, 0, 100, "%") {
-                    prefs.threeFingerSpeedPanelTransparency.set(it)
-                }
-                LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
-                    prefs.threeFingerSpeedPanelGap.set(it)
-                }
+                LuaOverlaySettingsControls(prefs = prefs, advanced = advanced)
 
-                // Visual settings for the active playback-speed preset only.
-                Text("Podświetlenie aktywnej prędkości", fontWeight = FontWeight.Bold)
-                LuaNumberSlider(
-                    "Przezroczystość podświetlenia", highlightTransparency, 0, 100, "%"
-                ) { prefs.luaActiveSpeedHighlightTransparency.set(it) }
-                Text("Kolor podświetlenia")
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val choices = listOf(
-                        "#1976D2", "#E53935", "#43A047", "#FB8C00",
-                        "#8E24AA", "#00ACC1", "#FFFFFF", "#000000",
-                    )
-                    choices.forEach { hex ->
-                        val selected = highlightHex.equals(hex, ignoreCase = true)
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(parseCustomButtonColor(hex) ?: Color.Blue)
-                                .border(
-                                    if (selected) 3.dp else 1.dp,
-                                    if (selected) Color(0xFF90CAF9) else Color.Gray,
-                                    CircleShape,
-                                )
-                                .clickable { prefs.luaActiveSpeedHighlightColor.set(hex) },
-                        )
-                    }
-                }
-                OutlinedTextField(
-                    value = highlightDraft,
-                    onValueChange = { candidate ->
-                        if (candidate.length <= 9) {
-                            highlightDraft = candidate
-                            if (parseCustomButtonColor(candidate) != null) {
-                                prefs.luaActiveSpeedHighlightColor.set(candidate.trim())
-                            }
-                        }
-                    },
-                    label = { Text("Własny kolor HEX") },
-                    placeholder = { Text("#1976D2") },
-                    supportingText = {
-                        Text("Wpisz #RRGGBB lub #AARRGGBB. Zmiana zapisuje się automatycznie.")
-                    },
-                    isError = parseCustomButtonColor(highlightDraft) == null,
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("Podgląd aktywnej prędkości")
-                    TextButton(onClick = {
-                        prefs.luaActiveSpeedHighlightColor.set("#1976D2")
-                        prefs.luaActiveSpeedHighlightTransparency.set(0)
-                    }) { Text("Domyślne") }
-                }
-                val highlightColor = parseCustomButtonColor(highlightHex) ?: Color(0xFF1976D2)
-                val highlightAlpha = highlightColor.alpha *
-                    (1f - highlightTransparency.coerceIn(0, 100) / 100f)
-                Text(
-                    "2×",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF34343B))
-                        .background(highlightColor.copy(alpha = highlightAlpha))
-                        .border(
-                            2.dp,
-                            highlightColor.copy(alpha = highlightAlpha),
-                            RoundedCornerShape(8.dp),
-                        )
-                        .padding(horizontal = 20.dp, vertical = 10.dp),
-                )
-                Button(onClick = {
-                    prefs.threeFingerSpeedPositionX.set(0.5f)
-                    prefs.threeFingerSpeedPositionY.set(0.16f)
-                }) { Text("Przywróć pozycję panelu") }
-                Text("Pozycję zmienisz również, przeciągając uchwyt u góry nakładki. " +
-                     "Kliknięcie i przytrzymanie przycisku mają osobne skrypty.")
             }
         }
+    }
+}
+
+/**
+ * The settings shown in the app preferences and inside the in-player editor
+ * are intentionally the same composable, backed by the same durable preferences.
+ */
+@Composable
+fun LuaOverlaySettingsControls(
+    prefs: PlayerPreferences,
+    advanced: AdvancedPreferences,
+    modifier: Modifier = Modifier,
+) {
+    val luaEnabled by advanced.enableLuaScripts.collectAsState()
+    val panelEnabled by prefs.threeFingerSpeedEnabled.collectAsState()
+    val autoShow by prefs.threeFingerSpeedAutoShow.collectAsState()
+    val persistent by prefs.threeFingerSpeedPersistent.collectAsState()
+    val hideAfter by prefs.threeFingerSpeedAutoHide.collectAsState()
+    val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+    val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
+    val columns by prefs.luaPanelColumns.collectAsState()
+    val highlightHex by prefs.luaActiveSpeedHighlightColor.collectAsState()
+    val highlightTransparency by prefs.luaActiveSpeedHighlightTransparency.collectAsState()
+    var highlightDraft by remember { mutableStateOf(highlightHex) }
+    LaunchedEffect(highlightHex) { highlightDraft = highlightHex }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
+            advanced.enableLuaScripts.set(it)
+        }
+        ToggleLine("Włącz nakładkę (gest trzech palców)", panelEnabled) {
+            prefs.threeFingerSpeedEnabled.set(it)
+        }
+        ToggleLine("Pokaż panel po uruchomieniu filmu", autoShow) {
+            prefs.threeFingerSpeedAutoShow.set(it)
+        }
+        ToggleLine("Pozostań widoczny do zamknięcia X", persistent) {
+            prefs.threeFingerSpeedPersistent.set(it)
+        }
+        if (!persistent) {
+            LuaNumberSlider("Automatyczne ukrywanie", hideAfter, 3, 30, " s") {
+                prefs.threeFingerSpeedAutoHide.set(it)
+            }
+        }
+        LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
+            prefs.luaPanelColumns.set(it)
+        }
+        LuaNumberSlider("Wielkość panelu", scale, 70, 150, "%") {
+            prefs.threeFingerSpeedPanelSize.set(it)
+        }
+        LuaNumberSlider("Przezroczystość tła", transparency, 0, 100, "%") {
+            prefs.threeFingerSpeedPanelTransparency.set(it)
+        }
+        LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
+            prefs.threeFingerSpeedPanelGap.set(it)
+        }
+
+        // Visual settings for the active playback-speed preset only.
+        Text("Podświetlenie aktywnej prędkości", fontWeight = FontWeight.Bold)
+        LuaNumberSlider(
+            "Przezroczystość podświetlenia", highlightTransparency, 0, 100, "%"
+        ) { prefs.luaActiveSpeedHighlightTransparency.set(it) }
+        Text("Kolor podświetlenia")
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val choices = listOf(
+                "#1976D2", "#E53935", "#43A047", "#FB8C00",
+                "#8E24AA", "#00ACC1", "#FFFFFF", "#000000",
+            )
+            choices.forEach { hex ->
+                val selected = highlightHex.equals(hex, ignoreCase = true)
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(parseCustomButtonColor(hex) ?: Color.Blue)
+                        .border(
+                            if (selected) 3.dp else 1.dp,
+                            if (selected) Color(0xFF90CAF9) else Color.Gray,
+                            CircleShape,
+                        )
+                        .clickable { prefs.luaActiveSpeedHighlightColor.set(hex) },
+                )
+            }
+        }
+        OutlinedTextField(
+            value = highlightDraft,
+            onValueChange = { candidate ->
+                if (candidate.length <= 9) {
+                    highlightDraft = candidate
+                    if (parseCustomButtonColor(candidate) != null) {
+                        prefs.luaActiveSpeedHighlightColor.set(candidate.trim())
+                    }
+                }
+            },
+            label = { Text("Własny kolor HEX") },
+            placeholder = { Text("#1976D2") },
+            supportingText = {
+                Text("Wpisz #RRGGBB lub #AARRGGBB. Zmiana zapisuje się automatycznie.")
+            },
+            isError = parseCustomButtonColor(highlightDraft) == null,
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Podgląd aktywnej prędkości")
+            TextButton(onClick = {
+                prefs.luaActiveSpeedHighlightColor.set("#1976D2")
+                prefs.luaActiveSpeedHighlightTransparency.set(0)
+            }) { Text("Domyślne") }
+        }
+        val highlightColor = parseCustomButtonColor(highlightHex) ?: Color(0xFF1976D2)
+        val highlightAlpha = highlightColor.alpha *
+            (1f - highlightTransparency.coerceIn(0, 100) / 100f)
+        Text(
+            "2×",
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color(0xFF34343B))
+                .background(highlightColor.copy(alpha = highlightAlpha))
+                .border(
+                    2.dp,
+                    highlightColor.copy(alpha = highlightAlpha),
+                    RoundedCornerShape(8.dp),
+                )
+                .padding(horizontal = 20.dp, vertical = 10.dp),
+        )
+        Button(onClick = {
+            prefs.threeFingerSpeedPositionX.set(0.5f)
+            prefs.threeFingerSpeedPositionY.set(0.16f)
+        }) { Text("Przywróć pozycję panelu") }
+        Text("Pozycję zmienisz również, przeciągając uchwyt u góry nakładki. " +
+             "Kliknięcie i przytrzymanie przycisku mają osobne skrypty.")
     }
 }
 
