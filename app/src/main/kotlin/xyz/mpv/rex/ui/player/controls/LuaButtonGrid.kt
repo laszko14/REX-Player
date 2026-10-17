@@ -229,7 +229,7 @@ fun LuaButtonGrid(
                                                             val latest = decodeLuaButtonSlots(
                                                                 preferences.customButtons.get(),
                                                             )
-                                                            if (latest[index]?.id == saved.id) {
+                                                            if (saved != null && latest[index]?.id == saved.id) {
                                                                 val moved = swapLuaSlotPositions(
                                                                     latest, index, target,
                                                                 )
