@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.preferences
 
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import xyz.mpv.rex.preferences.PlayerPreferences
 
