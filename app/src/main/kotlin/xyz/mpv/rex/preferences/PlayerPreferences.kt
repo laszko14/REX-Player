@@ -132,6 +132,8 @@ class PlayerPreferences(
   val showSystemNavigationBar = preferenceStore.getBoolean("show_system_navigation_bar")
   val reduceMotion = preferenceStore.getBoolean("reduce_motion", true)
   val playerGradientOpacity = preferenceStore.getFloat("player_gradient_opacity", 1.0f)
+  // 0 hides the entire on-video controls layer, 100 keeps its original appearance.
+  val playerOverlayOpacityPercent = preferenceStore.getInt("player_overlay_opacity_percent", 100)
   val playerTimeToDisappear = preferenceStore.getInt("player_time_to_disappear", 4000)
 
   val defaultVideoZoom = preferenceStore.getFloat("default_video_zoom", 0f)
