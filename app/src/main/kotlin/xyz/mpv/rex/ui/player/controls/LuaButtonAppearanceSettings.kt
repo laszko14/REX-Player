@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.preferences.preference.collectAsState
 import kotlin.math.roundToInt
 
@@ -159,6 +160,101 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
                 0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()),
             compact,
         )
+    }
+}
+
+/**
+ * Per-button style & persistence overrides are kept in the button data itself.
+ * They move with a button when the list is reordered. A null color inherits
+ * the current global value; pressing Reset returns all attributes to defaults.
+ */
+@Composable
+fun LuaButtonIndividualAppearance(
+    button: CustomButton,
+    prefs: PlayerPreferences,
+    onChange: (CustomButton) -> Unit,
+    compact: Boolean = false,
+) {
+    val globalAlways by prefs.luaButtonAlwaysVisible.collectAsState()
+    val globalBg by prefs.luaButtonBaseColor.collectAsState()
+    val globalFg by prefs.luaButtonTextColor.collectAsState()
+    val globalActiveBg by prefs.luaButtonActiveColor.collectAsState()
+    val globalActiveFg by prefs.luaButtonActiveTextColor.collectAsState()
+
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 8.dp)) {
+        Text(
+            "Indywidualne ustawienia: " + button.title,
+            style = MaterialTheme.typography.titleSmall,
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Zawsze widoczny", style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "Pozostaje na filmie, gdy inne przyciski znikają.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = button.alwaysVisible ?: globalAlways,
+                onCheckedChange = { onChange(button.copy(alwaysVisible = it)) },
+            )
+        }
+        Text(
+            if (button.alwaysVisible == null) "Widoczność: domyślna (globalna)"
+            else "Widoczność: ustawiona tylko dla tego guzika",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LuaPalette(
+            "Tło przycisku",
+            button.backgroundColor ?: globalBg,
+            { onChange(button.copy(backgroundColor = it)) },
+            listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
+                0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Kolor czcionki",
+            button.textColor ?: globalFg,
+            { onChange(button.copy(textColor = it)) },
+            listOf(0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(),
+                0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Tło aktywnej prędkości",
+            button.activeBackgroundColor ?: globalActiveBg,
+            { onChange(button.copy(activeBackgroundColor = it)) },
+            listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
+                0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Kolor czcionki aktywnej prędkości",
+            button.activeTextColor ?: globalActiveFg,
+            { onChange(button.copy(activeTextColor = it)) },
+            listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt(),
+                0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()),
+            compact,
+        )
+        OutlinedButton(
+            onClick = {
+                onChange(
+                    button.copy(
+                        alwaysVisible = null,
+                        backgroundColor = null,
+                        textColor = null,
+                        activeBackgroundColor = null,
+                        activeTextColor = null,
+                    )
+                )
+            },
+            modifier = Modifier.fillMaxWidth(),
+        ) { Text("Przywróć domyślne ustawienia tego przycisku") }
     }
 }
 
