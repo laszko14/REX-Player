@@ -283,6 +283,7 @@ fun PlayerControls(
   val luaEngineStatus by viewModel.customButtonManager.luaStatus.collectAsState()
   var luaSettingsVisible by remember { mutableStateOf(false) }
   var luaDragActive by remember { mutableStateOf(false) }
+  var luaManualMinimized by remember { mutableStateOf(false) }
   val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
   val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
   val luaAlwaysVisible by playerPreferences.luaButtonAlwaysVisible.collectAsState()
@@ -2006,10 +2007,13 @@ fun PlayerControls(
       LuaButtonsInPlayerDialog(
         prefs = playerPreferences,
         hiddenDuringDrag = luaDragActive,
+        manualMinimized = luaManualMinimized,
+        onManualMinimize = { luaManualMinimized = it },
         engineStatus = luaEngineStatus,
         onDismiss = {
           luaSettingsVisible = false
           luaDragActive = false
+          luaManualMinimized = false
           resetControlsTimestamp = System.currentTimeMillis()
           viewModel.showControls()
         },
