@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_share_ui_page_title">REX Player Web Share</string>
+    <string name="web_share_ui_badge">REX Player Share</string>
+    <string name="web_share_ui_heading">Shared Files</string>
+    <string name="web_share_ui_download">Download</string>
+    <string name="web_share_ui_play">Play</string>
+    <string name="web_share_ui_upload_title">Send Files to REX Player</string>
+    <string name="web_share_ui_upload_description">Tap to browse or drop files to send</string>
+    <string name="web_share_ui_download_all">Download All (ZIP)</string>
+    <string name="web_share_ui_saved">✓ Saved</string>
+    <string name="web_share_ui_upload_failed">✗ Upload failed</string>
+    <string name="web_share_ui_connection_error">✗ Connection error</string>
+    <string name="web_share_ui_close">Close player</string>
+    <plurals name="web_share_ui_summary">
+        <item quantity="one">%1$d file • %2$s total</item>
+        <item quantity="other">%1$d files • %2$s total</item>
+    </plurals>
+</resources>

@@ -35,3 +35,9 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Uwzględniono HUD, Lua, ustawienia, napisy, odtwarzacz/OSD, powiadomienia, yt-dlp, Jellyfin, przeglądarkę, listy odtwarzania i komunikaty udostępniania.
 - Niezależny przegląd wskazał dodatkowe komunikaty audio, skryptów i udostępniania, odmianę potwierdzenia usunięcia z listy i spacje w dołączanych etykietach; poprawki wprowadzono przed kompilacją.
 - Kontrola zasobów, referencji oraz białych znaków przeszła. Teksty strony Web Share są korygowane osobno. Wyniki renderowania i kompilacji będą zapisane po ich zakończeniu.
+
+## Etap 2c — strona Web Share
+
+- Dodano 12 tekstów i zasób liczby mnogiej (16 polskich wartości) dla strony generowanej HTML/JavaScript: tytuł, pobieranie/odtwarzanie, wysyłanie plików, ZIP, stan połączenia i komunikaty przeglądarki.
+- Wybrany język aplikacji jest przekazywany do strony. Polskie nazwy plików i teksty są kodowane jako bezpieczne dane JSON; endpointy i logika JavaScript pozostają bez zmian.
+- Sprawdzono składnię JavaScript i zgodność parametrów zasobów. Odpowiedzi diagnostyczne serwera i komunikaty bibliotek/systemu są odrębną warstwą wymagającą rozróżnienia od etykiet interfejsu.
