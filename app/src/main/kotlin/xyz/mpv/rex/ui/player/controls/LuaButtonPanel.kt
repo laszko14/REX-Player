@@ -77,7 +77,15 @@ fun LuaButtonPanel(
     BoxWithConstraints(modifier.fillMaxSize()) {
         val maxX = (constraints.maxWidth - measured.width).coerceAtLeast(0)
         val maxY = (constraints.maxHeight - measured.height).coerceAtLeast(0)
-        val width = (312f * factor).dp.coerceAtMost(maxWidth - 12.dp)
+        // Fit the panel to the number of active buttons, not the 24-slot capacity.
+        val visibleColumns = minOf(cols, buttons.size.coerceAtLeast(1))
+        val longestLabel = buttons.maxOfOrNull { it.label.length }?.coerceIn(4, 15) ?: 9
+        val buttonWidth = ((longestLabel * 6.5f + 14f) * factor).coerceIn(48f, 124f)
+        val neededWidth = visibleColumns * buttonWidth +
+            (visibleColumns - 1) * buttonGap.coerceIn(0, 16) + 12f * factor
+        val panelWidth = if (buttons.isEmpty()) 240f * factor
+            else neededWidth.coerceAtMost(340f * factor)
+        val width = panelWidth.dp.coerceAtMost((maxWidth - 12.dp).coerceAtLeast(80.dp))
         val shape = RoundedCornerShape((14f * factor).dp)
         Column(
             modifier = Modifier
