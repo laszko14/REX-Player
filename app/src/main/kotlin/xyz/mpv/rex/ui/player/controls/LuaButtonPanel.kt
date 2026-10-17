@@ -65,6 +65,10 @@ fun LuaButtonPanel(
 ) {
     val sizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
     val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+    val highlightHex by preferences.luaActiveSpeedHighlightColor.collectAsState()
+    val highlightTransparency by preferences.luaActiveSpeedHighlightTransparency.collectAsState()
+    val highlightColor = parseCustomButtonColor(highlightHex) ?: Color(0xFF1976D2)
+    val highlightOpacity = (1f - highlightTransparency.coerceIn(0, 100) / 100f)
     val buttonGap by preferences.threeFingerSpeedPanelGap.collectAsState()
     val columns by preferences.luaPanelColumns.collectAsState()
     val storedX by preferences.threeFingerSpeedPositionX.collectAsState()
@@ -148,7 +152,11 @@ fun LuaButtonPanel(
                                 // including speed changes made by gestures and other controls.
                                 val active = isActiveSpeedPreset(button.label, currentPlaybackSpeed)
                                 val buttonShape = RoundedCornerShape((6f * factor).dp)
-                                val activeBlue = Color(0xFF1976D2)
+                                val normalBackground = parseCustomButtonColor(button.backgroundColor)
+                                    ?: Color.White.copy(alpha = 0.09f)
+                                val translucentHighlight = highlightColor.copy(
+                                    alpha = highlightColor.alpha * highlightOpacity,
+                                )
                                 Text(
                                     text = button.label,
                                     color = if (active) Color.White
@@ -161,14 +169,13 @@ fun LuaButtonPanel(
                                     modifier = Modifier
                                         .weight(1f)
                                         .heightIn(min = (26f * factor).dp)
-                                        .shadow(if (active) 5.dp else 0.dp, buttonShape)
+                                        .shadow(if (active && highlightOpacity > 0f) 5.dp else 0.dp, buttonShape)
                                         .clip(buttonShape)
-                                        .background(if (active) activeBlue
-                                            else parseCustomButtonColor(button.backgroundColor)
-                                                ?: Color.White.copy(alpha = 0.09f))
+                                        .background(normalBackground)
+                                        .background(if (active) translucentHighlight else Color.Transparent)
                                         .border(
-                                            width = if (active) 2.dp else 0.dp,
-                                            color = if (active) Color(0xFF81D4FA) else Color.Transparent,
+                                            width = if (active && translucentHighlight.alpha > 0f) 2.dp else 0.dp,
+                                            color = if (active) translucentHighlight else Color.Transparent,
                                             shape = buttonShape,
                                         )
                                         .combinedClickable(
