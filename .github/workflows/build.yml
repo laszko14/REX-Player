@@ -63,6 +63,8 @@ jobs:
   android:
     name: Android - build, testy, lint
     needs: sources
+    # Full Android tests and Lint run on pushes/PRs, not on manual signed APK builds.
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 70
     steps:
@@ -71,12 +73,16 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Java 17 i cache Gradle
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
+
+      # Caches the Gradle user home, dependency transforms and reusable task outputs.
+      # The setup-java Gradle cache is intentionally disabled to avoid competing caches.
+      - name: Cache Gradle - dependencies and build outputs
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Android SDK
         uses: android-actions/setup-android@v4
@@ -122,7 +128,8 @@ jobs:
     name: MPV Alpha - podpisany APK do aktualizacji
     # Signing secrets and a write-capable GitHub token are NEVER exposed to PRs.
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
-    needs: [sources, android]
+    # Manual releases only need fast source validation, not a second unsigned Android build.
+    needs: sources
     runs-on: ubuntu-latest
     timeout-minutes: 70
     permissions:
@@ -197,12 +204,16 @@ jobs:
           test -s "$keystore"
           echo "MPV_ALPHA_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
 
-      - name: Java 17 i cache Gradle
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
-          cache: gradle
+
+      # Caches the Gradle user home, dependency transforms and reusable task outputs.
+      # The setup-java Gradle cache is intentionally disabled to avoid competing caches.
+      - name: Cache Gradle - dependencies and build outputs
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Android SDK
         uses: android-actions/setup-android@v4
