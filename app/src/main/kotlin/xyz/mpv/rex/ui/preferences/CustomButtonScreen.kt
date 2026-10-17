@@ -322,7 +322,7 @@ object CustomButtonScreen : Screen {
                                 onClick = { appearanceExpanded = !appearanceExpanded },
                             ) {
                                 Text(
-                                    ""Wygląd i położenie $LUA_SLOT_COUNT przycisków " +
+                                    "Wygląd i położenie $LUA_SLOT_COUNT przycisków " +
                                         if (appearanceExpanded) "▲" else "▼"
                                 )
                             }
