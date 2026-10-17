@@ -34,10 +34,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -48,12 +50,14 @@ import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.ui.player.managers.CustomButtonManager
 import xyz.mpv.rex.ui.preferences.parseCustomButtonColor
 import kotlin.math.roundToInt
+import java.util.Locale
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LuaButtonPanel(
     preferences: PlayerPreferences,
     buttons: List<CustomButtonManager.CustomButtonState>,
+    currentPlaybackSpeed: Float,
     onClose: () -> Unit,
     onButtonClick: (String) -> Unit,
     onButtonLongClick: (String) -> Unit,
@@ -118,7 +122,7 @@ fun LuaButtonPanel(
                             }
                         }
                 )
-                Text("Lua", color = Color.White.copy(alpha = 0.8f),
+                Text("Lua · ${String.format(Locale.US, "%.2f", currentPlaybackSpeed).trimEnd('0').trimEnd('.')}×", color = Color.White.copy(alpha = 0.8f),
                     fontSize = (10f * factor).sp, modifier = Modifier.weight(2f),
                     textAlign = TextAlign.Center)
                 Icon(Icons.Default.Close, contentDescription = "Zamknij nakładkę",
@@ -140,9 +144,16 @@ fun LuaButtonPanel(
                     buttons.chunked(cols).forEach { line ->
                         Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                             line.forEach { button ->
+                                // Highlight the preset that matches mpv's *actual* speed,
+                                // including speed changes made by gestures and other controls.
+                                val active = isActiveSpeedPreset(button.label, currentPlaybackSpeed)
+                                val buttonShape = RoundedCornerShape((6f * factor).dp)
+                                val activeBlue = Color(0xFF1976D2)
                                 Text(
                                     text = button.label,
-                                    color = parseCustomButtonColor(button.textColor) ?: Color.White,
+                                    color = if (active) Color.White
+                                        else parseCustomButtonColor(button.textColor) ?: Color.White,
+                                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
                                     fontSize = (11f * factor).sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -150,8 +161,16 @@ fun LuaButtonPanel(
                                     modifier = Modifier
                                         .weight(1f)
                                         .heightIn(min = (26f * factor).dp)
-                                        .clip(RoundedCornerShape((6f * factor).dp))
-                                        .background(parseCustomButtonColor(button.backgroundColor) ?: Color.White.copy(alpha = 0.09f))
+                                        .shadow(if (active) 5.dp else 0.dp, buttonShape)
+                                        .clip(buttonShape)
+                                        .background(if (active) activeBlue
+                                            else parseCustomButtonColor(button.backgroundColor)
+                                                ?: Color.White.copy(alpha = 0.09f))
+                                        .border(
+                                            width = if (active) 2.dp else 0.dp,
+                                            color = if (active) Color(0xFF81D4FA) else Color.Transparent,
+                                            shape = buttonShape,
+                                        )
                                         .combinedClickable(
                                             onClick = { onButtonClick(button.id) },
                                             onLongClick = { onButtonLongClick(button.id) },
