@@ -92,6 +92,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import java.io.File
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -277,6 +278,43 @@ object CustomButtonScreen : Screen {
             ) {
                 // Section divider items
                 item { Spacer(Modifier.height(8.dp)) }
+
+                // Enhanced original REX editor: ONLY one page in app settings.
+                // All layout options are reused in the landscape in-player quick editor.
+                item {
+                    var appearanceExpanded by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { appearanceExpanded = !appearanceExpanded },
+                            ) {
+                                Text(
+                                    "Wygląd i położenie 30 przycisków " +
+                                        if (appearanceExpanded) "▲" else "▼"
+                                )
+                            }
+                            if (appearanceExpanded) {
+                                LuaButtonAppearanceSettings(preferences)
+                            } else {
+                                Text(
+                                    "Rozmiary, liczba kolumn, kolory, odstępy i pozycja.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
 
                 // itemsIndexed gives us the real slot position so empty-slot keys are unique
                 itemsIndexed(
