@@ -8,6 +8,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -42,6 +43,7 @@ fun LuaButtonGrid(
     preferences: PlayerPreferences,
     buttons: List<CustomButtonManager.CustomButtonState>,
     playbackSpeed: Float,
+    showAllButtons: Boolean,
     onButtonClick: (String) -> Unit,
     onButtonLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
@@ -61,6 +63,7 @@ fun LuaButtonGrid(
     val activeColor by preferences.luaButtonActiveColor.collectAsState()
     val textColor by preferences.luaButtonTextColor.collectAsState()
     val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
+    val globalAlwaysVisible by preferences.luaButtonAlwaysVisible.collectAsState()
     val factor = scale.coerceIn(70, 150) / 100f
     val width = (buttonWidth.coerceIn(30, 140) * factor).dp
     val height = (buttonHeight.coerceIn(22, 80) * factor).dp
@@ -81,13 +84,21 @@ fun LuaButtonGrid(
             buttons.take(30).chunked(columns.coerceIn(1, 8)).forEach { line ->
                 Row(horizontalArrangement = Arrangement.spacedBy(columnGap.coerceIn(0, 24).dp)) {
                     line.forEach { button ->
+                        if (!showAllButtons && !(button.alwaysVisible ?: globalAlwaysVisible)) {
+                            // Do not reflow rows: persistent buttons retain their
+                            // original on-screen positions when controls fade away.
+                            Spacer(Modifier.width(width).height(height))
+                        } else {
                         val label = button.label.trim()
                         val isSpeed = label.endsWith("x", true) || label.endsWith("×")
                         val value = if (isSpeed) label.dropLast(1).replace(',', '.').toFloatOrNull() else null
                         val active = value != null && abs(playbackSpeed - value) < 0.015f
                         Text(
                             text = button.label,
-                            color = Color(if (active) activeTextColor else textColor),
+                            color = Color(
+                                if (active) button.activeTextColor ?: activeTextColor
+                                else button.textColor ?: textColor
+                            ),
                             textAlign = TextAlign.Center,
                             fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
                             maxLines = 1,
@@ -96,7 +107,10 @@ fun LuaButtonGrid(
                                 .width(width)
                                 .height(height)
                                 .clip(shape)
-                                .background(Color(if (active) activeColor else buttonColor)
+                                .background(Color(
+                                    if (active) button.activeBackgroundColor ?: activeColor
+                                    else button.backgroundColor ?: buttonColor
+                                )
                                     .copy(alpha = if (active) 1f else alpha))
                                 .border(1.dp, Color.White.copy(alpha = if (active) 0.65f
                                         else borderOpacity.coerceIn(0, 100) / 100f), shape)
@@ -106,6 +120,7 @@ fun LuaButtonGrid(
                                 )
                                 .padding(vertical = (5f * factor).dp, horizontal = 2.dp),
                         )
+                        }
                     }
                 }
             }
