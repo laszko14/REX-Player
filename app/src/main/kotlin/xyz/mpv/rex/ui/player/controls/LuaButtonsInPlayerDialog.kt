@@ -197,11 +197,12 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
         var startCode by remember(index, old?.id) { mutableStateOf(old?.onStartup ?: "") }
         var enabled by remember(index, old?.id) { mutableStateOf(old?.enabled ?: true) }
 
-        fun write(button: CustomButton?) {
-            val values = slots.toMutableList()
-            values[index] = button
-            prefs.customButtons.set(Json.encodeToString(CustomButtonSlots(values)))
-            selectedIndex = -1
+        fun write(button: CustomButton?, closeEditor: Boolean = true) {
+            // Update the current serialized slot, preserving unrelated buttons.
+            val latest = decodeLuaSlots(prefs.customButtons.get()).toMutableList()
+            latest[index] = button
+            prefs.customButtons.set(Json.encodeToString(CustomButtonSlots(latest)))
+            if (closeEditor) selectedIndex = -1
         }
 
         Column(
@@ -218,6 +219,28 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Włączony", modifier = Modifier.weight(1f))
                 Switch(checked = enabled, onCheckedChange = { enabled = it })
+            }
+            if (old != null) {
+                var individualOpen by remember(index) { mutableStateOf(false) }
+                OutlinedButton(
+                    onClick = { individualOpen = !individualOpen },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(if (individualOpen) "Zwiń widoczność i kolory ▲" else "Widoczność i kolory tego guzika ▼")
+                }
+                if (individualOpen) {
+                    LuaButtonIndividualAppearance(
+                        button = old,
+                        prefs = prefs,
+                        compact = true,
+                        onChange = { write(it, closeEditor = false) },
+                    )
+                }
+            } else {
+                Text(
+                    "Zapisz przycisk, aby wybrać indywidualną widoczność i kolory.",
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
             OutlinedTextField(
                 value = clickCode, onValueChange = { clickCode = it },
@@ -243,6 +266,11 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                         longPressContent = longCode,
                         onStartup = startCode,
                         enabled = enabled,
+                        alwaysVisible = old?.alwaysVisible,
+                        backgroundColor = old?.backgroundColor,
+                        textColor = old?.textColor,
+                        activeBackgroundColor = old?.activeBackgroundColor,
+                        activeTextColor = old?.activeTextColor,
                     ))
                 },
                 enabled = name.isNotBlank(),
