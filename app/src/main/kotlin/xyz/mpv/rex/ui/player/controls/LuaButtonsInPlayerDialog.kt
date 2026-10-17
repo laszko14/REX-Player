@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,8 +16,13 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
@@ -27,6 +33,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -66,51 +73,42 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
     val advanced = koinInject<AdvancedPreferences>()
     val luaEnabled by advanced.enableLuaScripts.collectAsState()
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
-    var tab by remember { mutableIntStateOf(0) }
+    val savedTab by prefs.luaEditorLastTab.collectAsState()
+    val tab = savedTab.coerceIn(0, 2)
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        // A nearly transparent dim layer lets the actual playback buttons
-        // remain visible while the user changes their size and location.
-        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { dialogWindow?.setDimAmount(0.06f) }
-
+        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { window?.setDimAmount(0f) }
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.Center,
         ) {
             Surface(
                 modifier = Modifier
-                    .fillMaxWidth(if (landscape) 0.60f else 0.96f)
-                    .fillMaxHeight(if (landscape) 0.87f else 0.93f)
-                    .padding(end = if (landscape) 8.dp else 0.dp)
+                    .fillMaxWidth(if (landscape) 0.53f else 0.96f)
+                    .fillMaxHeight(if (landscape) 0.96f else 0.93f)
+                    .padding(end = if (landscape) 6.dp else 0.dp)
                     .imePadding(),
                 shape = RoundedCornerShape(16.dp),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp,
+                tonalElevation = 2.dp,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            "Przyciski Lua",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f),
-                        )
+                        Text("Przyciski Lua", style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
                         Text("Lua", style = MaterialTheme.typography.labelSmall)
                         Switch(checked = luaEnabled, onCheckedChange = advanced.enableLuaScripts::set)
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                        FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Wygląd i pozycja") })
-                        FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Kody Lua (30)") })
+                        TextButton(onClick = onDismiss) { Text("✕") }
                     }
                     val statusOk = engineStatus.startsWith("Lua gotowe")
-                    val statusNeutral = engineStatus.startsWith("Lua:") ||
+                    val statusPending = engineStatus.startsWith("Lua:") ||
                         engineStatus.contains("oczekiwanie", ignoreCase = true) ||
                         engineStatus.contains("niepotwierdzony", ignoreCase = true)
                     Text(
@@ -118,23 +116,43 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                         style = MaterialTheme.typography.labelSmall,
                         color = when {
                             statusOk -> Color(0xFF84DFA2)
-                            statusNeutral -> MaterialTheme.colorScheme.onSurfaceVariant
+                            statusPending -> MaterialTheme.colorScheme.onSurfaceVariant
                             else -> MaterialTheme.colorScheme.error
                         },
-                        maxLines = 2,
+                        maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    HorizontalDivider()
-                    if (tab == 0) {
-                        Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                            LuaButtonAppearanceSettings(prefs, compact = true)
-                        }
-                    } else {
-                        LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FilterChip(selected = tab == 0, onClick = { prefs.luaEditorLastTab.set(0) },
+                            label = { Text("Szybkie") })
+                        FilterChip(selected = tab == 1, onClick = { prefs.luaEditorLastTab.set(1) },
+                            label = { Text("Wygląd") })
+                        FilterChip(selected = tab == 2, onClick = { prefs.luaEditorLastTab.set(2) },
+                            label = { Text("Kody (30)") })
                     }
                     HorizontalDivider()
-                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(38.dp)) {
-                        Text("Gotowe")
+                    when (tab) {
+                        0 -> Column(
+                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                        ) {
+                            LuaButtonCompactQuickSettings(prefs)
+                        }
+                        1 -> Column(
+                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                        ) {
+                            LuaButtonOrganizedAppearanceSettings(prefs)
+                        }
+                        else -> LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
+                    }
+                    HorizontalDivider()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Button(onClick = onDismiss, modifier = Modifier.width(132.dp).height(36.dp)) {
+                            Text("Gotowe")
+                        }
                     }
                 }
             }
@@ -154,37 +172,83 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
+    var search by remember { mutableStateOf("") }
+    var filter by remember { mutableIntStateOf(0) }
+    val listState = rememberLazyListState()
+
     if (selectedIndex !in 0..29) {
-        Column(
-            modifier = modifier.verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text("Dotknij przycisku, aby edytować nazwę, kod kliknięcia i przytrzymania.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant)
-            slots.forEachIndexed { index, button ->
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                        .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(8.dp))
-                        .clickable { selectedIndex = index }
-                        .padding(horizontal = 10.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text((index + 1).toString() + ".", style = MaterialTheme.typography.labelMedium,
-                        modifier = Modifier.width(32.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(button?.title ?: "Pusty przycisk",
-                            maxLines = 1, overflow = TextOverflow.Ellipsis,
-                            fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
-                        val summary = if (button == null) "Dodaj nowy"
-                            else (if (button.enabled) "Włączony" else "Wyłączony") +
-                                " • klik " + (if (button.content.isNotBlank()) "✓" else "—") +
-                                " • długie " + (if (button.longPressContent.isNotBlank()) "✓" else "—")
-                        Text(summary, style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            OutlinedTextField(
+                value = search,
+                onValueChange = { search = it },
+                label = { Text("Szukaj guzika") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                listOf("Wszystkie", "Aktywne", "Puste", "On start")
+                    .forEachIndexed { which, title ->
+                        FilterChip(
+                            selected = filter == which,
+                            onClick = { filter = which },
+                            label = { Text(title, style = MaterialTheme.typography.labelSmall) },
+                        )
                     }
-                    Text("Edytuj ›", color = MaterialTheme.colorScheme.primary,
-                        style = MaterialTheme.typography.labelMedium)
+            }
+            val visibleIndexes = (0 until 30).filter { index ->
+                val button = slots[index]
+                val matchesQuery = search.isBlank() ||
+                    (button?.title?.contains(search.trim(), ignoreCase = true) == true) ||
+                    ((index + 1).toString() == search.trim())
+                val matchesFilter = when (filter) {
+                    1 -> button?.enabled == true
+                    2 -> button == null
+                    3 -> button?.onStartup?.isNotBlank() == true
+                    else -> true
+                }
+                matchesQuery && matchesFilter
+            }
+            if (visibleIndexes.isEmpty()) {
+                Text("Nie znaleziono przycisków.", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                state = listState,
+                verticalArrangement = Arrangement.spacedBy(3.dp),
+                contentPadding = PaddingValues(bottom = 6.dp),
+            ) {
+                items(visibleIndexes, key = { it }) { index ->
+                    val button = slots[index]
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .heightIn(min = 42.dp)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(8.dp))
+                            .clickable { selectedIndex = index }
+                            .padding(horizontal = 9.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text((index + 1).toString() + ".", style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(28.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(button?.title ?: "Pusty przycisk",
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
+                            val summary = if (button == null) "Wolne miejsce" else
+                                (if (button.enabled) "ON" else "OFF") +
+                                    " · Klik " + (if (button.content.isNotBlank()) "✓" else "—") +
+                                    " · Długie " + (if (button.longPressContent.isNotBlank()) "✓" else "—") +
+                                    " · Start " + (if (button.onStartup.isNotBlank()) "✓" else "—")
+                            Text(summary, style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(if (button == null) "+" else "›",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary)
+                    }
                 }
             }
         }
@@ -277,8 +341,24 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Zapisz Lua") }
             if (old != null) {
-                FilledTonalButton(onClick = { write(null) }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Wyczyść przycisk")
+                var confirmRemoval by remember(index) { mutableStateOf(false) }
+                FilledTonalButton(onClick = { confirmRemoval = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text("Usuń przycisk")
+                }
+                if (confirmRemoval) {
+                    AlertDialog(
+                        onDismissRequest = { confirmRemoval = false },
+                        title = { Text("Usunąć ten przycisk?") },
+                        text = { Text("Zwolnisz miejsce " + (index + 1) + ". Inne przyciski pozostaną na swoich pozycjach.") },
+                        confirmButton = {
+                            TextButton(onClick = { confirmRemoval = false; write(null) }) {
+                                Text("Usuń")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { confirmRemoval = false }) { Text("Anuluj") }
+                        },
+                    )
                 }
             }
         }

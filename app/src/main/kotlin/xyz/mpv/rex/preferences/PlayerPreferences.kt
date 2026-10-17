@@ -18,6 +18,8 @@ class PlayerPreferences(
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
   val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 5)
+  // Last tab in the in-player Lua editor: Quick / Appearance / Codes.
+  val luaEditorLastTab = preferenceStore.getInt("lua_editor_last_tab", 0)
   val luaButtonRowGap = preferenceStore.getInt("lua_button_row_gap_dp", 2)
   val luaButtonColumnGap = preferenceStore.getInt("lua_button_column_gap_dp", 2)
   // All settings are live-editable from the movie screen and persist across launches.

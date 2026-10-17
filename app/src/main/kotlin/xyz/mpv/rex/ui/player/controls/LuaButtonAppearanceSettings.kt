@@ -3,6 +3,7 @@ package xyz.mpv.rex.ui.player.controls
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -358,7 +359,7 @@ private fun LuaPalette(
 
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {
         Text(title, style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium)
-        val visiblePalette = if (expanded || palette.size <= 12) palette else palette.take(12)
+        val visiblePalette = if (expanded || palette.size <= 14) palette else palette.take(14)
         Column(verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)) {
             visiblePalette.chunked(7).forEach { swatchRow ->
                 Row(
@@ -389,9 +390,9 @@ private fun LuaPalette(
                 }
             }
         }
-        if (palette.size > 12) {
+        if (palette.size > 14) {
             OutlinedButton(onClick = { expanded = !expanded }) {
-                Text(if (expanded) "Pokaż mniej kolorów" else "Więcej kolorów (undefined)")
+                Text(if (expanded) "Pokaż mniej kolorów" else "Więcej kolorów (" + palette.size + ")")
             }
         }
         Row(
@@ -413,6 +414,200 @@ private fun LuaPalette(
                 onClick = { candidate?.let(onSelect) },
                 enabled = candidate != null && candidate != selected,
             ) { Text("Ustaw") }
+        }
+    }
+}
+
+
+/** Compact live controls used by the new three-tab in-player editor. */
+@Composable
+fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
+    val cols by prefs.luaPanelColumns.collectAsState()
+    val width by prefs.luaButtonWidth.collectAsState()
+    val height by prefs.luaButtonHeight.collectAsState()
+    val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+    val columnGap by prefs.luaButtonColumnGap.collectAsState()
+    val rowGap by prefs.luaButtonRowGap.collectAsState()
+    val alpha by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val posX by prefs.luaButtonPositionX.collectAsState()
+    val posY by prefs.luaButtonPositionY.collectAsState()
+    val textColor by prefs.luaButtonTextColor.collectAsState()
+    val activeColor by prefs.luaButtonActiveColor.collectAsState()
+
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text("Najczęściej używane", style = MaterialTheme.typography.titleSmall)
+        LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = true, onChange = prefs.luaPanelColumns::set)
+        LuaOptionSlider("Szerokość", width, 30, 140, " dp", compact = true, onChange = prefs.luaButtonWidth::set)
+        LuaOptionSlider("Wysokość", height, 22, 80, " dp", compact = true, onChange = prefs.luaButtonHeight::set)
+        LuaOptionSlider("Skala siatki", scale, 70, 150, "%", compact = true, onChange = prefs.threeFingerSpeedPanelSize::set)
+        LuaOptionSlider("Odstęp poziomy", columnGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonColumnGap::set)
+        LuaOptionSlider("Odstęp pionowy", rowGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonRowGap::set)
+        LuaOptionSlider("Pozycja X", posX, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionX::set)
+        LuaOptionSlider("Pozycja Y", posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
+        LuaOptionSlider("Przezroczystość tła", alpha, 0, 100, "%", compact = true,
+            onChange = prefs.threeFingerSpeedPanelTransparency::set)
+        LuaQuickColorRow("Czcionka", textColor, prefs.luaButtonTextColor::set,
+            LUA_TEXT_PALETTE.take(8))
+        LuaQuickColorRow("Aktywny przycisk", activeColor, prefs.luaButtonActiveColor::set,
+            listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
+                0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()))
+        Text("Pozostałe kolory i ustawienia znajdziesz w zakładce Wygląd.",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+@Composable
+private fun LuaQuickColorRow(title: String, selected: Int, onSelect: (Int) -> Unit, colors: List<Int>) {
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(title, style = MaterialTheme.typography.labelMedium)
+        Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+            colors.forEach { color ->
+                Box(
+                    modifier = Modifier.size(28.dp)
+                        .clip(CircleShape)
+                        .background(Color(color))
+                        .clickable { onSelect(color) },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (selected == color) Text("✓",
+                        color = if (Color(color).luminance() > 0.5f) Color.Black else Color.White)
+                }
+            }
+        }
+    }
+}
+
+/** Grouped version of the appearance options, with independent section resets. */
+@Composable
+fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
+    val cols by prefs.luaPanelColumns.collectAsState()
+    val width by prefs.luaButtonWidth.collectAsState()
+    val height by prefs.luaButtonHeight.collectAsState()
+    val font by prefs.luaButtonFontSize.collectAsState()
+    val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+    val rowGap by prefs.luaButtonRowGap.collectAsState()
+    val columnGap by prefs.luaButtonColumnGap.collectAsState()
+    val posX by prefs.luaButtonPositionX.collectAsState()
+    val posY by prefs.luaButtonPositionY.collectAsState()
+    val alwaysVisible by prefs.luaButtonAlwaysVisible.collectAsState()
+    val corner by prefs.luaButtonCornerRadius.collectAsState()
+    val border by prefs.luaButtonBorderOpacity.collectAsState()
+    val baseColor by prefs.luaButtonBaseColor.collectAsState()
+    val activeColor by prefs.luaButtonActiveColor.collectAsState()
+    val fontColor by prefs.luaButtonTextColor.collectAsState()
+    val activeFont by prefs.luaButtonActiveTextColor.collectAsState()
+    val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        LuaAppearanceSection("Rozmiar i układ", initiallyOpen = true) {
+            LuaOptionSlider("Kolumny", cols, 1, 8, "", true, prefs.luaPanelColumns::set)
+            LuaOptionSlider("Szerokość", width, 30, 140, " dp", true, prefs.luaButtonWidth::set)
+            LuaOptionSlider("Wysokość", height, 22, 80, " dp", true, prefs.luaButtonHeight::set)
+            LuaOptionSlider("Rozmiar czcionki", font, 8, 22, " sp", true, prefs.luaButtonFontSize::set)
+            LuaOptionSlider("Skala", scale, 70, 150, "%", true, prefs.threeFingerSpeedPanelSize::set)
+            LuaOptionSlider("Odstęp kolumn", columnGap, 0, 24, " dp", true, prefs.luaButtonColumnGap::set)
+            LuaOptionSlider("Odstęp rzędów", rowGap, 0, 24, " dp", true, prefs.luaButtonRowGap::set)
+            OutlinedButton(onClick = {
+                prefs.luaPanelColumns.set(5)
+                prefs.luaButtonWidth.set(52)
+                prefs.luaButtonHeight.set(27)
+                prefs.luaButtonFontSize.set(11)
+                prefs.threeFingerSpeedPanelSize.set(100)
+                prefs.luaButtonColumnGap.set(2)
+                prefs.luaButtonRowGap.set(2)
+            }) { Text("Resetuj rozmiary i odstępy") }
+        }
+        LuaAppearanceSection("Pozycja i widoczność") {
+            LuaOptionSlider("Pozycja X", posX, 0, 240, " dp", true, prefs.luaButtonPositionX::set)
+            LuaOptionSlider("Pozycja Y", posY, 0, 240, " dp", true, prefs.luaButtonPositionY::set)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text("Domyślnie zawsze widoczne", modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium)
+                Switch(checked = alwaysVisible, onCheckedChange = prefs.luaButtonAlwaysVisible::set)
+            }
+            OutlinedButton(onClick = {
+                prefs.luaButtonPositionX.set(0)
+                prefs.luaButtonPositionY.set(100)
+                prefs.luaButtonAlwaysVisible.set(false)
+            }) { Text("Resetuj pozycję") }
+        }
+        LuaAppearanceSection("Kolory czcionki") {
+            LuaPalette("Zwykła czcionka", fontColor, prefs.luaButtonTextColor::set,
+                LUA_TEXT_PALETTE, compact = true)
+            LuaPalette("Czcionka aktywnej prędkości", activeFont,
+                prefs.luaButtonActiveTextColor::set, LUA_ACTIVE_TEXT_PALETTE, compact = true)
+            OutlinedButton(onClick = {
+                prefs.luaButtonTextColor.set(0xFFFFFFFF.toInt())
+                prefs.luaButtonActiveTextColor.set(0xFF071426.toInt())
+            }) { Text("Resetuj kolory czcionki") }
+        }
+        LuaAppearanceSection("Kolory tła") {
+            LuaPalette("Tło zwykłego przycisku", baseColor, prefs.luaButtonBaseColor::set,
+                listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
+                    0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()), true)
+            LuaPalette("Tło aktywnego przycisku", activeColor, prefs.luaButtonActiveColor::set,
+                listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
+                    0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()), true)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                LuaAppearancePreview("Zwykły", baseColor, fontColor, transparency)
+                LuaAppearancePreview("Aktywny", activeColor, activeFont, activeTransparency)
+            }
+            OutlinedButton(onClick = {
+                prefs.luaButtonBaseColor.set(0xFF252631.toInt())
+                prefs.luaButtonActiveColor.set(0xFF92BBFF.toInt())
+            }) { Text("Resetuj kolory tła") }
+        }
+        LuaAppearanceSection("Przezroczystość i obramowanie") {
+            LuaOptionSlider("Tło zwykłe", transparency, 0, 100, "%", true,
+                prefs.threeFingerSpeedPanelTransparency::set)
+            LuaOptionSlider("Tło aktywne", activeTransparency, 0, 100, "%", true,
+                prefs.luaButtonActiveTransparency::set)
+            LuaOptionSlider("Obramowanie", border, 0, 100, "%", true,
+                prefs.luaButtonBorderOpacity::set)
+            LuaOptionSlider("Zaokrąglenie", corner, 0, 24, " dp", true,
+                prefs.luaButtonCornerRadius::set)
+            OutlinedButton(onClick = {
+                prefs.threeFingerSpeedPanelTransparency.set(20)
+                prefs.luaButtonActiveTransparency.set(0)
+                prefs.luaButtonBorderOpacity.set(20)
+                prefs.luaButtonCornerRadius.set(7)
+            }) { Text("Resetuj przezroczystość i ramkę") }
+        }
+    }
+}
+
+@Composable
+private fun LuaAppearancePreview(title: String, bg: Int, fg: Int, transparent: Int) {
+    Box(
+        modifier = Modifier.clip(androidx.compose.foundation.shape.RoundedCornerShape(7.dp))
+            .background(Color(bg).copy(alpha = 1f - transparent.coerceIn(0, 100) / 100f))
+            .padding(horizontal = 16.dp, vertical = 9.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(title, color = Color(fg), style = MaterialTheme.typography.labelMedium)
+    }
+}
+
+@Composable
+private fun LuaAppearanceSection(
+    title: String,
+    initiallyOpen: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    var open by remember(title) { mutableStateOf(initiallyOpen) }
+    Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        OutlinedButton(onClick = { open = !open }, modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.labelMedium)
+                Text(if (open) "▲" else "▼")
+            }
+        }
+        if (open) Column(verticalArrangement = Arrangement.spacedBy(3.dp),
+            modifier = Modifier.padding(horizontal = 4.dp)) {
+            content()
         }
     }
 }
