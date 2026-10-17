@@ -272,6 +272,7 @@ fun PlayerControls(
   var luaSettingsVisible by remember { mutableStateOf(false) }
   val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
   val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
+  val luaAlwaysVisible by playerPreferences.luaButtonAlwaysVisible.collectAsState()
     
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
@@ -826,7 +827,10 @@ fun PlayerControls(
 
         // One unified grid of existing and new Lua buttons, in portrait and landscape.
         AnimatedVisibility(
-          visible = areButtonsVisible && !areControlsLocked && customButtons.isNotEmpty(),
+          // Independent of mpv's ordinary controls auto-hide when persistent
+          // mode is enabled. Still hide on explicit screen lock.
+          visible = (luaAlwaysVisible || luaSettingsVisible || areButtonsVisible) &&
+            !areControlsLocked && customButtons.isNotEmpty(),
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier
