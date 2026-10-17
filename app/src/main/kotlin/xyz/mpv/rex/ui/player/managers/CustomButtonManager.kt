@@ -57,6 +57,7 @@ class CustomButtonManager(
             repeat(25) {
                 if (isScriptLoaded()) {
                     _luaStatus.value = "Lua gotowe — oryginalne przyciski"
+                    runStartupActions()
                     return@launch
                 }
                 delay(180L)
@@ -150,6 +151,23 @@ class CustomButtonManager(
         isMpvReady && runCatching {
             MPVLib.getPropertyString(ACTIVE_CLIENT_PROPERTY) == "1"
         }.getOrDefault(false)
+
+    private fun runStartupActions() {
+        val saved = playerPreferences.customButtons.get()
+        val buttons = runCatching {
+            json.decodeFromString<CustomButtonSlots>(saved).slots.filterNotNull()
+        }.getOrElse {
+            runCatching { json.decodeFromString<List<CustomButton>>(saved) }
+                .getOrDefault(emptyList())
+        }
+        buttons.filter { it.enabled && it.onStartup.isNotBlank() }.take(30).forEach { button ->
+            runCatching {
+                MPVLib.command("script-message", "mpv_alpha_eval", button.onStartup)
+            }.onFailure { error ->
+                Log.e(TAG, "Lua startup error for " + button.title, error)
+            }
+        }
+    }
 
     private fun showFeedback(message: String) {
         runCatching { MPVLib.command("show-text", message, "1500") }
