@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCut
 import android.content.res.Configuration.ORIENTATION_PORTRAIT
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,6 +87,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -414,6 +417,15 @@ fun PlayerControls(
       val configuration = LocalConfiguration.current
       val isPortrait by remember(configuration) {
         derivedStateOf { configuration.orientation == ORIENTATION_PORTRAIT }
+      }
+
+      // Root cause of the jump: topLeftControls is AnimatedVisibility, so its
+      // height collapses to zero when the other player controls disappear.
+      // Cache its last REAL bottom position and anchor the Lua grid directly to
+      // the parent instead. The anchor is reset when orientation changes.
+      val luaAnchorDensity = LocalDensity.current
+      var luaTopControlsBottom by remember(isPortrait) {
+        mutableStateOf(if (isPortrait) 96.dp else 60.dp)
       }
 
       ConstraintLayout(
@@ -838,7 +850,9 @@ fun PlayerControls(
             .offset(x = luaPositionX.coerceIn(0, 240).dp, y = (luaPositionY.coerceIn(0, 240) + 20).dp)
             .constrainAs(customLeftButtonsRef) {
               start.linkTo(parent.start, spacing.large)
-              top.linkTo(topLeftControls.bottom, 4.dp)
+              // Do not anchor to the AnimatedVisibility topLeftControls here:
+              // its bottom jumps to the top as the UI auto-hides.
+              top.linkTo(parent.top, luaTopControlsBottom + 4.dp)
               width = Dimension.preferredWrapContent
               height = Dimension.wrapContent
             },
@@ -1439,6 +1453,18 @@ fun PlayerControls(
                 end.linkTo(topRightControls.start, spacing.extraSmall)
                 width = Dimension.preferredWrapContent
                 horizontalBias = 0f
+              }
+              .onGloballyPositioned { coordinates ->
+                // Ignore collapsing/hidden animation frames. Record the
+                // original placement while controls are genuinely visible.
+                if (controlsShown && !areControlsLocked && coordinates.size.height > 0) {
+                  val bottom = with(luaAnchorDensity) {
+                    coordinates.boundsInParent().bottom.toDp()
+                  }
+                  if (bottom > 0.dp && luaTopControlsBottom != bottom) {
+                    luaTopControlsBottom = bottom
+                  }
+                }
               },
         ) {
           if (isPortrait) {
