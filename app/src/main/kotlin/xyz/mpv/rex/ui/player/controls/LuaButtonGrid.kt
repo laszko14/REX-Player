@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -54,6 +55,7 @@ fun LuaButtonGrid(
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
     val buttonHeight by preferences.luaButtonHeight.collectAsState()
     val fontSize by preferences.luaButtonFontSize.collectAsState()
+    val positionY by preferences.luaButtonPositionY.collectAsState()
     val cornerRadius by preferences.luaButtonCornerRadius.collectAsState()
     val borderOpacity by preferences.luaButtonBorderOpacity.collectAsState()
     val buttonColor by preferences.luaButtonBaseColor.collectAsState()
@@ -64,9 +66,12 @@ fun LuaButtonGrid(
     val height = (buttonHeight.coerceIn(22, 80) * factor).dp
     val shape = RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     val alpha = (1f - transparency.coerceIn(0, 100) / 100f) * 0.86f
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.72f).dp
+    val availableScreen = LocalConfiguration.current
+    // Never cover the bottom timeline on shorter landscape screens.
+    val maxHeight = (availableScreen.screenHeightDp - 92 - positionY.coerceIn(0, 240)).coerceAtLeast(95).dp
+    val maxWidth = (availableScreen.screenWidthDp * 0.85f).dp
     Column(
-        modifier = modifier.heightIn(max = maxHeight),
+        modifier = modifier.heightIn(max = maxHeight).widthIn(max = maxWidth),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
