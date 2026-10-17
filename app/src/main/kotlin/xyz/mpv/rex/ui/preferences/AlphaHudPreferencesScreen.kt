@@ -92,10 +92,10 @@ object AlphaHudPreferencesScreen : Screen {
         Text("Wyświetlane informacje")
         HudToggle("Poziom baterii", showBattery) { prefs.hudShowBattery.set(it) }
         HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
-        HudToggle("Prędkość pobierania internetu (Mb/s)", showNetworkSpeed) {
+        HudToggle("Prędkość pobierania filmu (Mb/s)", showNetworkSpeed) {
           prefs.hudShowNetworkSpeed.set(it)
         }
-        Text("Transfer pobierania całego telefonu, aktualizowany co sekundę — nie test prędkości łącza.")
+        Text("Transfer wyłącznie odtwarzanego strumienia MPV, aktualizowany co sekundę. Dla plików lokalnych lub gdy MPV nie udostępnia pomiaru: -- Mb/s.")
         HudToggle("Czas pozostały", showRemaining) { prefs.hudShowRemaining.set(it) }
         HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
         HudToggle("Pozostały czas w rzeczywistości (uwzględnij prędkość)",
@@ -138,7 +138,7 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudBatteryColor.set(it)
         }
         HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
-        HudHexInput("Prędkość internetu", networkSpeedColor) {
+        HudHexInput("Prędkość pobierania filmu", networkSpeedColor) {
           prefs.hudNetworkSpeedColor.set(it)
         }
         HudHexInput("Pozostały czas", remainingColor) { prefs.hudRemainingColor.set(it) }

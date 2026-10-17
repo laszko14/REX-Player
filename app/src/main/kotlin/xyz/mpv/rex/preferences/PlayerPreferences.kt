@@ -86,6 +86,7 @@ class PlayerPreferences(
   val hudBatteryColor = preferenceStore.getString("alpha_hud_battery_color", "#4ADE80")
   val hudBackgroundColor = preferenceStore.getString("alpha_hud_background_color", "#10151C")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
+  val holdSpeedQuarterSteps = preferenceStore.getBoolean("hold_speed_quarter_steps", false)
   val rememberLongPressSpeed = preferenceStore.getBoolean("remember_long_press_speed", true)
   val showDynamicSpeedOverlay = preferenceStore.getBoolean("show_dynamic_speed_overlay", true)
   val showSpeedIndicatorOverlay = preferenceStore.getBoolean("show_speed_indicator_overlay", true)

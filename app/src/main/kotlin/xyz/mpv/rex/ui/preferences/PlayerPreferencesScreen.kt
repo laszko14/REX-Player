@@ -23,6 +23,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import xyz.mpv.rex.R
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.preferences.snapHoldSpeed
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.presentation.components.GroupPosition
@@ -496,6 +497,7 @@ object PlayerPreferencesScreen : Screen {
             val pinchToResizeSubtitle by preferences.pinchToResizeSubtitle.collectAsState()
             val horizontalSwipeSensitivity by preferences.horizontalSwipeSensitivity.collectAsState()
             val holdForMultipleSpeed by preferences.holdForMultipleSpeed.collectAsState()
+            val holdSpeedQuarterSteps by preferences.holdSpeedQuarterSteps.collectAsState()
             val rememberLongPressSpeed by preferences.rememberLongPressSpeed.collectAsState()
             val showDynamicSpeedOverlay by preferences.showDynamicSpeedOverlay.collectAsState()
             val showSpeedIndicatorOverlay by preferences.showSpeedIndicatorOverlay.collectAsState()
@@ -643,7 +645,7 @@ object PlayerPreferencesScreen : Screen {
               ) {
                 SliderPreference(
                   value = holdForMultipleSpeed,
-                  onValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
+                  onValueChange = { preferences.holdForMultipleSpeed.set(snapHoldSpeed(it, holdSpeedQuarterSteps)) },
                   title = { Text(stringResource(R.string.pref_player_gestures_hold_for_multiple_speed)) },
                   valueRange = 0f..6f,
                   summary = {
@@ -656,8 +658,28 @@ object PlayerPreferencesScreen : Screen {
                       color = MaterialTheme.colorScheme.outline,
                     )
                   },
-                  onSliderValueChange = { preferences.holdForMultipleSpeed.set(it.toFixed(2)) },
+                  onSliderValueChange = { preferences.holdForMultipleSpeed.set(snapHoldSpeed(it, holdSpeedQuarterSteps)) },
                   sliderValue = holdForMultipleSpeed,
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_player_hold_speed_quarter_steps_title,
+              ) {
+                SwitchPreference(
+                  value = holdSpeedQuarterSteps,
+                  onValueChange = { enabled ->
+                    preferences.holdSpeedQuarterSteps.set(enabled)
+                    preferences.holdForMultipleSpeed.set(snapHoldSpeed(holdForMultipleSpeed, enabled))
+                  },
+                  title = { Text(stringResource(R.string.pref_player_hold_speed_quarter_steps_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_player_hold_speed_quarter_steps_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
                 )
               }
 
