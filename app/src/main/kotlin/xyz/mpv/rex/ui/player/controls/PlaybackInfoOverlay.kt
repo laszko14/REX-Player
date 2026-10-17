@@ -180,13 +180,23 @@ internal fun PlaybackInfoOverlay(
       horizontalArrangement = Arrangement.spacedBy(gap),
       verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
     ) {
-      if (showSpeed) {
+      if (showBattery) {
         Row(verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.PlayArrow, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = speedColor)
-          Text(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
-            color = speedColor, fontSize = fontSize, fontWeight = textWeight, maxLines = 1)
+          Icon(Icons.Default.BatteryFull, contentDescription = null,
+            modifier = Modifier.size(iconSize), tint = lowBatteryColor)
+          Text((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
+            (if (isCharging) " ⚡" else ""),
+            color = lowBatteryColor, fontSize = fontSize,
+            fontWeight = textWeight, maxLines = 1)
+        }
+      }      if (showClock) {
+        Row(verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
+          Icon(Icons.Default.AccessTime, contentDescription = null,
+            modifier = Modifier.size(iconSize), tint = clockColor)
+          Text(clockText, color = clockColor, fontSize = fontSize,
+            fontWeight = textWeight, maxLines = 1)
         }
       }
       if (showRemaining) {
@@ -198,26 +208,16 @@ internal fun PlaybackInfoOverlay(
             fontSize = fontSize, fontWeight = textWeight, maxLines = 1)
         }
       }
-      if (showClock) {
+      if (showSpeed) {
         Row(verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.AccessTime, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = clockColor)
-          Text(clockText, color = clockColor, fontSize = fontSize,
-            fontWeight = textWeight, maxLines = 1)
+          Icon(Icons.Default.PlayArrow, contentDescription = null,
+            modifier = Modifier.size(iconSize), tint = speedColor)
+          Text(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
+            color = speedColor, fontSize = fontSize, fontWeight = textWeight, maxLines = 1)
         }
       }
-      if (showBattery) {
-        Row(verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-          Icon(Icons.Default.BatteryFull, contentDescription = null,
-            modifier = Modifier.size(iconSize), tint = lowBatteryColor)
-          Text((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
-            (if (isCharging) " ⚡" else ""),
-            color = lowBatteryColor, fontSize = fontSize,
-            fontWeight = textWeight, maxLines = 1)
-        }
-      }
+
     }
   }
 }
