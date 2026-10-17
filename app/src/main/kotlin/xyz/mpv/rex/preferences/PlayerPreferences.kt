@@ -31,6 +31,11 @@ class PlayerPreferences(
   val luaButtonBaseColor = preferenceStore.getInt("lua_button_base_argb", 0xFF252631.toInt())
   val luaButtonActiveColor = preferenceStore.getInt("lua_button_active_argb", 0xFF92BBFF.toInt())
   val luaButtonTextColor = preferenceStore.getInt("lua_button_text_argb", 0xFFFFFFFF.toInt())
+  // Keep the Lua controls on the video even when the regular mpv UI auto-hides.
+  // Screen lock still suppresses button interaction.
+  val luaButtonAlwaysVisible = preferenceStore.getBoolean("lua_button_always_visible", false)
+  // Active speed has its own foreground so it is not forced to dark navy.
+  val luaButtonActiveTextColor = preferenceStore.getInt("lua_button_active_text_argb", 0xFF071426.toInt())
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
