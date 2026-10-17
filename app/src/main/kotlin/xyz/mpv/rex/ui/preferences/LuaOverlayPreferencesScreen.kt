@@ -97,6 +97,9 @@ object LuaOverlayPreferencesScreen : Screen {
                 }
                 Text("Oryginalne osiem przycisków i nowa nakładka mają osobny zapis. " +
                      "Aktualizacja zachowuje kopię starego układu.")
+                Text("Odstępy między guzikami: w edytorze nowej nakładki zostaw puste miejsca " +
+                     "(np. P9 albo P11). Panel zachowa te przerwy, a puste miejsca za " +
+                     "ostatnim guzikiem nie powiększą okna.")
                 ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
                     advanced.enableLuaScripts.set(it)
                 }
