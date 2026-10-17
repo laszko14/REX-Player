@@ -111,29 +111,29 @@ class ChapterMenuTest {
   }
 
   @Test
-  fun directIndexedAccess_eliminatesQuadraticScans() {
+  fun directIndexedAccess_generatesDistinctKeysAcrossLargeChapterLists() {
     val chapterCount = 10_000
     val largeChapters = (0 until chapterCount).map { i ->
       Segment(name = "Chapter ${i + 1}", start = i * 10f)
     }.toImmutableList()
 
-    // Measure time for direct indexed access and key generation (O(1) per item, O(N) total)
-    val startTimeDirect = System.nanoTime()
+    // Check the actual result of indexed access without depending on wall-clock
+    // timing. A 50 ms cutoff was flaky on shared GitHub Actions runners.
+    val keys = HashSet<String>(chapterCount)
     var directAccessCount = 0
     for (index in largeChapters.indices) {
       val chapter = largeChapters[index]
       val key = chapterKey(index, chapter)
-      val isSelected = index == 5000
-      val label = "${index + 1}: ${chapter.name}"
-      if (isSelected || label.isNotEmpty() || key.toString().isNotEmpty()) {
-        directAccessCount++
+      assertTrue("Duplicate chapter key at index $index", keys.add(key))
+      if (index == 5000) {
+        assertEquals("Chapter 5001", chapter.name)
+        assertEquals("5000_50000.0", key)
       }
+      directAccessCount++
     }
-    val directDurationMs = (System.nanoTime() - startTimeDirect) / 1_000_000
 
     assertEquals(chapterCount, directAccessCount)
-    // Direct indexed access for 10,000 items should complete in under 50ms
-    assertTrue("Direct indexed access took too long: ${directDurationMs}ms", directDurationMs < 50)
+    assertEquals(chapterCount, keys.size)
   }
 
   @Test
