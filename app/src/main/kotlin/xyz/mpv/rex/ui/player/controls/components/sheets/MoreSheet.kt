@@ -53,6 +53,7 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.Switch
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -109,6 +110,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -666,6 +668,7 @@ fun AestheticsTab() {
   val playerPreferences = koinInject<PlayerPreferences>()
 
   val whiteSeekBar by playerPreferences.whiteSeekBar.collectAsState()
+  val overlayOpacityPercent by playerPreferences.playerOverlayOpacityPercent.collectAsState()
   val enableBounceAnimation by appearancePreferences.enableBounceAnimation.collectAsState()
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val enableGlass by appearancePreferences.enableGlassPlayerControls.collectAsState()
@@ -685,6 +688,38 @@ fun AestheticsTab() {
       style = MaterialTheme.typography.titleLarge,
       modifier = Modifier.padding(bottom = MaterialTheme.spacing.small)
     )
+
+    // Single global opacity of on-video controls, not the movie itself.
+    // Keep the More menu opaque so 0% can always be changed back to 100%.
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+      Text(
+        "Widoczność wszystkich elementów odtwarzacza",
+        style = MaterialTheme.typography.titleMedium,
+        modifier = Modifier.weight(1f),
+      )
+      Text("$"+"{overlayOpacityPercent.coerceIn(0, 100)}%", fontWeight = FontWeight.Bold)
+    }
+    Slider(
+      value = overlayOpacityPercent.coerceIn(0, 100).toFloat(),
+      onValueChange = { playerPreferences.playerOverlayOpacityPercent.set(it.roundToInt()) },
+      valueRange = 0f..100f,
+      steps = 99,
+    )
+    Text(
+      "0% — niewidoczne: Play, pasek czasu, HUD, Lua i pozostałe przyciski. " +
+        "100% — zwykła pełna widoczność. Film i napisy nie zmieniają się.",
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+      TextButton(onClick = { playerPreferences.playerOverlayOpacityPercent.set(100) }) {
+        Text("Przywróć 100%")
+      }
+    }
 
     InteractionSwitch(
       label = stringResource(R.string.pref_appearance_hide_player_buttons_background_title),
