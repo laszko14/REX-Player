@@ -119,7 +119,7 @@ class ChapterMenuTest {
 
     // Check the actual result of indexed access without depending on wall-clock
     // timing. A 50 ms cutoff was flaky on shared GitHub Actions runners.
-    val keys = HashSet<String>(chapterCount)
+    val keys = HashSet<Any>(chapterCount)
     var directAccessCount = 0
     for (index in largeChapters.indices) {
       val chapter = largeChapters[index]
