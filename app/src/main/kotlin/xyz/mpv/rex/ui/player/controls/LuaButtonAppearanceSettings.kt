@@ -33,7 +33,7 @@ import kotlin.math.roundToInt
 
 /** Shared settings UI: accessible both in Preferences and on top of a playing film. */
 @Composable
-fun LuaButtonAppearanceSettings(prefs: PlayerPreferences) {
+fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = false) {
     val cols by prefs.luaPanelColumns.collectAsState()
     val width by prefs.luaButtonWidth.collectAsState()
     val height by prefs.luaButtonHeight.collectAsState()
@@ -50,19 +50,19 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences) {
     val activeColor by prefs.luaButtonActiveColor.collectAsState()
     val fontColor by prefs.luaButtonTextColor.collectAsState()
 
-    Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
-        LuaOptionSlider("Kolumny", cols, 1, 8, "") { prefs.luaPanelColumns.set(it) }
-        LuaOptionSlider("Szerokość przycisku", width, 30, 140, " dp") { prefs.luaButtonWidth.set(it) }
-        LuaOptionSlider("Wysokość przycisku", height, 22, 80, " dp") { prefs.luaButtonHeight.set(it) }
-        LuaOptionSlider("Wielkość czcionki", font, 8, 22, " sp") { prefs.luaButtonFontSize.set(it) }
-        LuaOptionSlider("Skala całej siatki", scale, 70, 150, "%") { prefs.threeFingerSpeedPanelSize.set(it) }
-        LuaOptionSlider("Odstęp między kolumnami", columnGap, 0, 24, " dp") { prefs.luaButtonColumnGap.set(it) }
-        LuaOptionSlider("Odstęp między rzędami", rowGap, 0, 24, " dp") { prefs.luaButtonRowGap.set(it) }
-        LuaOptionSlider("Przesunięcie w prawo", posX, 0, 240, " dp") { prefs.luaButtonPositionX.set(it) }
-        LuaOptionSlider("Przesunięcie w dół", posY, 0, 240, " dp") { prefs.luaButtonPositionY.set(it) }
-        LuaOptionSlider("Przezroczystość tła", transparent, 0, 100, "%") { prefs.threeFingerSpeedPanelTransparency.set(it) }
-        LuaOptionSlider("Zaokrąglenie rogów", radius, 0, 24, " dp") { prefs.luaButtonCornerRadius.set(it) }
-        LuaOptionSlider("Obramowanie", border, 0, 100, "%") { prefs.luaButtonBorderOpacity.set(it) }
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 7.dp)) {
+        LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
+        LuaOptionSlider("Szerokość przycisku", width, 30, 140, " dp", compact = compact) { prefs.luaButtonWidth.set(it) }
+        LuaOptionSlider("Wysokość przycisku", height, 22, 80, " dp", compact = compact) { prefs.luaButtonHeight.set(it) }
+        LuaOptionSlider("Wielkość czcionki", font, 8, 22, " sp", compact = compact) { prefs.luaButtonFontSize.set(it) }
+        LuaOptionSlider("Skala całej siatki", scale, 70, 150, "%", compact = compact) { prefs.threeFingerSpeedPanelSize.set(it) }
+        LuaOptionSlider("Odstęp między kolumnami", columnGap, 0, 24, " dp", compact = compact) { prefs.luaButtonColumnGap.set(it) }
+        LuaOptionSlider("Odstęp między rzędami", rowGap, 0, 24, " dp", compact = compact) { prefs.luaButtonRowGap.set(it) }
+        LuaOptionSlider("Przesunięcie w prawo", posX, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionX.set(it) }
+        LuaOptionSlider("Przesunięcie w dół", posY, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
+        LuaOptionSlider("Przezroczystość tła", transparent, 0, 100, "%", compact = compact) { prefs.threeFingerSpeedPanelTransparency.set(it) }
+        LuaOptionSlider("Zaokrąglenie rogów", radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
+        LuaOptionSlider("Obramowanie", border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
         LuaPalette("Kolor przycisków", baseColor, prefs.luaButtonBaseColor::set,
             listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(), 0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()))
         LuaPalette("Aktywny przycisk (prędkość)", activeColor, prefs.luaButtonActiveColor::set,
@@ -93,14 +93,49 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences) {
 }
 
 @Composable
-private fun LuaOptionSlider(title: String, value: Int, low: Int, high: Int, unit: String, onChange: (Int) -> Unit) {
-    Column {
-        Text(title + ": " + value + unit, style = MaterialTheme.typography.bodyMedium)
-        Slider(
-            value = value.coerceIn(low, high).toFloat(),
-            onValueChange = { onChange(it.roundToInt()) },
-            valueRange = low.toFloat()..high.toFloat(),
-        )
+private fun LuaOptionSlider(
+    title: String,
+    value: Int,
+    low: Int,
+    high: Int,
+    unit: String,
+    compact: Boolean = false,
+    onChange: (Int) -> Unit,
+) {
+    if (compact) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(0.42f),
+                maxLines = 2,
+            )
+            Slider(
+                modifier = Modifier.weight(0.49f),
+                value = value.coerceIn(low, high).toFloat(),
+                onValueChange = { onChange(it.roundToInt()) },
+                valueRange = low.toFloat()..high.toFloat(),
+            )
+            Text(
+                text = "$value$unit",
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.weight(0.20f),
+                maxLines = 1,
+            )
+        }
+    } else {
+        Column {
+            Text(title + ": " + value + unit, style = MaterialTheme.typography.bodyMedium)
+            Slider(
+                value = value.coerceIn(low, high).toFloat(),
+                onValueChange = { onChange(it.roundToInt()) },
+                valueRange = low.toFloat()..high.toFloat(),
+            )
+        }
     }
 }
 
