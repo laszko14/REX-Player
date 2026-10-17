@@ -1,59 +1,118 @@
-name: CI/CD Build
+name: MPV Alpha - kontrola kodu i jeden APK
 
 on:
   pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+    paths:
+      - "AGENTS.md"
+      - ".github/workflows/**"
+      - ".github/scripts/**"
+      - "app/**"
+      - "gradle/**"
+      - "*.gradle.kts"
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: mpv-alpha-ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build:
+  sources:
+    name: YAML, Python i Lua
     runs-on: ubuntu-latest
-
+    timeout-minutes: 15
     steps:
-      - name: Checkout repo
+      - name: Pobierz kod
         uses: actions/checkout@v4
 
-      - name: Generate short SHA
-        id: set-short-sha
-        run: echo "SHORT_SHA=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+      - name: Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Setup JDK 17
+      - name: Zainstaluj parser YAML
+        run: python3 -m pip install --disable-pip-version-check "PyYAML>=6,<7"
+
+      - name: Sprawdz skladnie workflow i osadzonego Pythona
+        run: python3 .github/scripts/check_workflows.py
+
+      - name: Testy walidatora workflow
+        run: python3 -m unittest discover -s .github/scripts -p "test_*.py" -v
+
+      - name: Sprawdz samodzielne pliki Lua (jezeli sa)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -d '' -t lua_files < <(find . -type f -name '*.lua' -not -path './.git/*' -print0)
+          if (( ${#lua_files[@]} == 0 )); then
+            echo "Brak samodzielnych plikow .lua w repozytorium - pomijam."
+            exit 0
+          fi
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lua5.2
+          for file in "${lua_files[@]}"; do
+            echo "Sprawdzam Lua: $file"
+            luac5.2 -p "$file"
+          done
+
+  android:
+    name: Android - build, testy, lint
+    needs: sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Java 17 i cache Gradle
         uses: actions/setup-java@v4
         with:
-          distribution: 'adopt'
-          java-version: 17
-          cache: 'gradle'
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
 
-      - name: Make gradlew executable
-        run: chmod +x ./gradlew
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
 
-      - name: Build with Gradle
-        run: ./gradlew assembleRelease
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Upload app-arm64-v8a Artifact
+      - name: Sprawdz, czy zatwierdzono baze dotychczasowych problemow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git ls-files --error-unmatch app/lint-baseline.xml
+          test -s app/lint-baseline.xml
+          echo "Lint baseline jest zapisany w repozytorium. Nowe problemy beda wykrywane."
+
+      - name: Build, testy jednostkowe i Android Lint
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
+
+      - name: Zapisz raport Lint przy bledzie
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: REX-Player-arm64-v8a-release-unsigned-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/release/app-arm64-v8a-release-unsigned.apk
-      - name: Upload app-armeabi-v7a Artifact
+          name: mpv-alpha-lint-raport
+          path: |
+            app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-debug.xml
+            app/build/reports/lint-results-debug.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: Wyslij tylko jeden APK arm64-v8a
         uses: actions/upload-artifact@v4
         with:
-          name: REX-Player-armeabi-v7a-release-unsigned-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/release/app-armeabi-v7a-release-unsigned.apk
-      - name: Upload app-universal Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: REX-Player-universal-release-unsigned-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/release/app-universal-release-unsigned.apk
-      - name: Upload app-x86 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: REX-Player-x86-release-unsigned-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/release/app-x86-release-unsigned.apk
-      - name: Upload app-x86_64 Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: REX-Player-x86_64-release-unsigned-${{ env.SHORT_SHA }}
-          path: app/build/outputs/apk/release/app-x86_64-release-unsigned.apk
+          name: MPV-Alpha-arm64-debug
+          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
+          if-no-files-found: error
+          retention-days: 7
