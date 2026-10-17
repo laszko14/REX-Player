@@ -69,11 +69,8 @@ fun LuaButtonGrid(
     val serialized by preferences.customButtons.collectAsState()
     val savedSlots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     val readyById = remember(buttons) { buttons.associateBy { it.id } }
-    // Keep internal holes, but avoid an invisible scrollable area after the
-    // last active button during ordinary playback.
-    val displaySlotCount = if (editMode) LUA_SLOT_COUNT else {
-        savedSlots.indexOfLast { it != null && it.enabled && it.title.isNotBlank() } + 1
-    }
+    // Playback only needs holes preceding a genuinely visible button. Extra slots
+    // never alter the indexes/relative positions of the existing 35-slot grid.
     val columns by preferences.luaPanelColumns.collectAsState()
     val scale by preferences.threeFingerSpeedPanelSize.collectAsState()
     val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
@@ -93,6 +90,26 @@ fun LuaButtonGrid(
     val textColor by preferences.luaButtonTextColor.collectAsState()
     val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
     val globalAlwaysVisible by preferences.luaButtonAlwaysVisible.collectAsState()
+
+    fun isSlotVisible(index: Int): Boolean {
+        val saved = savedSlots.getOrNull(index) ?: return false
+        if (!saved.enabled || saved.title.isBlank()) return false
+        val live = readyById[saved.id] ?: return false
+        return showAllButtons || (live.alwaysVisible ?: globalAlwaysVisible)
+    }
+    val extraIsShown = editMode ||
+        (LUA_EXTRA_START until LUA_SLOT_COUNT).any(::isSlotVisible)
+    val displayMainCount = if (editMode) LUA_MAIN_SLOT_COUNT else {
+        (0 until LUA_MAIN_SLOT_COUNT).indexOfLast(::isSlotVisible) + 1
+    }
+    // Extra buttons occupy their own two rows above the original grid.
+    // No extra empty rows are allocated during ordinary playback.
+    val displayRows = buildList {
+        if (extraIsShown) {
+            addAll((LUA_EXTRA_START until LUA_SLOT_COUNT).toList().chunked(LUA_EXTRA_COLUMNS))
+        }
+        addAll((0 until displayMainCount).toList().chunked(columns.coerceIn(1, 8)))
+    }
 
     val colCount = columns.coerceIn(1, 8)
     val factor = scale.coerceIn(70, 150) / 100f
@@ -116,7 +133,7 @@ fun LuaButtonGrid(
     var draggedIndex by remember { mutableIntStateOf(-1) }
     var dragDistance by remember { mutableStateOf(Offset.Zero) }
     val dropTarget = if (editMode && draggedIndex >= 0) {
-        luaDropSlotIndex(
+        luaDropSlotIndexWithExtra(
             draggedIndex, dragDistance.x, dragDistance.y,
             colCount, widthPx, heightPx, columnGapPx, rowGapPx,
         )
@@ -124,14 +141,20 @@ fun LuaButtonGrid(
 
     Column(modifier = modifier.heightIn(max = maxHeight).widthIn(max = maxWidth)) {
         Column(
-            modifier = Modifier.verticalScroll(rememberScrollState())
-                .horizontalScroll(rememberScrollState()),
+            // Root cause of blocked film gestures: nested scroll recognizers were active
+            // even when the rows consisted exclusively of invisible Spacers.
+            // Only edit mode is scrollable; playback leaves all holes touch-transparent.
+            modifier = Modifier.then(
+                if (editMode) Modifier.verticalScroll(rememberScrollState())
+                    .horizontalScroll(rememberScrollState())
+                else Modifier
+            ),
             verticalArrangement = Arrangement.spacedBy(rowSpace),
         ) {
-            (0 until displaySlotCount).toList().chunked(colCount).forEachIndexed { rowIndex, row ->
+            displayRows.forEach { row ->
                 Row(
                     modifier = Modifier.zIndex(
-                        if (draggedIndex >= 0 && draggedIndex / colCount == rowIndex) 1f else 0f,
+                        if (draggedIndex in row) 1f else 0f,
                     ),
                     horizontalArrangement = Arrangement.spacedBy(colSpace),
                 ) {
@@ -223,7 +246,7 @@ fun LuaButtonGrid(
                                                         dragDistance = Offset.Zero
                                                     },
                                                     onDragEnd = {
-                                                        val target = luaDropSlotIndex(
+                                                        val target = luaDropSlotIndexWithExtra(
                                                             index, dragDistance.x, dragDistance.y,
                                                             colCount, widthPx, heightPx,
                                                             columnGapPx, rowGapPx,
