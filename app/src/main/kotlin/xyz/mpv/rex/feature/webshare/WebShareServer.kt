@@ -42,8 +42,21 @@ class WebShareServer(
 
   private val fileMap = files.associateBy { it.id }
 
-  private fun ui(id: Int, vararg args: Any): String =
-    LocaleHelper.wrapContext(context).getString(id, *args)
+  private fun ui(id: Int, vararg args: Any): String {
+    context?.let { return LocaleHelper.wrapContext(it).getString(id, *args) }
+    // Context-less servers are used by JVM tests; preserve their English fallback.
+    val fallback = when (id) {
+      R.string.web_share_ui_access_denied -> "Access denied: invalid or missing security token."
+      R.string.web_share_ui_not_found -> "404 Not Found"
+      R.string.web_share_ui_internal_error -> "500 Internal Server Error: %1\$s"
+      R.string.web_share_ui_file_not_found -> "File not found"
+      R.string.web_share_ui_file_unreadable -> "File unreadable on device"
+      R.string.web_share_ui_unknown_error -> "Unknown error"
+      R.string.web_share_ui_upload_error_details -> "Upload failed: %1\$s"
+      else -> error("Unknown Web Share UI resource")
+    }
+    return String.format(java.util.Locale.ENGLISH, fallback, *args)
+  }
 
   override fun serve(session: IHTTPSession): Response {
     val uri = session.uri

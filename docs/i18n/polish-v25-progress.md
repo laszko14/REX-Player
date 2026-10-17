@@ -57,3 +57,9 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Polski dialog usunięcia z listy używa pełnych zdań odmienianych liczebnikowo. Inne języki zachowują dotychczasowy zasób.
 - Dodano jeszcze siedem polskich komunikatów błędów Web Share (bez zmiany statusów HTTP, endpointów i kluczy JSON). Łączny wynik audytu: 1230 zmienionych/dodanych wartości tekstowych, z osobnym liczeniem form liczby mnogiej.
 - Końcowy przegląd tych poprawek nie wskazał dalszych konkretnych usterek. Renderowanie i zbiorcza walidacja pozostają w toku.
+
+## Dostosowanie testów wyszukiwarki
+
+- Po wydzieleniu dawnych angielskich literałów cztery testy odwoływały się do nieużywanego już pola `title`. Testy sprawdzają teraz zasób oraz dotychczasowy ekran i pozycję docelową; zachowano sprawdzanie wyszukiwania po angielsku.
+- Dodano regresję polskich zapytań („rozdzielczość”, „niedosłyszących”, „dwukrotnego dotknięcia”).
+- Serwer Web Share zachowuje angielski wariant bez kontekstu Androida, używany w testach JVM; przy rzeczywistym kontekście korzysta z języka aplikacji.

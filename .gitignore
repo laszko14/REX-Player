@@ -16,3 +16,6 @@ compile_release.sh
 remote.log
 mpvRex-libmpv/
 REX-Ytdlp/
+
+# Local Kotlin compiler session state
+.kotlin/
