@@ -73,16 +73,16 @@ class CustomButtonManager(
                 if (!playerPreferences.luaPanelInitialized.get()) {
                     val current = playerPreferences.customButtons.get()
                     val slots = try {
-                        json.decodeFromString<CustomButtonSlots>(current).slots.take(24).toMutableList()
+                        json.decodeFromString<CustomButtonSlots>(current).slots.take(30).toMutableList()
                     } catch (_: Exception) {
                         try {
-                            json.decodeFromString<List<CustomButton>>(current).take(24)
+                            json.decodeFromString<List<CustomButton>>(current).take(30)
                                 .map { it as CustomButton? }.toMutableList()
                         } catch (_: Exception) {
                             mutableListOf<CustomButton?>()
                         }
                     }
-                    while (slots.size < 24) slots.add(null)
+                    while (slots.size < 30) slots.add(null)
                     val speeds = playerPreferences.threeFingerSpeedPresets.get().split(',')
                         .mapNotNull { it.trim().toFloatOrNull()?.takeIf { v -> v in 0.25f..6f } }
                         .take(9)
@@ -121,7 +121,7 @@ class CustomButtonManager(
                             slotsData.slots.forEachIndexed { index, btn ->
                                 if (btn != null && btn.enabled) {
                                     val safeId = btn.id.replace("-", "_")
-                                    val isLeft = index < 4
+                                    val isLeft = true
                                     processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
                                 }
                             }
@@ -131,7 +131,7 @@ class CustomButtonManager(
                                 val customButtonsList = json.decodeFromString<List<CustomButton>>(jsonString)
                                 customButtonsList.forEachIndexed { index, btn ->
                                     val safeId = btn.id.replace("-", "_")
-                                    val isLeft = index < 4
+                                    val isLeft = true
                                     processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
                                 }
                             } catch (e2: Exception) {
