@@ -124,7 +124,7 @@ data class CustomButton(
 
 @Serializable
 data class CustomButtonSlots(
-    val slots: List<CustomButton?> = List(8) { null }
+    val slots: List<CustomButton?> = List(24) { null }
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ object CustomButtonScreen : Screen {
         val preferences = koinInject<PlayerPreferences>()
 
         // 8 slots — order = left 0-3, right 4-7
-        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(8) { null }) }
+        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(24) { null }) }
 
         // Import dialog state
         var showImportDialog by remember { mutableStateOf(false) }
@@ -188,31 +188,36 @@ object CustomButtonScreen : Screen {
             }
         }
 
+        var buttonDataLoaded by remember { mutableStateOf(false) }
         // Load saved data
         LaunchedEffect(Unit) {
             val jsonString = preferences.customButtons.get()
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(8).toMutableList()
-                    while (slots.size < 8) slots.add(null)
+                    val slots = loaded.slots.take(24).toMutableList()
+                    while (slots.size < 24) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
                 }.onFailure {
                     runCatching {
                         val old: List<CustomButton> = Json.decodeFromString(jsonString)
-                        val slots = MutableList<CustomButton?>(8) { null }
-                        old.forEachIndexed { i, b -> if (i < 8) slots[i] = b }
+                        val slots = MutableList<CustomButton?>(24) { null }
+                        old.forEachIndexed { i, b -> if (i < 24) slots[i] = b }
                         buttonSlots.clear()
                         buttonSlots.addAll(slots)
                     }
                 }
             }
+            buttonDataLoaded = true
         }
 
-        // Persist on every change
-        LaunchedEffect(buttonSlots.toList()) {
-            preferences.customButtons.set(Json.encodeToString(CustomButtonSlots(buttonSlots.toList())))
+        // Persist only after reading existing buttons; don't wipe old config.
+        LaunchedEffect(buttonDataLoaded, buttonSlots.toList()) {
+            if (buttonDataLoaded) {
+                val value = Json.encodeToString(CustomButtonSlots(buttonSlots.toList()))
+                if (preferences.customButtons.get() != value) preferences.customButtons.set(value)
+            }
         }
 
         // Reorderable list state 
@@ -278,7 +283,7 @@ object CustomButtonScreen : Screen {
                     items = buttonSlots.toList(),
                     key = { index, item -> item?.id ?: "slot_$index" },
                 ) { index, button ->
-                    val side = if (index < 4) "L${index + 1}" else "R${index - 3}"
+                    val side = "P${index + 1}"
 
                     ReorderableItem(reorderState, key = button?.id ?: "slot_$index") { isDragging ->
                         val elevation by animateFloatAsState(
@@ -1003,7 +1008,7 @@ fun ImportSelectionScreen(
                 },
                 key = { (index, _) -> "import_button_$index" }
             ) { (index, button) ->
-                val side = if (index < 4) "L${index + 1}" else "R${index - 3}"
+                val side = "P${index + 1}"
                 val isSelected = selectedSlots.contains(index)
                 val willOverwrite = currentSlots.getOrNull(index) != null
                 val sideColor = if (index < 4) 
@@ -1132,7 +1137,7 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
 }
 
 private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
-    val slots = MutableList<CustomButton?>(8) { null }
+    val slots = MutableList<CustomButton?>(24) { null }
     
     // Simple XML parsing using regex (for basic structure)
     val buttonPattern = """<button\s+slot="(\d+)">(.*?)</button>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1145,7 +1150,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     
     buttonPattern.findAll(xmlContent).forEach { buttonMatch ->
         val slotIndex = buttonMatch.groupValues[1].toIntOrNull() ?: return@forEach
-        if (slotIndex !in 0..7) return@forEach
+        if (slotIndex !in 0..23) return@forEach
         
         val buttonXml = buttonMatch.groupValues[2]
         

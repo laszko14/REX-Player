@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import java.util.Locale
 import java.io.File
 
 /**
@@ -31,6 +33,7 @@ class CustomButtonManager(
     companion object {
         private const val TAG = "CustomButtonManager"
         private const val CUSTOM_BUTTONS_LOADED_FLAG = "user-data/mpvex/custombuttons_loaded"
+        private const val ACTIVE_SCRIPT_GENERATION = "user-data/mpvex/custombuttons_generation"
     }
 
     data class CustomButtonState(
@@ -46,6 +49,7 @@ class CustomButtonManager(
     private val loadMutex = Mutex()
     private var isMpvReady = false
     private var scriptPath: String? = null
+    private var scriptGeneration: String? = null
 
     fun onMpvInitialized() {
         isMpvReady = true
@@ -64,7 +68,51 @@ class CustomButtonManager(
                     return@launch
                 }
 
+                val scriptToken = System.nanoTime().toString()
+                // MPV_ALPHA_LUA_PANEL_V10: seed speeds/seek without changing saved user buttons.
+                if (!playerPreferences.luaPanelInitialized.get()) {
+                    val current = playerPreferences.customButtons.get()
+                    val slots = try {
+                        json.decodeFromString<CustomButtonSlots>(current).slots.take(24).toMutableList()
+                    } catch (_: Exception) {
+                        try {
+                            json.decodeFromString<List<CustomButton>>(current).take(24)
+                                .map { it as CustomButton? }.toMutableList()
+                        } catch (_: Exception) {
+                            mutableListOf<CustomButton?>()
+                        }
+                    }
+                    while (slots.size < 24) slots.add(null)
+                    val speeds = playerPreferences.threeFingerSpeedPresets.get().split(',')
+                        .mapNotNull { it.trim().toFloatOrNull()?.takeIf { v -> v in 0.25f..6f } }
+                        .take(9)
+                    val fallback = listOf(1.5f, 2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f, 5.5f)
+                    val defaults = (0 until 9).map { index ->
+                        val speed = speeds.getOrNull(index) ?: fallback[index]
+                        val display = String.format(Locale.US, "%.2f", speed).trimEnd('0').trimEnd('.')
+                        CustomButton(id = "lua_alpha_speed_$index", title = "${display}x",
+                            content = "mp.set_property_number('speed', $speed)")
+                    } + listOf(
+                        playerPreferences.threeFingerSpeedSeekButton1.get(),
+                        playerPreferences.threeFingerSpeedSeekButton2.get(),
+                        playerPreferences.threeFingerSpeedSeekButton3.get()
+                    ).mapIndexed { index, duration ->
+                        val sign = if (duration > 0) "+" else ""
+                        CustomButton(id = "lua_alpha_seek_$index", title = "$sign${duration}s",
+                            content = "mp.commandv('seek', '$duration', 'relative')")
+                    }
+                    for (button in defaults) {
+                        if (slots.none { it?.id == button.id }) {
+                            val free = slots.indexOfFirst { it == null }
+                            if (free >= 0) slots[free] = button
+                        }
+                    }
+                    playerPreferences.customButtons.set(json.encodeToString(CustomButtonSlots(slots)))
+                    playerPreferences.luaPanelInitialized.set(true)
+                }
+
                 val scriptContent = buildString {
+                    append("local user_button_generation = '$scriptToken'\n")
                     val jsonString = playerPreferences.customButtons.get()
                     if (jsonString.isNotBlank()) {
                         try {
@@ -106,6 +154,7 @@ class CustomButtonManager(
                     val file = File(scriptsDir, "custombuttons.lua")
                     file.writeText(scriptContent)
                     scriptPath = file.absolutePath
+                    scriptGeneration = scriptToken
 
                     if (isMpvReady) {
                         if (!loadScript(file)) {
@@ -155,6 +204,7 @@ class CustomButtonManager(
     private fun loadScript(file: File): Boolean {
         runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
         return runCatching {
+            scriptGeneration?.let { MPVLib.setPropertyString(ACTIVE_SCRIPT_GENERATION, it) }
             MPVLib.command("load-script", file.absolutePath)
             true
         }.getOrElse {
@@ -195,6 +245,7 @@ class CustomButtonManager(
                 append(
                     """
                     function button_${safeId}()
+                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
                         ${command}
                     end
                     mp.register_script_message('call_button_${safeId}', button_${safeId})
@@ -207,6 +258,7 @@ class CustomButtonManager(
                 append(
                     """
                     function button_long_${safeId}()
+                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
                         ${longPressCommand}
                     end
                     mp.register_script_message('call_button_long_${safeId}', button_long_${safeId})

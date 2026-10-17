@@ -842,7 +842,7 @@ fun PlayerControls(
       }
 
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait,
+            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customLeftButtonsRef) {
@@ -907,7 +907,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait,
+            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customRightButtonsRef) {
@@ -974,7 +974,7 @@ fun PlayerControls(
         }
         
         AnimatedVisibility(
-            visible = areButtonsVisible && isPortrait,
+            visible = areButtonsVisible && isPortrait && !threeFingerSpeedEnabled,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customButtonsPortraitRef) {
@@ -2118,16 +2118,16 @@ fun PlayerControls(
         }
 
         if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
-          ThreeFingerSpeedOverlay(
+          LuaButtonPanel(
             preferences = playerPreferences,
-            currentSpeed = playbackSpeed ?: 1f,
+            buttons = customButtons,
             onClose = { threeFingerSpeedVisible = false },
-            onSelectSpeed = { speed ->
-              viewModel.setPlaybackSpeed(speed)
+            onButtonClick = { id ->
+              viewModel.callCustomButton(id)
               threeFingerSpeedInteractionCount++
             },
-            onSeekBy = { delta ->
-              viewModel.seekBy(delta)
+            onButtonLongClick = { id ->
+              viewModel.callCustomButtonLongPress(id)
               threeFingerSpeedInteractionCount++
             },
             modifier = Modifier.constrainAs(threeFingerSpeedPanelRef) {

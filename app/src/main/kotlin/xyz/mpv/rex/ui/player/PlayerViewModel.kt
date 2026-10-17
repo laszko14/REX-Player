@@ -44,6 +44,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -577,10 +578,10 @@ class PlayerViewModel(
     
     // Refresh custom buttons when Lua scripts are enabled/disabled or configuration changes
     viewModelScope.launch {
-      combine(
-        advancedPreferences.enableLuaScripts.changes().drop(1),
-        playerPreferences.customButtons.changes().drop(1)
-      ) { _, _ -> }.collect {
+      merge(
+        advancedPreferences.enableLuaScripts.changes().drop(1).map { Unit },
+        playerPreferences.customButtons.changes().drop(1).map { Unit }
+      ).collect {
         _customButtonManager.setup()
       }
     }

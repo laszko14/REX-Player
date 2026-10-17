@@ -171,6 +171,21 @@ object PreferencesScreen : Screen {
             }
           }
 
+          // A dedicated top-level category for fully editable floating Lua buttons.
+          item {
+            PreferenceSection(title = "Nakładka Lua") {
+              GroupedListColumn {
+                PreferenceItem(
+                  position = GroupPosition.ONLY,
+                  title = "Panel przycisków Lua",
+                  summary = "Dodawanie przycisków i wygląd ramki — bez kompilacji APK",
+                  icon = Icons.Outlined.Code,
+                  onClick = { backstack.add(LuaOverlayPreferencesScreen) },
+                )
+              }
+            }
+          }
+
           // Media & Library Section
           item {
             PreferenceSection(title = stringResource(R.string.pref_media_library_title)) {
