@@ -843,7 +843,7 @@ fun PlayerControls(
           // mode is enabled. Still hide on explicit screen lock.
           visible = (areButtonsVisible || luaSettingsVisible ||
               customButtons.any { it.alwaysVisible ?: luaAlwaysVisible }) &&
-            !areControlsLocked && customButtons.isNotEmpty(),
+            !areControlsLocked && (customButtons.isNotEmpty() || luaSettingsVisible),
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier
@@ -862,6 +862,7 @@ fun PlayerControls(
             buttons = customButtons,
             playbackSpeed = playbackSpeed ?: 1f,
             showAllButtons = areButtonsVisible || luaSettingsVisible,
+            editMode = luaSettingsVisible,
             onButtonClick = { id ->
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.callCustomButton(id)
