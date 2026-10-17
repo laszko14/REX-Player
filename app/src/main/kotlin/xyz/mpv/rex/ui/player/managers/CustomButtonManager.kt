@@ -244,18 +244,93 @@ class CustomButtonManager(
         }
     }
 
-    fun callButton(id: String) {
-        val safeId = id.replace("-", "_")
-        val client = scriptClientName ?: return
-        runCatching { MPVLib.command("script-message-to", client, "call_button_$safeId") }
-            .onFailure { Log.e(TAG, "Lua click failed: $id", it) }
+    private fun showFeedback(message: String) {
+        runCatching { MPVLib.command("show-text", message, "1500") }
+        Log.d(TAG, message)
     }
 
-    fun callButtonLongPress(id: String) {
-        val safeId = id.replace("-", "_")
-        val client = scriptClientName ?: return
-        runCatching { MPVLib.command("script-message-to", client, "call_button_long_$safeId") }
-            .onFailure { Log.e(TAG, "Lua long press failed: $id", it) }
+    private fun actionCode(id: String, longPress: Boolean): String? {
+        val raw = playerPreferences.customButtons.get()
+        val saved = runCatching {
+            json.decodeFromString<CustomButtonSlots>(raw).slots
+        }.getOrElse {
+            runCatching {
+                json.decodeFromString<List<CustomButton>>(raw).map { it as CustomButton? }
+            }.getOrDefault(emptyList())
+        }
+        val entry = saved.firstOrNull { it?.id == id && it.enabled }
+        return if (longPress) entry?.longPressContent else entry?.content
+    }
+
+    private fun tryNativeAction(lua: String): Boolean {
+        val source = lua.trim().removeSuffix(";").trim()
+        // Reliable native handling of common MPV operations, even if the Lua
+        // interpreter isn't ready. This does NOT interpret arbitrary Lua.
+        val speedPattern = Regex("""^mp\.set_property(?:_number)?\s*\(\s*['"]speed['"]\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*\)$""")
+        val speed = speedPattern.matchEntire(source)
+        if (speed != null) {
+            val value = speed.groupValues[1].toFloatOrNull() ?: return false
+            if (value !in 0.1f..8f) return false
+            MPVLib.setPropertyFloat("speed", value)
+            showFeedback("Predkosc: " + value + "x")
+            return true
+        }
+        val speedCommand = Regex("""^mp\.commandv\s*\(\s*['"]set['"]\s*,\s*['"]speed['"]\s*,\s*['"]?([0-9]+(?:\.[0-9]+)?)['"]?\s*\)$""")
+            .matchEntire(source)
+        if (speedCommand != null) {
+            val value = speedCommand.groupValues[1].toFloatOrNull() ?: return false
+            if (value !in 0.1f..8f) return false
+            MPVLib.setPropertyFloat("speed", value)
+            showFeedback("Predkosc: " + value + "x")
+            return true
+        }
+        val seek = Regex("""^mp\.commandv\s*\(\s*['"]seek['"]\s*,\s*['"]?([+-]?[0-9]+(?:\.[0-9]+)?)['"]?\s*,\s*['"](relative|absolute)['"]\s*\)$""")
+            .matchEntire(source)
+        if (seek != null) {
+            MPVLib.command("seek", seek.groupValues[1], seek.groupValues[2])
+            showFeedback("Przewijanie: " + seek.groupValues[1] + "s")
+            return true
+        }
+        return false
+    }
+
+    fun callButton(id: String) = runAction(id, false)
+
+    fun callButtonLongPress(id: String) = runAction(id, true)
+
+    private fun runAction(id: String, longPress: Boolean) {
+        val code = actionCode(id, longPress)
+        if (code == null || code.isBlank()) {
+            showFeedback("Lua: brak przypisanej akcji")
+            return
+        }
+        try {
+            if (tryNativeAction(code)) return
+        } catch (e: Exception) {
+            Log.e(TAG, "Native Lua button fallback failed: " + id, e)
+        }
+        val client = scriptClientName
+        if (client == null || !isScriptLoaded()) {
+            showFeedback("Lua niegotowe - otworz ustawienia 3 palcami")
+            _luaStatus.value = "BŁĄD: brak aktywnego skryptu Lua"
+            val now = System.currentTimeMillis()
+            if (isMpvReady && now - lastRetryMs > 7000L) {
+                lastRetryMs = now
+                setup()
+            }
+            return
+        }
+        val safeId = id.replace(Regex("[^A-Za-z0-9_]"), "_")
+        val msg = (if (longPress) "call_button_long_" else "call_button_") + safeId
+        runCatching {
+            MPVLib.command("script-message-to", client, msg)
+            // This proves the Compose button and the Kotlin callback fired.
+            showFeedback("Lua wyslane: " + id.take(12))
+        }.onFailure { e ->
+            _luaStatus.value = "BŁĄD Lua: " + (e.message ?: "nieznany")
+            Log.e(TAG, "Lua dispatch failed: " + msg, e)
+            showFeedback("Błąd wysyłania Lua")
+        }
     }
 
     private fun StringBuilder.processButton(
