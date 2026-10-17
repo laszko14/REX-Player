@@ -92,6 +92,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.FileProvider
 import java.io.File
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
+import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
+import xyz.mpv.rex.ui.player.controls.LuaButtonIndividualAppearance
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -120,11 +123,17 @@ data class CustomButton(
     val longPressContent: String = "",
     val onStartup: String = "",
     val enabled: Boolean = true,
+    // Nullable overrides keep older saved buttons compatible with global defaults.
+    val alwaysVisible: Boolean? = null,
+    val backgroundColor: Int? = null,
+    val textColor: Int? = null,
+    val activeBackgroundColor: Int? = null,
+    val activeTextColor: Int? = null,
 )
 
 @Serializable
 data class CustomButtonSlots(
-    val slots: List<CustomButton?> = List(24) { null }
+    val slots: List<CustomButton?> = List(30) { null }
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -140,8 +149,13 @@ object CustomButtonScreen : Screen {
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // 8 slots — order = left 0-3, right 4-7
-        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(24) { null }) }
+        // One unified set: slots 1–30, preserving existing imported Lua buttons.
+        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(30) { null }) }
+        // Stable keys move WITH each slot, including empty slots. Index-based keys
+        // make Compose reset a dragged item as soon as it crosses an empty position.
+        val slotKeys = remember {
+            mutableStateListOf(*Array(30) { "lua-slot-" + UUID.randomUUID().toString() })
+        }
 
         // Import dialog state
         var showImportDialog by remember { mutableStateOf(false) }
@@ -195,15 +209,15 @@ object CustomButtonScreen : Screen {
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(24).toMutableList()
-                    while (slots.size < 24) slots.add(null)
+                    val slots = loaded.slots.take(30).toMutableList()
+                    while (slots.size < 30) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
                 }.onFailure {
                     runCatching {
                         val old: List<CustomButton> = Json.decodeFromString(jsonString)
-                        val slots = MutableList<CustomButton?>(24) { null }
-                        old.forEachIndexed { i, b -> if (i < 24) slots[i] = b }
+                        val slots = MutableList<CustomButton?>(30) { null }
+                        old.forEachIndexed { i, b -> if (i < 30) slots[i] = b }
                         buttonSlots.clear()
                         buttonSlots.addAll(slots)
                     }
@@ -220,14 +234,23 @@ object CustomButtonScreen : Screen {
             }
         }
 
-        // Reorderable list state 
+        // The LazyColumn has TWO non-button items before the slot entries:
+        // 1) spacer, 2) appearance preferences card. Reorder indices include both.
         val lazyListState = rememberLazyListState()
-        val NON_SLOT_ITEMS_BEFORE = 1  // the Spacer item()
+        val NON_SLOT_ITEMS_BEFORE = 2
         val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-            val fromIdx = (from.index - NON_SLOT_ITEMS_BEFORE).coerceIn(0, buttonSlots.lastIndex)
-            val toIdx   = (to.index   - NON_SLOT_ITEMS_BEFORE).coerceIn(0, buttonSlots.lastIndex)
-            val moved = buttonSlots.removeAt(fromIdx)
-            buttonSlots.add(toIdx.coerceIn(0, buttonSlots.size), moved)
+            val fromIdx = from.index - NON_SLOT_ITEMS_BEFORE
+            val toIdx = to.index - NON_SLOT_ITEMS_BEFORE
+            // Never accidentally move a real button when hovering the header,
+            // import/export controls or anything outside the 30 slot rows.
+            if (fromIdx in buttonSlots.indices && toIdx in buttonSlots.indices &&
+                fromIdx != toIdx
+            ) {
+                val movingButton = buttonSlots.removeAt(fromIdx)
+                buttonSlots.add(toIdx, movingButton)
+                val movingKey = slotKeys.removeAt(fromIdx)
+                slotKeys.add(toIdx, movingKey)
+            }
         }
 
         Scaffold(
@@ -278,14 +301,54 @@ object CustomButtonScreen : Screen {
                 // Section divider items
                 item { Spacer(Modifier.height(8.dp)) }
 
+                // Enhanced original REX editor: ONLY one page in app settings.
+                // All layout options are reused in the landscape in-player quick editor.
+                item {
+                    var appearanceExpanded by remember { mutableStateOf(false) }
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            TextButton(
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick = { appearanceExpanded = !appearanceExpanded },
+                            ) {
+                                Text(
+                                    "Wygląd i położenie 30 przycisków " +
+                                        if (appearanceExpanded) "▲" else "▼"
+                                )
+                            }
+                            // Primary visibility and color options stay visible,
+                            // even before expanding geometry / advanced controls.
+                            LuaButtonQuickSettings(preferences)
+                            if (appearanceExpanded) {
+                                LuaButtonAppearanceSettings(preferences, showQuick = false)
+                            } else {
+                                Text(
+                                    "Rozwiń, aby ustawić wymiary, kolumny, czcionkę, odstępy i pozycję.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+
                 // itemsIndexed gives us the real slot position so empty-slot keys are unique
                 itemsIndexed(
                     items = buttonSlots.toList(),
-                    key = { index, item -> item?.id ?: "slot_$index" },
+                    key = { index, _ -> slotKeys[index] },
                 ) { index, button ->
                     val side = "P${index + 1}"
 
-                    ReorderableItem(reorderState, key = button?.id ?: "slot_$index") { isDragging ->
+                    ReorderableItem(reorderState, key = slotKeys[index]) { isDragging ->
                         val elevation by animateFloatAsState(
                             targetValue = if (isDragging) 8f else 0f,
                             animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -295,6 +358,7 @@ object CustomButtonScreen : Screen {
                         ButtonSlotCard(
                             slotLabel = side,
                             button = button,
+                            appearancePrefs = preferences,
                             isDragging = isDragging,
                             elevation = elevation,
                             dragHandle = { interceptModifier ->
@@ -436,6 +500,7 @@ object CustomButtonScreen : Screen {
 fun ButtonSlotCard(
     slotLabel: String,
     button: CustomButton?,
+    appearancePrefs: PlayerPreferences,
     isDragging: Boolean,
     elevation: Float,
     dragHandle: @Composable (Modifier) -> Unit,
@@ -544,16 +609,10 @@ fun ButtonSlotCard(
 
                 // Drag handle button - always show but disable when empty
                 if (isPopulated) {
-                    dragHandle(
-                        Modifier.pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitFirstDown(requireUnconsumed = false)
-                                    expanded = false
-                                }
-                            }
-                        }
-                    )
+                    // Let sh.calvin.reorderable exclusively own this pointer gesture.
+                    // The custom awaitFirstDown loop intercepted pointer events and
+                    // caused jitter / springing back to the previous position.
+                    dragHandle(Modifier)
                 } else {
                     // Disabled drag handle for empty slots
                     Icon(
@@ -571,6 +630,7 @@ fun ButtonSlotCard(
                 enter   = expandVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeIn(),
                 exit    = shrinkVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeOut(),
             ) {
+                Column {
                 ButtonExpandedContent(
                     slotLabel      = slotLabel,
                     buttonId       = buttonId,
@@ -592,6 +652,11 @@ fun ButtonSlotCard(
                                 longPressContent = draftLongPress,
                                 onStartup        = draftStartup,
                                 enabled          = draftEnabled,
+                                alwaysVisible     = button?.alwaysVisible,
+                                backgroundColor   = button?.backgroundColor,
+                                textColor         = button?.textColor,
+                                activeBackgroundColor = button?.activeBackgroundColor,
+                                activeTextColor   = button?.activeTextColor,
                             )
                         )
                         expanded = false
@@ -599,6 +664,31 @@ fun ButtonSlotCard(
                     onCollapse      = { expanded = false },
                     onOpenLuaEditor = { field -> activeLuaField = field },
                 )
+                if (button != null) {
+                    var customAppearanceOpen by remember(button.id) { mutableStateOf(false) }
+                    TextButton(
+                        onClick = { customAppearanceOpen = !customAppearanceOpen },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (customAppearanceOpen) "Ukryj indywidualny wygląd ▲" else "Widoczność i kolory tego przycisku ▼")
+                    }
+                    if (customAppearanceOpen) {
+                        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            LuaButtonIndividualAppearance(
+                                button = button,
+                                prefs = appearancePrefs,
+                                onChange = onSave,
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "Zapisz przycisk, aby ustawić jego stałą widoczność i własne kolory.",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                }
             }
         }
     }
@@ -629,6 +719,11 @@ fun ButtonSlotCard(
                         longPressContent = draftLongPress,
                         onStartup        = draftStartup,
                         enabled          = draftEnabled,
+                        alwaysVisible     = button?.alwaysVisible,
+                        backgroundColor   = button?.backgroundColor,
+                        textColor         = button?.textColor,
+                        activeBackgroundColor = button?.activeBackgroundColor,
+                        activeTextColor   = button?.activeTextColor,
                     )
                 )
             }
@@ -1125,6 +1220,11 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             sb.appendLine("    <id>${escapeXml(button.id)}</id>")
             sb.appendLine("    <title>${escapeXml(button.title)}</title>")
             sb.appendLine("    <enabled>${button.enabled}</enabled>")
+            button.alwaysVisible?.let { sb.appendLine("    <alwaysVisible>$it</alwaysVisible>") }
+            button.backgroundColor?.let { sb.appendLine("    <backgroundColor>$it</backgroundColor>") }
+            button.textColor?.let { sb.appendLine("    <textColor>$it</textColor>") }
+            button.activeBackgroundColor?.let { sb.appendLine("    <activeBackgroundColor>$it</activeBackgroundColor>") }
+            button.activeTextColor?.let { sb.appendLine("    <activeTextColor>$it</activeTextColor>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
             sb.appendLine("    <longPressContent><![CDATA[${button.longPressContent}]]></longPressContent>")
             sb.appendLine("    <onStartup><![CDATA[${button.onStartup}]]></onStartup>")
@@ -1137,7 +1237,7 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
 }
 
 private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
-    val slots = MutableList<CustomButton?>(24) { null }
+    val slots = MutableList<CustomButton?>(30) { null }
     
     // Simple XML parsing using regex (for basic structure)
     val buttonPattern = """<button\s+slot="(\d+)">(.*?)</button>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1150,7 +1250,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     
     buttonPattern.findAll(xmlContent).forEach { buttonMatch ->
         val slotIndex = buttonMatch.groupValues[1].toIntOrNull() ?: return@forEach
-        if (slotIndex !in 0..23) return@forEach
+        if (slotIndex !in 0..29) return@forEach
         
         val buttonXml = buttonMatch.groupValues[2]
         
@@ -1160,14 +1260,22 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
         val content = contentPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val longPress = longPressPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val startup = startupPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
-        
+        fun optionalField(name: String): String? =
+            Regex("<$name>(.*?)</$name>", RegexOption.DOT_MATCHES_ALL)
+                .find(buttonXml)?.groupValues?.get(1)
+
         slots[slotIndex] = CustomButton(
             id = id,
             title = title,
             content = content,
             longPressContent = longPress,
             onStartup = startup,
-            enabled = enabled
+            enabled = enabled,
+            alwaysVisible = optionalField("alwaysVisible")?.toBooleanStrictOrNull(),
+            backgroundColor = optionalField("backgroundColor")?.toIntOrNull(),
+            textColor = optionalField("textColor")?.toIntOrNull(),
+            activeBackgroundColor = optionalField("activeBackgroundColor")?.toIntOrNull(),
+            activeTextColor = optionalField("activeTextColor")?.toIntOrNull(),
         )
     }
     

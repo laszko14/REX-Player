@@ -194,7 +194,7 @@ object AboutScreen : Screen {
                         modifier = Modifier.matchParentSize(),
                         factory = { ctx ->
                           ImageView(ctx).apply {
-                            setImageResource(R.mipmap.ic_launcher)
+                            setImageResource(R.drawable.mpv_alpha_icon)
                           }
                         },
                       )

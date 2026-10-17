@@ -17,7 +17,29 @@ class PlayerPreferences(
   val backgroundPlayback = preferenceStore.getEnum("background_playback_mode", BackgroundPlaybackMode.AudioOnly)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
-  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
+  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 5)
+  // Last tab in the in-player Lua editor: Quick / Appearance / Codes.
+  val luaEditorLastTab = preferenceStore.getInt("lua_editor_last_tab", 0)
+  val luaButtonRowGap = preferenceStore.getInt("lua_button_row_gap_dp", 2)
+  val luaButtonColumnGap = preferenceStore.getInt("lua_button_column_gap_dp", 2)
+  // All settings are live-editable from the movie screen and persist across launches.
+  val luaButtonWidth = preferenceStore.getInt("lua_button_width_dp", 52)
+  val luaButtonHeight = preferenceStore.getInt("lua_button_height_dp", 27)
+  val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
+  val luaButtonPositionX = preferenceStore.getInt("lua_button_position_x_dp", 0)
+  val luaButtonPositionY = preferenceStore.getInt("lua_button_position_y_dp", 100)
+  val luaButtonCornerRadius = preferenceStore.getInt("lua_button_corner_dp", 7)
+  val luaButtonBorderOpacity = preferenceStore.getInt("lua_button_border_opacity_pct", 20)
+  val luaButtonBaseColor = preferenceStore.getInt("lua_button_base_argb", 0xFF252631.toInt())
+  val luaButtonActiveColor = preferenceStore.getInt("lua_button_active_argb", 0xFF92BBFF.toInt())
+  // Separate 0–100% transparency for the selected speed button; 0 keeps existing opaque look.
+  val luaButtonActiveTransparency = preferenceStore.getInt("lua_button_active_transparency_pct", 0)
+  val luaButtonTextColor = preferenceStore.getInt("lua_button_text_argb", 0xFFFFFFFF.toInt())
+  // Keep the Lua controls on the video even when the regular mpv UI auto-hides.
+  // Screen lock still suppresses button interaction.
+  val luaButtonAlwaysVisible = preferenceStore.getBoolean("lua_button_always_visible", false)
+  // Active speed has its own foreground so it is not forced to dark navy.
+  val luaButtonActiveTextColor = preferenceStore.getInt("lua_button_active_text_argb", 0xFF071426.toInt())
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
@@ -40,6 +62,27 @@ class PlayerPreferences(
   val threeFingerSpeedPositionX = preferenceStore.getFloat("three_finger_speed_position_x", 0.5f)
   val threeFingerSpeedPositionY = preferenceStore.getFloat("three_finger_speed_position_y", 0.16f)
   val showPlaybackInfoOverlay = preferenceStore.getBoolean("show_playback_info_overlay", true)
+  // HUD Alpha v1: separate from Lua controls and the system status bar.
+  // Allow very small and very large HUDs; renderer always clamps unsafe saved values.
+  val hudScalePercent = preferenceStore.getInt("alpha_hud_scale_percent", 100) // 35..300%
+  val hudItemGapDp = preferenceStore.getInt("alpha_hud_item_gap_dp", 12) // 0..64 dp
+  val hudPaddingDp = preferenceStore.getInt("alpha_hud_padding_dp", 8) // 0..40 dp
+  val hudBackgroundOpacity = preferenceStore.getInt("alpha_hud_background_opacity", 70)
+  val hudCornerRadiusDp = preferenceStore.getInt("alpha_hud_corner_radius_dp", 10)
+  val hudPositionX = preferenceStore.getFloat("alpha_hud_position_x", 1f)
+  val hudPositionY = preferenceStore.getFloat("alpha_hud_position_y", 0.03f)
+  val hudEditMode = preferenceStore.getBoolean("alpha_hud_edit_mode", false)
+  val hudAlwaysVisible = preferenceStore.getBoolean("alpha_hud_always_visible", true)
+  val hudShowSpeed = preferenceStore.getBoolean("alpha_hud_show_speed", true)
+  val hudShowRemaining = preferenceStore.getBoolean("alpha_hud_show_remaining", true)
+  val hudShowClock = preferenceStore.getBoolean("alpha_hud_show_clock", true)
+  val hudShowBattery = preferenceStore.getBoolean("alpha_hud_show_battery", true)
+  val hudRealTimeRemaining = preferenceStore.getBoolean("alpha_hud_real_time_remaining", false)
+  val hudSpeedColor = preferenceStore.getString("alpha_hud_speed_color", "#60E2F2")
+  val hudRemainingColor = preferenceStore.getString("alpha_hud_remaining_color", "#FFFFFF")
+  val hudClockColor = preferenceStore.getString("alpha_hud_clock_color", "#E2E8F0")
+  val hudBatteryColor = preferenceStore.getString("alpha_hud_battery_color", "#4ADE80")
+  val hudBackgroundColor = preferenceStore.getString("alpha_hud_background_color", "#10151C")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
   val rememberLongPressSpeed = preferenceStore.getBoolean("remember_long_press_speed", true)
   val showDynamicSpeedOverlay = preferenceStore.getBoolean("show_dynamic_speed_overlay", true)

@@ -10,15 +10,14 @@ import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.encodeToString
 import java.util.Locale
-import java.io.File
 
 /**
  * Manages custom user-defined buttons, including Lua script generation and MPV integration.
@@ -32,28 +31,46 @@ class CustomButtonManager(
 ) {
     companion object {
         private const val TAG = "CustomButtonManager"
-        private const val CUSTOM_BUTTONS_LOADED_FLAG = "user-data/mpvex/custombuttons_loaded"
-        private const val ACTIVE_SCRIPT_GENERATION = "user-data/mpvex/custombuttons_generation"
+        private const val ACTIVE_CLIENT_PROPERTY = "user-data/mpvex/alpha_bridge_ready"
     }
 
     data class CustomButtonState(
         val id: String,
         val label: String,
         val isLeft: Boolean,
+        val alwaysVisible: Boolean? = null,
+        val backgroundColor: Int? = null,
+        val textColor: Int? = null,
+        val activeBackgroundColor: Int? = null,
+        val activeTextColor: Int? = null,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
     val customButtons = _customButtons.asStateFlow()
+    private val _luaStatus = MutableStateFlow("Oczekiwanie na silnik MPV")
+    val luaStatus = _luaStatus.asStateFlow()
 
     private var setupJob: Job? = null
-    private val loadMutex = Mutex()
     private var isMpvReady = false
-    private var scriptPath: String? = null
-    private var scriptGeneration: String? = null
 
     fun onMpvInitialized() {
         isMpvReady = true
-        reloadScript("mpv_initialized")
+        // Starting again also covers the race where the first setup was queued
+        // before MPV finished initialization.
+        setup()
+        scope.launch(Dispatchers.IO) {
+            repeat(25) {
+                if (isScriptLoaded()) {
+                    _luaStatus.value = "Lua gotowe — oryginalne przyciski"
+                    runStartupActions()
+                    return@launch
+                }
+                delay(180L)
+            }
+            if (advancedPreferences.enableLuaScripts.get()) {
+                _luaStatus.value = "Lua: oczekiwanie na potwierdzenie (przyciski mogą działać)"
+            }
+        }
     }
 
     fun setup() {
@@ -63,8 +80,7 @@ class CustomButtonManager(
                 val uiButtons = mutableListOf<CustomButtonState>()
                 if (!advancedPreferences.enableLuaScripts.get()) {
                     _customButtons.value = uiButtons
-                    scriptPath = null
-                    runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
+                    _luaStatus.value = "Skrypty Lua wyłączone"
                     return@launch
                 }
 
@@ -73,16 +89,16 @@ class CustomButtonManager(
                 if (!playerPreferences.luaPanelInitialized.get()) {
                     val current = playerPreferences.customButtons.get()
                     val slots = try {
-                        json.decodeFromString<CustomButtonSlots>(current).slots.take(24).toMutableList()
+                        json.decodeFromString<CustomButtonSlots>(current).slots.take(30).toMutableList()
                     } catch (_: Exception) {
                         try {
-                            json.decodeFromString<List<CustomButton>>(current).take(24)
+                            json.decodeFromString<List<CustomButton>>(current).take(30)
                                 .map { it as CustomButton? }.toMutableList()
                         } catch (_: Exception) {
                             mutableListOf<CustomButton?>()
                         }
                     }
-                    while (slots.size < 24) slots.add(null)
+                    while (slots.size < 30) slots.add(null)
                     val speeds = playerPreferences.threeFingerSpeedPresets.get().split(',')
                         .mapNotNull { it.trim().toFloatOrNull()?.takeIf { v -> v in 0.25f..6f } }
                         .take(9)
@@ -111,61 +127,32 @@ class CustomButtonManager(
                     playerPreferences.luaPanelInitialized.set(true)
                 }
 
-                val scriptContent = buildString {
-                    append("local user_button_generation = '$scriptToken'\n")
-                    val jsonString = playerPreferences.customButtons.get()
-                    if (jsonString.isNotBlank()) {
-                        try {
-                            // Try new slot-based format first
-                            val slotsData = json.decodeFromString<CustomButtonSlots>(jsonString)
-                            slotsData.slots.forEachIndexed { index, btn ->
-                                if (btn != null && btn.enabled) {
-                                    val safeId = btn.id.replace("-", "_")
-                                    val isLeft = index < 4
-                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
-                                }
-                            }
-                        } catch (e: Exception) {
-                            // Fallback to old format
-                            try {
-                                val customButtonsList = json.decodeFromString<List<CustomButton>>(jsonString)
-                                customButtonsList.forEachIndexed { index, btn ->
-                                    val safeId = btn.id.replace("-", "_")
-                                    val isLeft = index < 4
-                                    processButton(btn.id, safeId, btn.title, btn.content, btn.longPressContent, btn.onStartup, isLeft, uiButtons)
-                                }
-                            } catch (e2: Exception) {
-                                Log.e(TAG, "Failed to parse custom buttons JSON", e2)
-                            }
-                        }
-                    }
-
-                    if (uiButtons.isNotEmpty()) {
-                        append("mp.set_property_native('$CUSTOM_BUTTONS_LOADED_FLAG', '1')\n")
-                    }
+                val saved = playerPreferences.customButtons.get()
+                val allButtons = runCatching {
+                    json.decodeFromString<CustomButtonSlots>(saved).slots.filterNotNull()
+                }.getOrElse {
+                    runCatching { json.decodeFromString<List<CustomButton>>(saved) }
+                        .getOrDefault(emptyList())
                 }
-
+                uiButtons.addAll(allButtons.filter { it.enabled && it.title.isNotBlank() }
+                    .take(30).map {
+                        CustomButtonState(
+                            id = it.id,
+                            label = it.title,
+                            isLeft = true,
+                            alwaysVisible = it.alwaysVisible,
+                            backgroundColor = it.backgroundColor,
+                            textColor = it.textColor,
+                            activeBackgroundColor = it.activeBackgroundColor,
+                            activeTextColor = it.activeTextColor,
+                        )
+                    })
                 _customButtons.value = uiButtons
-
-                if (scriptContent.isNotEmpty()) {
-                    val scriptsDir = File(context.filesDir, "scripts")
-                    if (!scriptsDir.exists()) scriptsDir.mkdirs()
-
-                    val file = File(scriptsDir, "custombuttons.lua")
-                    file.writeText(scriptContent)
-                    scriptPath = file.absolutePath
-                    scriptGeneration = scriptToken
-
-                    if (isMpvReady) {
-                        if (!loadScript(file)) {
-                            Log.w(TAG, "Failed to load custombuttons.lua")
-                        }
-                    } else {
-                        Log.d(TAG, "Deferring custombuttons.lua load until MPV is ready")
-                    }
-                } else {
-                    scriptPath = null
-                    runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
+                _luaStatus.value = when {
+                    !advancedPreferences.enableLuaScripts.get() -> "Skrypty Lua wyłączone"
+                    !isMpvReady -> "Czekam na MPV"
+                    isScriptLoaded() -> "Lua gotowe — oryginalne przyciski"
+                    else -> "Lua: oczekiwanie na potwierdzenie"
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting up custom buttons", e)
@@ -173,99 +160,120 @@ class CustomButtonManager(
         }
     }
 
-    private fun reloadScript(reason: String) {
-        if (!isMpvReady) return
-
-        scope.launch(Dispatchers.IO) {
-            loadMutex.withLock {
-                if (!advancedPreferences.enableLuaScripts.get()) return@withLock
-
-                val currentPath = scriptPath ?: return@withLock
-                if (isScriptLoaded()) return@withLock
-
-                val file = File(currentPath)
-                if (!file.exists()) {
-                    Log.w(TAG, "custombuttons.lua missing during $reason, rebuilding")
-                    setup()
-                    return@withLock
-                }
-
-                if (!loadScript(file)) {
-                    Log.w(TAG, "custombuttons.lua load failed during $reason")
-                }
-            }
-        }
-    }
-
+    // The sole bridge script is installed BEFORE libmpv initialize().
+    // It receives current Lua code directly; never runtime-load or reload a script.
     private fun isScriptLoaded(): Boolean =
-        runCatching { MPVLib.getPropertyString(CUSTOM_BUTTONS_LOADED_FLAG) == "1" }
-            .getOrDefault(false)
+        isMpvReady && runCatching {
+            MPVLib.getPropertyString(ACTIVE_CLIENT_PROPERTY) == "1"
+        }.getOrDefault(false)
 
-    private fun loadScript(file: File): Boolean {
-        runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
-        return runCatching {
-            scriptGeneration?.let { MPVLib.setPropertyString(ACTIVE_SCRIPT_GENERATION, it) }
-            MPVLib.command("load-script", file.absolutePath)
-            true
+    private fun runStartupActions() {
+        val saved = playerPreferences.customButtons.get()
+        val buttons = runCatching {
+            json.decodeFromString<CustomButtonSlots>(saved).slots.filterNotNull()
         }.getOrElse {
-            Log.w(TAG, "load-script failed: ${it.message}")
-            false
+            runCatching { json.decodeFromString<List<CustomButton>>(saved) }
+                .getOrDefault(emptyList())
+        }
+        buttons.filter { it.enabled && it.onStartup.isNotBlank() }.take(30).forEach { button ->
+            runCatching {
+                MPVLib.command("script-message", "mpv_alpha_eval", button.onStartup)
+            }.onFailure { error ->
+                Log.e(TAG, "Lua startup error for " + button.title, error)
+            }
         }
     }
 
-    fun callButton(id: String) {
-        val safeId = id.replace("-", "_")
-        MPVLib.command("script-message", "call_button_$safeId")
+    private fun showFeedback(message: String) {
+        runCatching { MPVLib.command("show-text", message, "1500") }
+        Log.d(TAG, message)
     }
 
-    fun callButtonLongPress(id: String) {
-        val safeId = id.replace("-", "_")
-        MPVLib.command("script-message", "call_button_long_$safeId")
+    private fun actionCode(id: String, longPress: Boolean): String? {
+        val raw = playerPreferences.customButtons.get()
+        val saved = runCatching {
+            json.decodeFromString<CustomButtonSlots>(raw).slots
+        }.getOrElse {
+            runCatching {
+                json.decodeFromString<List<CustomButton>>(raw).map { it as CustomButton? }
+            }.getOrDefault(emptyList())
+        }
+        val entry = saved.firstOrNull { it?.id == id && it.enabled }
+        return if (longPress) entry?.longPressContent else entry?.content
     }
 
-    private fun StringBuilder.processButton(
-        originalId: String,
-        safeId: String,
-        label: String,
-        command: String,
-        longPressCommand: String,
-        onStartup: String,
-        isLeft: Boolean,
-        uiList: MutableList<CustomButtonState>
-    ) {
-        if (label.isNotBlank()) {
-            uiList.add(CustomButtonState(originalId, label, isLeft))
+    private fun tryNativeAction(lua: String): Boolean {
+        val source = lua.trim().removeSuffix(";").trim()
+        // Reliable native handling of common MPV operations, even if the Lua
+        // interpreter isn't ready. This does NOT interpret arbitrary Lua.
+        val speedPattern = Regex("""^mp\.set_property(?:_number)?\s*\(\s*['"]speed['"]\s*,\s*([0-9]+(?:\.[0-9]+)?)\s*\)$""")
+        val speed = speedPattern.matchEntire(source)
+        if (speed != null) {
+            val value = speed.groupValues[1].toFloatOrNull() ?: return false
+            if (value !in 0.1f..8f) return false
+            MPVLib.setPropertyFloat("speed", value)
+            showFeedback("Predkosc: " + value + "x")
+            return true
+        }
+        val speedCommand = Regex("""^mp\.commandv\s*\(\s*['"]set['"]\s*,\s*['"]speed['"]\s*,\s*['"]?([0-9]+(?:\.[0-9]+)?)['"]?\s*\)$""")
+            .matchEntire(source)
+        if (speedCommand != null) {
+            val value = speedCommand.groupValues[1].toFloatOrNull() ?: return false
+            if (value !in 0.1f..8f) return false
+            MPVLib.setPropertyFloat("speed", value)
+            showFeedback("Predkosc: " + value + "x")
+            return true
+        }
+        val seek = Regex("""^mp\.commandv\s*\(\s*['"]seek['"]\s*,\s*['"]?([+-]?[0-9]+(?:\.[0-9]+)?)['"]?\s*,\s*['"](relative|absolute)['"]\s*\)$""")
+            .matchEntire(source)
+        if (seek != null) {
+            MPVLib.command("seek", seek.groupValues[1], seek.groupValues[2])
+            showFeedback("Przewijanie: " + seek.groupValues[1] + "s")
+            return true
+        }
+        return false
+    }
 
-            if (onStartup.isNotBlank()) {
-                append(onStartup)
-                append("\n")
-            }
+    fun callButton(id: String) = runAction(id, false)
 
-            if (command.isNotBlank()) {
-                append(
-                    """
-                    function button_${safeId}()
-                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
-                        ${command}
-                    end
-                    mp.register_script_message('call_button_${safeId}', button_${safeId})
-                    """.trimIndent()
-                )
-                append("\n")
-            }
+    fun callButtonLongPress(id: String) = runAction(id, true)
 
-            if (longPressCommand.isNotBlank()) {
-                append(
-                    """
-                    function button_long_${safeId}()
-                        if mp.get_property('user-data/mpvex/custombuttons_generation') ~= user_button_generation then return end
-                        ${longPressCommand}
-                    end
-                    mp.register_script_message('call_button_long_${safeId}', button_long_${safeId})
-                    """.trimIndent()
-                )
-                append("\n")
+    private fun runAction(id: String, longPress: Boolean) {
+        val code = actionCode(id, longPress)
+        if (code.isNullOrBlank()) {
+            showFeedback("Lua: brak przypisanej akcji")
+            return
+        }
+        try {
+            if (tryNativeAction(code)) return
+        } catch (e: Exception) {
+            Log.e(TAG, "Native button error", e)
+        }
+        if (!advancedPreferences.enableLuaScripts.get()) {
+            showFeedback("Włącz Lua w ustawieniach zaawansowanych")
+            return
+        }
+        if (!isMpvReady) {
+            showFeedback("Lua: MPV jeszcze się uruchamia")
+            return
+        }
+        runCatching {
+            // The script-message API returns once the request has been sent,
+            // not necessarily once the Lua callback has run. Therefore a missing
+            // immediate user-data acknowledgement is NOT an execution failure.
+            MPVLib.command("script-message", "mpv_alpha_eval", code)
+            _luaStatus.value = if (isScriptLoaded()) {
+                "Lua gotowe — oryginalne przyciski"
+            } else {
+                "Lua: polecenie wysłane (bez potwierdzenia wykonania)"
             }
+            // Real Lua parse/runtime errors are surfaced by the bridge itself.
+            // Do not show an alarming OSD for a missing readiness flag.
+        }.onFailure { e ->
+            _luaStatus.value = "BŁĄD Lua: " + e.message
+            Log.e(TAG, "Lua bridge dispatch error", e)
+            showFeedback("Błąd wywołania Lua")
         }
     }
+
 }

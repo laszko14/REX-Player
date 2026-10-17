@@ -642,7 +642,7 @@ object YtdlSettingsScreen : Screen {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "ReX Ytdlp add- on zapewnia natywny procesor Python i Y- dlp w pakiecie bez głowy. Nie ma ikony wyrzutni i działa bezpiecznie w tle.",
+                    text = "Dodatek yt-dlp zapewnia natywny procesor Python i Y- dlp w pakiecie bez głowy. Nie ma ikony wyrzutni i działa bezpiecznie w tle.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onErrorContainer,
                 )
@@ -708,7 +708,7 @@ object YtdlSettingsScreen : Screen {
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "REX Ytdlp",
+                                text = "Dodatek yt-dlp",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
