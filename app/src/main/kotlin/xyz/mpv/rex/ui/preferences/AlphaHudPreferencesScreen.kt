@@ -54,8 +54,8 @@ object AlphaHudPreferencesScreen : Screen {
     val gap by prefs.hudItemGapDp.collectAsState()
     val innerPadding by prefs.hudPaddingDp.collectAsState()
     val opacity by prefs.hudBackgroundOpacity.collectAsState()
-    val highContrastText by prefs.hudHighContrastText.collectAsState()
-    val boldText by prefs.hudBoldText.collectAsState()
+    val fontWeightPercent by prefs.hudFontWeightPercent.collectAsState()
+    val outlinePercent by prefs.hudOutlinePercent.collectAsState()
     val radius by prefs.hudCornerRadiusDp.collectAsState()
     val x by prefs.hudPositionX.collectAsState()
     val y by prefs.hudPositionY.collectAsState()
@@ -121,14 +121,30 @@ object AlphaHudPreferencesScreen : Screen {
         }
 
         Text("Czytelność napisów")
-        HudToggle("Kontrastowy obrys czcionki", highContrastText) {
-          prefs.hudHighContrastText.set(it)
+        HudIntSlider("Pogrubienie czcionki", fontWeightPercent, 0, 100, "%") {
+          prefs.hudFontWeightPercent.set(it)
         }
-        HudToggle("Pogrubiona czcionka", boldText) {
-          prefs.hudBoldText.set(it)
+        HudIntSlider("Siła kontrastowego obrysu", outlinePercent, 0, 100, "%") {
+          prefs.hudOutlinePercent.set(it)
         }
-        Text("Obrys jest czarny dla jasnych liter i biały dla ciemnych. " +
-          "Zachowuje ustawione kolory i nie analizuje klatek filmu.")
+        Text("0% obrysu wyłącza kontur, 50% odpowiada poprzedniej opcji włączonej. " +
+          "40% pogrubienia to wcześniejszy domyślny HUD, 60% odpowiada Bold. " +
+          "Kolory napisów pozostają bez zmian.")
+        Row(modifier = Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          OutlinedButton(onClick = {
+            prefs.hudFontWeightPercent.set(40)
+            prefs.hudOutlinePercent.set(0)
+          }, modifier = Modifier.weight(1f)) { Text("Naturalny") }
+          OutlinedButton(onClick = {
+            prefs.hudFontWeightPercent.set(60)
+            prefs.hudOutlinePercent.set(50)
+          }, modifier = Modifier.weight(1f)) { Text("Czytelny") }
+          OutlinedButton(onClick = {
+            prefs.hudFontWeightPercent.set(90)
+            prefs.hudOutlinePercent.set(85)
+          }, modifier = Modifier.weight(1f)) { Text("Mocny") }
+        }
 
         Text("Położenie (niezależne od przycisków Lua)")
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -164,6 +180,8 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudBackgroundOpacity.set(70)
           prefs.hudHighContrastText.set(false)
           prefs.hudBoldText.set(false)
+          prefs.hudFontWeightPercent.set(40)
+          prefs.hudOutlinePercent.set(0)
           prefs.hudCornerRadiusDp.set(10)
           prefs.hudPositionX.set(1f)
           prefs.hudPositionY.set(0.03f)
