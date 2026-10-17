@@ -127,6 +127,9 @@ object MpvConfigSync : KoinComponent {
       -- MPV Alpha: stable bridge for the ORIGINAL custom buttons editor.
       -- Input is a user-authored button script passed by Kotlin, not an external link.
       mp.register_script_message("mpv_alpha_eval", function(source)
+          -- MPV's user-data status may be reset on media transitions.
+          -- Re-acknowledge on a real Lua callback, not only on script startup.
+          pcall(mp.set_property, "user-data/mpvex/alpha_bridge_ready", "1")
           if type(source) ~= "string" or source == "" then
               mp.msg.warn("Alpha: empty Lua button source")
               return
@@ -144,7 +147,7 @@ object MpvConfigSync : KoinComponent {
               mp.osd_message("Blad Lua: " .. tostring(failure), 4)
           end
       end)
-      mp.set_property("user-data/mpvex/alpha_bridge_ready", "1")
+      pcall(mp.set_property, "user-data/mpvex/alpha_bridge_ready", "1")
       mp.msg.info("MPV Alpha Lua bridge initialized")
       """.trimIndent() + "\n",
       Charsets.UTF_8
