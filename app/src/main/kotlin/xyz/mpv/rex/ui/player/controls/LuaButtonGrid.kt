@@ -178,16 +178,8 @@ fun LuaButtonGrid(
                             } else {
                                 button.backgroundColor ?: buttonColor
                             }
-                            Text(
-                                text = button.label,
-                                color = Color(
-                                    if (active) button.activeTextColor ?: activeTextColor
-                                    else button.textColor ?: textColor,
-                                ),
-                                textAlign = TextAlign.Center,
-                                fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                            Box(
+                                contentAlignment = Alignment.Center,
                                 modifier = Modifier
                                     .zIndex(if (isDragging) 2f else 0f)
                                     .offset {
@@ -262,9 +254,20 @@ fun LuaButtonGrid(
                                                 onLongClick = { onButtonLongClick(button.id) },
                                             )
                                         },
-                                    )
-                                    .border(0.dp, Color.Transparent, shape),
-                            )
+                                    ),
+                            ) {
+                                Text(
+                                    text = button.label,
+                                    color = Color(
+                                        if (active) button.activeTextColor ?: activeTextColor
+                                        else button.textColor ?: textColor,
+                                    ),
+                                    textAlign = TextAlign.Center,
+                                    fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }
