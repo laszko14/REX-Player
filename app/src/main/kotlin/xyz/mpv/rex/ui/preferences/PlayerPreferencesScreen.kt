@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.preferences
 
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.lazy.LazyColumn
@@ -789,7 +790,7 @@ object PlayerPreferencesScreen : Screen {
           item {
             androidx.compose.material3.OutlinedButton(
               onClick = { backstack.add(AlphaHudPreferencesScreen) },
-              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+              modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
             ) {
               Text("HUD Alpha — rozmiar, odstępy, pozycja, kolory")
             }
