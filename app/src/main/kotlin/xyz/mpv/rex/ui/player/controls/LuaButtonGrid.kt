@@ -69,6 +69,7 @@ fun LuaButtonGrid(
     onButtonLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
     onDragStateChange: (Boolean) -> Unit = {},
+    leftOffsetDp: Int = 0,
     previewDragging: Boolean = false,
 ) {
     val serialized by preferences.customButtons.collectAsState()
@@ -241,7 +242,8 @@ fun LuaButtonGrid(
             verticalAlignment = Alignment.Top,
         ) {
             Column(
-                modifier = Modifier.heightIn(max = maxHeight).then(
+                modifier = Modifier.offset(x = leftOffsetDp.coerceIn(0, 240).dp)
+                    .heightIn(max = maxHeight).then(
                     if (editMode) Modifier.verticalScroll(rememberScrollState()) else Modifier
                 ),
                 verticalArrangement = Arrangement.spacedBy(rowSpace),
