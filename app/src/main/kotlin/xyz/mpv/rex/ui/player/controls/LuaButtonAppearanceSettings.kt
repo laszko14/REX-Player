@@ -220,8 +220,8 @@ private fun LuaFontReadabilitySettings(prefs: PlayerPreferences, compact: Boolea
     }
     if (!compact) {
         Text(
-            "0% = brak obrysu lub zwykła czcionka, 50% obrysu = dawny kontrast, " +
-                "60% pogrubienia = dawny Bold. Kolory napisów nie są zmieniane.",
+            "0% = czcionka normalna i brak obrysu; 60% = Bold, 90% = Black. " +
+                "100% kontrastu = cienki, wyraźny kontur bez halo. Kolory pozostają bez zmian.",
             style = MaterialTheme.typography.labelSmall,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
