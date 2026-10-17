@@ -146,15 +146,13 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                                 modifier = Modifier.weight(1f),
                             ) { Text("Przyciski") }
                             Button(
-                                onClick = {},
+                                onClick = { settingsTab = true },
                                 modifier = Modifier.weight(1f),
-                                enabled = false,
                             ) { Text("Ustawienia") }
                         } else {
                             Button(
-                                onClick = {},
+                                onClick = { settingsTab = false },
                                 modifier = Modifier.weight(1f),
-                                enabled = false,
                             ) { Text("Przyciski") }
                             OutlinedButton(
                                 onClick = { settingsTab = true },
