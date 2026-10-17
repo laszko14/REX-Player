@@ -3,8 +3,6 @@ package xyz.mpv.rex.ui.player.controls
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
-import android.net.TrafficStats
-import android.os.SystemClock
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -50,6 +48,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
+import `is`.xyz.mpv.MPVLib
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 
@@ -92,7 +91,7 @@ internal fun PlaybackInfoOverlay(
   val batteryHex by preferences.hudBatteryColor.collectAsState()
   val backgroundHex by preferences.hudBackgroundColor.collectAsState()
 
-  // The value is downloaded traffic across the phone, not a speed test.
+  // Download rate comes from MPV's active media stream, never Android-wide traffic.
   var networkDownloadSpeed by remember { mutableFloatStateOf(-1f) }
   var batteryPercent by remember { mutableIntStateOf(-1) }
   var isCharging by remember { mutableStateOf(false) }
@@ -106,19 +105,18 @@ internal fun PlaybackInfoOverlay(
     }
   }
   LaunchedEffect(showNetworkSpeed) {
+    networkDownloadSpeed = -1f
     if (!showNetworkSpeed) return@LaunchedEffect
-    // Elapsed realtime avoids wall-clock corrections affecting speed calculations.
-    var previousBytes = TrafficStats.getTotalRxBytes()
-    var previousTime = SystemClock.elapsedRealtime()
     while (true) {
       delay(1_000L)
-      val currentBytes = TrafficStats.getTotalRxBytes()
-      val currentTime = SystemClock.elapsedRealtime()
-      networkDownloadSpeed = networkDownloadMbps(
-        previousBytes, currentBytes, currentTime - previousTime,
-      ) ?: -1f
-      previousBytes = currentBytes
-      previousTime = currentTime
+      // MPV reports cache-speed in bytes/s over roughly a one-second window.
+      // It can be unavailable for some sources or when the stream has no cache.
+      networkDownloadSpeed = runCatching {
+        mpvStreamDownloadMbps(
+          MPVLib.getPropertyInt("cache-speed"),
+          MPVLib.getPropertyString("path"),
+        )
+      }.getOrNull() ?: -1f
     }
   }
   LaunchedEffect(context, showBattery) {
