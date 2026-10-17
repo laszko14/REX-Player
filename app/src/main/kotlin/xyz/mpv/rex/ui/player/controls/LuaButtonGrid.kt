@@ -49,7 +49,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Fixed 30-cell layout. In three-finger settings mode, long-press and drag a
+ * Fixed 35-cell layout (seven rows at the default five columns). In three-finger settings mode, long-press and drag a
  * button to exchange it with another or move it to an empty cell.
  * At other times, the same positions are kept but empty cells are invisible.
  */

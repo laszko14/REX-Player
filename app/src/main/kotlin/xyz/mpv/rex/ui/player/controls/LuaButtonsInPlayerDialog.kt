@@ -116,7 +116,7 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                         FilterChip(
                             selected = tab == 2,
                             onClick = { prefs.luaEditorLastTab.set(2) },
-                            label = { Text("Kody (30)") },
+                            label = { Text("Kody ($LUA_SLOT_COUNT)") },
                         )
                     }
                     HorizontalDivider()
@@ -149,10 +149,10 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    // All 30 fixed slots are always shown. No search/filter rows take up screen space.
+    // All 35 fixed slots are always shown. No search/filter rows take up screen space.
     val listState = rememberLazyListState()
 
-    if (selectedIndex !in 0..29) {
+    if (selectedIndex !in 0 until LUA_SLOT_COUNT) {
         Column(modifier = modifier) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -160,7 +160,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                 verticalArrangement = Arrangement.spacedBy(3.dp),
                 contentPadding = PaddingValues(bottom = 6.dp),
             ) {
-                items((0 until 30).toList(), key = { it }) { index ->
+                items((0 until LUA_SLOT_COUNT).toList(), key = { it }) { index ->
                     val button = slots[index]
                     Row(
                         modifier = Modifier.fillMaxWidth()
@@ -215,8 +215,8 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             modifier = modifier.verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
-            OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista 30 przycisków") }
-            Text("Przycisk " + (index + 1) + " / 30", style = MaterialTheme.typography.titleMedium)
+            OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista $LUA_SLOT_COUNT przycisków") }
+            Text("Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT", style = MaterialTheme.typography.titleMedium)
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(), label = { Text("Nazwa przycisku") },
