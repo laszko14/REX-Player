@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -50,9 +51,12 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.koin.compose.koinInject
+import xyz.mpv.rex.preferences.AdvancedPreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
+import xyz.mpv.rex.ui.preferences.LuaOverlaySettingsControls
 import xyz.mpv.rex.ui.preferences.isValidCustomButtonColor
 import xyz.mpv.rex.ui.preferences.parseCustomButtonColor
 
@@ -64,12 +68,14 @@ private const val SLOT_COUNT = 24
  */
 @Composable
 internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: () -> Unit) {
+    val advanced = koinInject<AdvancedPreferences>()
     val slots = remember(preferences) {
         mutableStateListOf<CustomButton?>().apply {
             addAll(readOverlaySlots(preferences.luaOverlayButtons.get()))
         }
     }
     var selected by remember { mutableStateOf<Int?>(null) }
+    var settingsTab by remember { mutableStateOf(false) }
     var deleteIndex by remember { mutableStateOf<Int?>(null) }
     var label by remember { mutableStateOf("") }
     var tapCode by remember { mutableStateOf("") }
@@ -130,6 +136,48 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                 }
                 HorizontalDivider()
                 if (selected == null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (settingsTab) {
+                            OutlinedButton(
+                                onClick = { settingsTab = false },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Przyciski") }
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                enabled = false,
+                            ) { Text("Ustawienia") }
+                        } else {
+                            Button(
+                                onClick = {},
+                                modifier = Modifier.weight(1f),
+                                enabled = false,
+                            ) { Text("Przyciski") }
+                            OutlinedButton(
+                                onClick = { settingsTab = true },
+                                modifier = Modifier.weight(1f),
+                            ) { Text("Ustawienia") }
+                        }
+                    }
+                }
+                if (selected == null && settingsTab) {
+                    Column(
+                        modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        Text(
+                            "Ustawienia nakładki — te same co w aplikacji. Zmiany zapisują się od razu.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        LuaOverlaySettingsControls(prefs = preferences, advanced = advanced)
+                    }
+                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                        Text("Gotowe — wróć do filmu")
+                    }
+                } else if (selected == null) {
                     Text(
                         "Film nadal jest odtwarzany. + dodaje przycisk, ołówek go edytuje, " +
                             "strzałki przesuwają o jeden slot, kosz usuwa. " +
