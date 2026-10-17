@@ -4,6 +4,7 @@ name: mpv α - 30 przyciskow Lua (jeden APK)
   push:
     branches:
       - feat/unified-lua-30-buttons
+      - feat/hud-alpha-unified-lua-20261017
     paths:
       - .github/workflows/mpv-alpha-30-buttons.yml
       - app/src/main/kotlin/xyz/mpv/rex/**
@@ -11,6 +12,7 @@ name: mpv α - 30 przyciskow Lua (jeden APK)
   pull_request:
     branches:
       - master
+      - feat/unified-lua-30-buttons
     paths:
       - .github/workflows/mpv-alpha-30-buttons.yml
       - app/src/main/kotlin/xyz/mpv/rex/**
