@@ -63,13 +63,25 @@ private fun PreviewRealLua(
     edit: Boolean, columns: Int, scale: Int,
     buttonWidth: Int = 52, buttonHeight: Int = 27,
     rowGap: Int = 2, columnGap: Int = 2,
+    populatedExtra: Boolean = false,
     outlined: Boolean = true, bold: Boolean = true,
     weightPercent: Int = if (bold) 60 else 0,
     outlinePercent: Int = if (outlined) 50 else 0,
 ) {
-    val slots = remember { demoSlots() }
+    val slots = remember(populatedExtra) {
+        demoSlots().toMutableList().also { result ->
+            if (populatedExtra) {
+                result[LUA_EXTRA_START] = CustomButton(
+                    id = "top-eq", title = "EQ+", content = "mp.commandv('show-text','EQ')",
+                )
+                result[LUA_EXTRA_START + 5] = CustomButton(
+                    id = "top-voice", title = "Głos", content = "mp.commandv('show-text','voice')",
+                )
+            }
+        }
+    }
     val store = remember { ScreenshotPreferenceStore() }
-    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, outlined, bold, weightPercent, outlinePercent) {
+    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, populatedExtra, outlined, bold, weightPercent, outlinePercent) {
         PlayerPreferences(store).also {
             it.customButtons.set(Json.encodeToString(CustomButtonSlots(slots)))
             it.luaPanelColumns.set(columns)
