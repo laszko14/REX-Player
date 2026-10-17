@@ -17,7 +17,9 @@ class PlayerPreferences(
   val backgroundPlayback = preferenceStore.getEnum("background_playback_mode", BackgroundPlaybackMode.AudioOnly)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
-  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
+  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 5)
+  val luaButtonRowGap = preferenceStore.getInt("lua_button_row_gap_dp", 2)
+  val luaButtonColumnGap = preferenceStore.getInt("lua_button_column_gap_dp", 2)
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
