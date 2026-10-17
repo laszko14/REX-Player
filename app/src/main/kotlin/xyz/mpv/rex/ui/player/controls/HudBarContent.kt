@@ -50,6 +50,8 @@ internal data class HudBarModel(
   val highContrastText: Boolean,
   val gap: Dp,
   val factor: Float,
+  // Default preserves existing preview fixtures without changing their look.
+  val outlineWidthDp: Float = if (highContrastText) 1.2f else 0f,
 )
 
 /** Actual production HUD content layout, reused by the screenshot test fixtures. */
@@ -74,7 +76,7 @@ internal fun HudBarContent(
             ContrastVideoLabel((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
               (if (isCharging) " ⚡" else ""),
               color = lowBatteryColor, fontSize = fontSize,
-              fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
+              fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, maxLines = 1)
           }
         }
         if (showClock) {
@@ -83,14 +85,14 @@ internal fun HudBarContent(
             Icon(Icons.Default.AccessTime, contentDescription = null,
               modifier = Modifier.size(iconSize), tint = clockColor)
             ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
-              fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
+              fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, maxLines = 1)
           }
         }
         if (showAdjustedRemaining) {
           ContrastVideoLabel(
             text = adjustedTimeLabel,
             color = adjustedRemainingColor, fontSize = fontSize,
-            fontWeight = textWeight, outlined = highContrastText, maxLines = 1,
+            fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, maxLines = 1,
           )
         }
         if (showRemaining) {
@@ -99,7 +101,7 @@ internal fun HudBarContent(
             Icon(Icons.Default.HourglassBottom, contentDescription = null,
               modifier = Modifier.size(iconSize), tint = remainingColor)
             ContrastVideoLabel(originalTimeLabel, color = remainingColor,
-              fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
+              fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, maxLines = 1)
           }
         }
         if (showSpeed) {
@@ -108,7 +110,7 @@ internal fun HudBarContent(
             Icon(Icons.Default.PlayArrow, contentDescription = null,
               modifier = Modifier.size(iconSize), tint = speedColor)
             ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
-              color = speedColor, fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
+              color = speedColor, fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, maxLines = 1)
           }
         }
   
