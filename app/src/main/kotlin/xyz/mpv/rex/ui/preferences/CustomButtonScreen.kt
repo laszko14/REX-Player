@@ -93,6 +93,7 @@ import androidx.core.content.FileProvider
 import java.io.File
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
+import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -317,11 +318,14 @@ object CustomButtonScreen : Screen {
                                         if (appearanceExpanded) "▲" else "▼"
                                 )
                             }
+                            // Primary visibility and color options stay visible,
+                            // even before expanding geometry / advanced controls.
+                            LuaButtonQuickSettings(preferences)
                             if (appearanceExpanded) {
-                                LuaButtonAppearanceSettings(preferences)
+                                LuaButtonAppearanceSettings(preferences, showQuick = false)
                             } else {
                                 Text(
-                                    "Rozmiary, liczba kolumn, kolory, odstępy i pozycja.",
+                                    "Rozwiń, aby ustawić wymiary, kolumny, czcionkę, odstępy i pozycję.",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
