@@ -19,6 +19,9 @@ class PlayerPreferences(
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
   val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
+  val luaSeparateInitialized = preferenceStore.getBoolean("lua_separate_initialized_v11", false)
+  val luaOverlayButtons = preferenceStore.getString("lua_overlay_buttons_json_v11", "")
+  val luaButtonBackup = preferenceStore.getString("lua_legacy_buttons_backup_v11", "")
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
   // MPVREX_SPEED_PANEL_APPEARANCE_V7
