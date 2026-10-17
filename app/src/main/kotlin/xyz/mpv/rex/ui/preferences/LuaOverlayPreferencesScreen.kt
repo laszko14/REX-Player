@@ -43,17 +43,14 @@ object LuaOverlayPreferencesScreen : Screen {
         val prefs = koinInject<PlayerPreferences>()
         val advanced = koinInject<AdvancedPreferences>()
         val luaEnabled by advanced.enableLuaScripts.collectAsState()
-        val panelEnabled by prefs.threeFingerSpeedEnabled.collectAsState()
-        val autoShow by prefs.threeFingerSpeedAutoShow.collectAsState()
-        val persistent by prefs.threeFingerSpeedPersistent.collectAsState()
-        val hideAfter by prefs.threeFingerSpeedAutoHide.collectAsState()
         val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
         val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
-        val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
+        val rowGap by prefs.luaButtonRowGap.collectAsState()
+        val columnGap by prefs.luaButtonColumnGap.collectAsState()
         val columns by prefs.luaPanelColumns.collectAsState()
 
         Scaffold(topBar = {
-            TopAppBar(title = { Text("Nakładka Lua") }, navigationIcon = {
+            TopAppBar(title = { Text("Przyciski Lua") }, navigationIcon = {
                 IconButton(onClick = backstack::removeLastOrNull) {
                     Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Wróć")
                 }
@@ -64,47 +61,32 @@ object LuaOverlayPreferencesScreen : Screen {
                     .verticalScroll(rememberScrollState()).padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                Text("Przyciski działają z kodem Lua zapisanym w aplikacji. " +
-                    "Po ich zmianie nie trzeba kompilować ani instalować nowego APK.")
+                Text("Jeden zestaw 30 miejsc na przyciski Lua po lewej stronie ekranu. " +
+                    "Zapisane wcześniej przyciski i skrypty pozostają dostępne.")
                 Button(onClick = { backstack.add(CustomButtonScreen) },
                     modifier = Modifier.fillMaxWidth()) {
-                    Text("Dodaj / usuń / edytuj przyciski Lua (24 miejsca)")
+                    Text("Dodaj / usuń / edytuj 30 przycisków Lua")
                 }
                 ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
                     advanced.enableLuaScripts.set(it)
                 }
-                ToggleLine("Włącz nakładkę (gest trzech palców)", panelEnabled) {
-                    prefs.threeFingerSpeedEnabled.set(it)
-                }
-                ToggleLine("Pokaż panel po uruchomieniu filmu", autoShow) {
-                    prefs.threeFingerSpeedAutoShow.set(it)
-                }
-                ToggleLine("Pozostań widoczny do zamknięcia X", persistent) {
-                    prefs.threeFingerSpeedPersistent.set(it)
-                }
-                if (!persistent) {
-                    LuaNumberSlider("Automatyczne ukrywanie", hideAfter, 3, 30, " s") {
-                        prefs.threeFingerSpeedAutoHide.set(it)
-                    }
-                }
                 LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
                     prefs.luaPanelColumns.set(it)
                 }
-                LuaNumberSlider("Wielkość panelu", scale, 70, 150, "%") {
+                LuaNumberSlider("Wielkość przycisków", scale, 70, 150, "%") {
                     prefs.threeFingerSpeedPanelSize.set(it)
                 }
-                LuaNumberSlider("Przezroczystość tła", transparency, 0, 100, "%") {
+                LuaNumberSlider("Przezroczystość przycisków", transparency, 0, 100, "%") {
                     prefs.threeFingerSpeedPanelTransparency.set(it)
                 }
-                LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
-                    prefs.threeFingerSpeedPanelGap.set(it)
+                LuaNumberSlider("Odstęp w poziomie", columnGap, 0, 16, " dp") {
+                    prefs.luaButtonColumnGap.set(it)
                 }
-                Button(onClick = {
-                    prefs.threeFingerSpeedPositionX.set(0.5f)
-                    prefs.threeFingerSpeedPositionY.set(0.16f)
-                }) { Text("Przywróć pozycję panelu") }
-                Text("Pozycję zmienisz również, przeciągając uchwyt u góry nakładki. " +
-                     "Kliknięcie i przytrzymanie przycisku mają osobne skrypty.")
+                LuaNumberSlider("Odstęp w pionie", rowGap, 0, 16, " dp") {
+                    prefs.luaButtonRowGap.set(it)
+                }
+                Text("Kliknięcie i przytrzymanie przycisku mają osobne skrypty. " +
+                     "Kolejność i widoczność zmienisz w edytorze.")
             }
         }
     }
