@@ -239,37 +239,49 @@ class CustomButtonManager(
         isLeft: Boolean,
         uiList: MutableList<CustomButtonState>
     ) {
-        if (label.isNotBlank()) {
-            uiList.add(CustomButtonState(originalId, label, isLeft))
+        if (label.isBlank()) return
+        uiList.add(CustomButtonState(originalId, label, isLeft))
 
-            if (onStartup.isNotBlank()) {
-                append(onStartup)
-                append("\n")
-            }
-
-            if (command.isNotBlank()) {
+        // Separate Lua chunks prevent a malformed user snippet from invalidating
+        // every other button. Errors are surfaced on screen and in the mpv log.
+        fun luaChunk(message: String, code: String, startup: Boolean = false) {
+            if (code.isBlank()) return
+            val quoted = json.encodeToString(code)
+            if (startup) {
                 append(
                     """
-                    function button_${safeId}()
-                        ${command}
+                    do
+                        local fn, err = (loadstring or load)($quoted, 'startup_$safeId')
+                        if fn then
+                            local ok, runtime_err = pcall(fn)
+                            if not ok then mp.msg.error('Lua startup: ' .. tostring(runtime_err)) end
+                        else mp.msg.error('Lua startup: ' .. tostring(err)) end
                     end
-                    mp.register_script_message('call_button_${safeId}', button_${safeId})
                     """.trimIndent()
                 )
-                append("\n")
-            }
-
-            if (longPressCommand.isNotBlank()) {
+            } else {
                 append(
                     """
-                    function button_long_${safeId}()
-                        ${longPressCommand}
-                    end
-                    mp.register_script_message('call_button_long_${safeId}', button_long_${safeId})
+                    mp.register_script_message('$message', function()
+                        local fn, err = (loadstring or load)($quoted, '$message')
+                        if not fn then
+                            mp.msg.error('Lua syntax: ' .. tostring(err))
+                            mp.osd_message('Błąd Lua: ' .. tostring(err), 4)
+                            return
+                        end
+                        local ok, runtime_err = pcall(fn)
+                        if not ok then
+                            mp.msg.error('Lua runtime: ' .. tostring(runtime_err))
+                            mp.osd_message('Błąd Lua: ' .. tostring(runtime_err), 4)
+                        end
+                    end)
                     """.trimIndent()
                 )
-                append("\n")
             }
+            append("\n")
         }
+        luaChunk("startup_$safeId", onStartup, startup = true)
+        luaChunk("call_button_$safeId", command)
+        luaChunk("call_button_long_$safeId", longPressCommand)
     }
 }
