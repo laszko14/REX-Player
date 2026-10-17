@@ -1219,6 +1219,8 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             sb.appendLine("    <id>${escapeXml(button.id)}</id>")
             sb.appendLine("    <title>${escapeXml(button.title)}</title>")
             sb.appendLine("    <enabled>${button.enabled}</enabled>")
+            button.textColor?.let { sb.appendLine("    <textColor>${escapeXml(it)}</textColor>") }
+            button.backgroundColor?.let { sb.appendLine("    <backgroundColor>${escapeXml(it)}</backgroundColor>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
             sb.appendLine("    <longPressContent><![CDATA[${button.longPressContent}]]></longPressContent>")
             sb.appendLine("    <onStartup><![CDATA[${button.onStartup}]]></onStartup>")
@@ -1238,6 +1240,8 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     val idPattern = """<id>(.*?)</id>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val titlePattern = """<title>(.*?)</title>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val enabledPattern = """<enabled>(.*?)</enabled>""".toRegex(RegexOption.DOT_MATCHES_ALL)
+    val textColorPattern = """<textColor>(.*?)</textColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
+    val backgroundColorPattern = """<backgroundColor>(.*?)</backgroundColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val contentPattern = """<content><!\[CDATA\[(.*?)\]\]></content>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val longPressPattern = """<longPressContent><!\[CDATA\[(.*?)\]\]></longPressContent>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val startupPattern = """<onStartup><!\[CDATA\[(.*?)\]\]></onStartup>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1251,6 +1255,8 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
         val id = idPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: UUID.randomUUID().toString()
         val title = titlePattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: ""
         val enabled = enabledPattern.find(buttonXml)?.groupValues?.get(1)?.toBoolean() ?: true
+        val textColor = textColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
+        val backgroundColor = backgroundColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
         val content = contentPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val longPress = longPressPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val startup = startupPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
@@ -1261,7 +1267,9 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
             content = content,
             longPressContent = longPress,
             onStartup = startup,
-            enabled = enabled
+            enabled = enabled,
+            textColor = textColor,
+            backgroundColor = backgroundColor,
         )
     }
     
