@@ -61,6 +61,7 @@ fun LuaButtonGrid(
     val borderOpacity by preferences.luaButtonBorderOpacity.collectAsState()
     val buttonColor by preferences.luaButtonBaseColor.collectAsState()
     val activeColor by preferences.luaButtonActiveColor.collectAsState()
+    val activeTransparency by preferences.luaButtonActiveTransparency.collectAsState()
     val textColor by preferences.luaButtonTextColor.collectAsState()
     val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
     val globalAlwaysVisible by preferences.luaButtonAlwaysVisible.collectAsState()
@@ -69,6 +70,7 @@ fun LuaButtonGrid(
     val height = (buttonHeight.coerceIn(22, 80) * factor).dp
     val shape = RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     val alpha = (1f - transparency.coerceIn(0, 100) / 100f) * 0.86f
+    val activeOpacity = 1f - activeTransparency.coerceIn(0, 100) / 100f
     val availableScreen = LocalConfiguration.current
     // Never cover the bottom timeline on shorter landscape screens.
     val maxHeight = (availableScreen.screenHeightDp - 92 - positionY.coerceIn(0, 240)).coerceAtLeast(95).dp
@@ -111,8 +113,8 @@ fun LuaButtonGrid(
                                     if (active) button.activeBackgroundColor ?: activeColor
                                     else button.backgroundColor ?: buttonColor
                                 )
-                                    .copy(alpha = if (active) 1f else alpha))
-                                .border(1.dp, Color.White.copy(alpha = if (active) 0.65f
+                                    .copy(alpha = if (active) activeOpacity else alpha))
+                                .border(1.dp, Color.White.copy(alpha = if (active) 0.65f * activeOpacity
                                         else borderOpacity.coerceIn(0, 100) / 100f), shape)
                                 .combinedClickable(
                                     onClick = { onButtonClick(button.id) },

@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +38,32 @@ import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.preferences.preference.collectAsState
 import kotlin.math.roundToInt
+
+/** Extended ready-to-use text colors. HEX input still supports every custom ARGB color. */
+private val LUA_TEXT_PALETTE = listOf(
+    0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(),
+    0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt(),
+    0xFFECEFF1.toInt(), 0xFFB0BEC5.toInt(), 0xFF78909C.toInt(),
+    0xFF616161.toInt(), 0xFF424242.toInt(), 0xFFFFF59D.toInt(),
+    0xFFFFE082.toInt(), 0xFFFFD54F.toInt(), 0xFFFFC107.toInt(),
+    0xFFFF9800.toInt(), 0xFFFF7043.toInt(), 0xFFFF5252.toInt(),
+    0xFFE53935.toInt(), 0xFFB71C1C.toInt(), 0xFFFF80AB.toInt(),
+    0xFFFF4081.toInt(), 0xFFEC407A.toInt(), 0xFFAD1457.toInt(),
+    0xFFCE93D8.toInt(), 0xFFBA68C8.toInt(), 0xFFAB47BC.toInt(),
+    0xFF7E57C2.toInt(), 0xFF673AB7.toInt(), 0xFFB39DDB.toInt(),
+    0xFF9FA8DA.toInt(), 0xFF7986CB.toInt(), 0xFF536DFE.toInt(),
+    0xFF448AFF.toInt(), 0xFF2196F3.toInt(), 0xFF40C4FF.toInt(),
+    0xFF80DEEA.toInt(), 0xFF26C6DA.toInt(), 0xFF00BCD4.toInt(),
+    0xFF4DB6AC.toInt(), 0xFF009688.toInt(), 0xFF00E676.toInt(),
+    0xFF66BB6A.toInt(), 0xFF388E3C.toInt(), 0xFFCDDC39.toInt(),
+    0xFF8BC34A.toInt(), 0xFF795548.toInt(), 0xFF071426.toInt(),
+    0xFF143D29.toInt(), 0xFF29244B.toInt(),
+)
+private val LUA_ACTIVE_TEXT_PALETTE =
+    listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt(),
+        0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()) +
+        LUA_TEXT_PALETTE.filterNot { it in listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(),
+            0xFF000000.toInt(), 0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()) }
 
 /** Shared settings UI: accessible both in Preferences and on top of a playing film. */
 @Composable
@@ -85,6 +112,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonBorderOpacity.set(20)
                 prefs.luaButtonBaseColor.set(0xFF252631.toInt())
                 prefs.luaButtonActiveColor.set(0xFF92BBFF.toInt())
+                prefs.luaButtonActiveTransparency.set(0)
                 prefs.luaButtonTextColor.set(0xFFFFFFFF.toInt())
                 prefs.luaButtonActiveTextColor.set(0xFF071426.toInt())
                 prefs.luaButtonAlwaysVisible.set(false)
@@ -103,6 +131,7 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
     val persistent by prefs.luaButtonAlwaysVisible.collectAsState()
     val baseColor by prefs.luaButtonBaseColor.collectAsState()
     val activeColor by prefs.luaButtonActiveColor.collectAsState()
+    val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
     val fontColor by prefs.luaButtonTextColor.collectAsState()
     val activeTextColor by prefs.luaButtonActiveTextColor.collectAsState()
 
@@ -132,16 +161,14 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
             "Kolor czcionki",
             fontColor,
             prefs.luaButtonTextColor::set,
-            listOf(0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(),
-                0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt()),
+            LUA_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
             "Kolor czcionki aktywnej prędkości",
             activeTextColor,
             prefs.luaButtonActiveTextColor::set,
-            listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt(),
-                0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()),
+            LUA_ACTIVE_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
@@ -160,6 +187,10 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
                 0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()),
             compact,
         )
+        LuaOptionSlider(
+            "Przezroczystość aktywnego przycisku",
+            activeTransparency, 0, 100, "%", compact = compact,
+        ) { prefs.luaButtonActiveTransparency.set(it) }
     }
 }
 
@@ -221,8 +252,7 @@ fun LuaButtonIndividualAppearance(
             "Kolor czcionki",
             button.textColor ?: globalFg,
             { onChange(button.copy(textColor = it)) },
-            listOf(0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(),
-                0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt()),
+            LUA_TEXT_PALETTE,
             compact,
         )
         LuaPalette(
@@ -237,8 +267,7 @@ fun LuaButtonIndividualAppearance(
             "Kolor czcionki aktywnej prędkości",
             button.activeTextColor ?: globalActiveFg,
             { onChange(button.copy(activeTextColor = it)) },
-            listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt(),
-                0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()),
+            LUA_ACTIVE_TEXT_PALETTE,
             compact,
         )
         OutlinedButton(
@@ -324,35 +353,45 @@ private fun LuaPalette(
     val shownHex = "#" + java.lang.Long.toHexString(selected.toLong() and 0xFFFFFFFFL)
         .padStart(8, '0').uppercase()
     var hexDraft by remember(title, selected) { mutableStateOf(shownHex) }
+    var expanded by remember(title) { mutableStateOf(false) }
     val candidate = readLuaArgbColor(hexDraft)
 
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {
         Text(title, style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            palette.forEach { color ->
-                androidx.compose.foundation.layout.Box(
-                    Modifier.size(if (compact) 26.dp else 32.dp)
-                        .clip(CircleShape)
-                        .background(Color(color))
-                        .clickable {
-                            onSelect(color)
-                            hexDraft = "#" + java.lang.Long.toHexString(color.toLong() and 0xFFFFFFFFL)
-                                .padStart(8, '0').uppercase()
-                        }
-                        .padding(3.dp),
+        val visiblePalette = if (expanded || palette.size <= 12) palette else palette.take(12)
+        Column(verticalArrangement = Arrangement.spacedBy(if (compact) 3.dp else 6.dp)) {
+            visiblePalette.chunked(7).forEach { swatchRow ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (color == selected) {
-                        Text(
-                            "✓",
-                            color = if (color == 0xFFFFFFFF.toInt() || color == 0xFFFFFFAE.toInt())
-                                Color.Black else Color.White,
-                            modifier = Modifier.align(Alignment.Center),
-                        )
+                    swatchRow.forEach { color ->
+                        androidx.compose.foundation.layout.Box(
+                            Modifier.size(if (compact) 26.dp else 32.dp)
+                                .clip(CircleShape)
+                                .background(Color(color))
+                                .clickable {
+                                    onSelect(color)
+                                    hexDraft = "#" + java.lang.Long.toHexString(color.toLong() and 0xFFFFFFFFL)
+                                        .padStart(8, '0').uppercase()
+                                }
+                                .padding(3.dp),
+                        ) {
+                            if (color == selected) {
+                                Text(
+                                    "✓",
+                                    color = if (Color(color).luminance() > 0.5f) Color.Black else Color.White,
+                                    modifier = Modifier.align(Alignment.Center),
+                                )
+                            }
+                        }
                     }
                 }
+            }
+        }
+        if (palette.size > 12) {
+            OutlinedButton(onClick = { expanded = !expanded }) {
+                Text(if (expanded) "Pokaż mniej kolorów" else "Więcej kolorów (undefined)")
             }
         }
         Row(

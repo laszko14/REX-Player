@@ -30,6 +30,8 @@ class PlayerPreferences(
   val luaButtonBorderOpacity = preferenceStore.getInt("lua_button_border_opacity_pct", 20)
   val luaButtonBaseColor = preferenceStore.getInt("lua_button_base_argb", 0xFF252631.toInt())
   val luaButtonActiveColor = preferenceStore.getInt("lua_button_active_argb", 0xFF92BBFF.toInt())
+  // Separate 0–100% transparency for the selected speed button; 0 keeps existing opaque look.
+  val luaButtonActiveTransparency = preferenceStore.getInt("lua_button_active_transparency_pct", 0)
   val luaButtonTextColor = preferenceStore.getInt("lua_button_text_argb", 0xFFFFFFFF.toInt())
   // Keep the Lua controls on the video even when the regular mpv UI auto-hides.
   // Screen lock still suppresses button interaction.
