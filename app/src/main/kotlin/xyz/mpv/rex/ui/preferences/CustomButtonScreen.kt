@@ -96,6 +96,7 @@ import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonIndividualAppearance
 import xyz.mpv.rex.ui.player.controls.LUA_SLOT_COUNT
+import xyz.mpv.rex.ui.player.controls.LUA_EXTRA_START
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -150,7 +151,7 @@ object CustomButtonScreen : Screen {
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // One unified set: slots 1–35, preserving existing imported Lua buttons.
+        // Preserve positions 1–35 and add eight new upper-left places at indexes 36–43.
         val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(LUA_SLOT_COUNT) { null }) }
         // Stable keys move WITH each slot, including empty slots. Index-based keys
         // make Compose reset a dragged item as soon as it crosses an empty position.
@@ -243,7 +244,7 @@ object CustomButtonScreen : Screen {
             val fromIdx = from.index - NON_SLOT_ITEMS_BEFORE
             val toIdx = to.index - NON_SLOT_ITEMS_BEFORE
             // Never accidentally move a real button when hovering the header,
-            // import/export controls or anything outside the 35 slot rows.
+            // import/export controls or anything outside the 43 slot rows.
             if (fromIdx in buttonSlots.indices && toIdx in buttonSlots.indices &&
                 fromIdx != toIdx
             ) {
@@ -347,7 +348,9 @@ object CustomButtonScreen : Screen {
                     items = buttonSlots.toList(),
                     key = { index, _ -> slotKeys[index] },
                 ) { index, button ->
-                    val side = "P${index + 1}"
+                    // L1–L8 are new 4×2 on-screen slots; P1–P35 keep old positions.
+                    val side = if (index >= LUA_EXTRA_START) "L${index - LUA_EXTRA_START + 1}"
+                               else "P${index + 1}"
 
                     ReorderableItem(reorderState, key = slotKeys[index]) { isDragging ->
                         val elevation by animateFloatAsState(
