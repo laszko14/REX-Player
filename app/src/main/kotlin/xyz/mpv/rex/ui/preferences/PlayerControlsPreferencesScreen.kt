@@ -595,7 +595,7 @@ object PlayerControlsPreferencesScreen : Screen {
                                     valueRange = 0f..100f,
                                     summary = {
                                         Text(
-                                            "$"+"{globalOverlayOpacityPercent.coerceIn(0, 100)}% — " +
+                                            "${globalOverlayOpacityPercent.coerceIn(0, 100)}% — " +
                                                 "przyciski, Play, pasek czasu, HUD i Lua",
                                             color = MaterialTheme.colorScheme.outline,
                                         )
