@@ -97,6 +97,8 @@ import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonIndividualAppearance
 import xyz.mpv.rex.ui.player.controls.LUA_SLOT_COUNT
 import xyz.mpv.rex.ui.player.controls.LUA_EXTRA_START
+import xyz.mpv.rex.ui.player.controls.LUA_MAIN_SLOT_COUNT
+import xyz.mpv.rex.ui.player.controls.normalizeLuaVisibleSlots
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -151,7 +153,7 @@ object CustomButtonScreen : Screen {
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // Preserve positions 1–35 and add eight new upper-left places at indexes 36–43.
+        // 30 visible left, 8 visible right; five archived legacy indexes preserve saved buttons.
         val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(LUA_SLOT_COUNT) { null }) }
         // Stable keys move WITH each slot, including empty slots. Index-based keys
         // make Compose reset a dragged item as soon as it crosses an empty position.
@@ -211,7 +213,7 @@ object CustomButtonScreen : Screen {
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(LUA_SLOT_COUNT).toMutableList()
+                    val slots = normalizeLuaVisibleSlots(loaded.slots).toMutableList()
                     while (slots.size < LUA_SLOT_COUNT) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
@@ -221,7 +223,7 @@ object CustomButtonScreen : Screen {
                         val slots = MutableList<CustomButton?>(LUA_SLOT_COUNT) { null }
                         old.forEachIndexed { i, b -> if (i < LUA_SLOT_COUNT) slots[i] = b }
                         buttonSlots.clear()
-                        buttonSlots.addAll(slots)
+                        buttonSlots.addAll(normalizeLuaVisibleSlots(slots))
                     }
                 }
             }
@@ -348,9 +350,12 @@ object CustomButtonScreen : Screen {
                     items = buttonSlots.toList(),
                     key = { index, _ -> slotKeys[index] },
                 ) { index, button ->
-                    // L1–L8 are new 4×2 on-screen slots; P1–P35 keep old positions.
-                    val side = if (index >= LUA_EXTRA_START) "L${index - LUA_EXTRA_START + 1}"
-                               else "P${index + 1}"
+                    // Preserve 43 storage indexes, identify the visible areas separately.
+                    val side = when {
+                        index >= LUA_EXTRA_START -> "P${index - LUA_EXTRA_START + 1}"
+                        index >= LUA_MAIN_SLOT_COUNT -> "ARCH${index - LUA_MAIN_SLOT_COUNT + 1}"
+                        else -> "L${index + 1}"
+                    }
 
                     ReorderableItem(reorderState, key = slotKeys[index]) { isDragging ->
                         val elevation by animateFloatAsState(
