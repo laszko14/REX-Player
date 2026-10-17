@@ -41,6 +41,7 @@ class CustomButtonManager(
         val isLeft: Boolean,
         val textColor: String? = null,
         val backgroundColor: String? = null,
+        val isSpacer: Boolean = false,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
@@ -95,13 +96,34 @@ class CustomButtonManager(
                                 emptyList()
                             }
                         }
-                        buttons.take(limit).forEachIndexed { index, button ->
-                            if (button != null && button.enabled) {
+                        // Retain slot indices for the new overlay: empty/disabled
+                        // middle slots become non-clickable visual gaps. Ignore
+                        // trailing empties so the panel can still shrink.
+                        val limitedSlots = buttons.take(limit)
+                        val layoutSlots = if (namespace == "overlay") {
+                            takeThroughLastVisibleSlot(limitedSlots) {
+                                it.enabled && it.title.isNotBlank()
+                            }
+                        } else {
+                            limitedSlots
+                        }
+                        layoutSlots.forEachIndexed { index, button ->
+                            if (button != null && button.enabled && button.title.isNotBlank()) {
                                 processButton(
                                     actionName = "${namespace}_${index}_$scriptToken",
                                     button = button,
                                     isLeft = index < 4,
                                     uiList = target,
+                                )
+                            } else if (namespace == "overlay") {
+                                // No Lua callback and no click handler for this slot.
+                                target.add(
+                                    CustomButtonState(
+                                        id = "overlay_empty_$index",
+                                        label = "",
+                                        isLeft = false,
+                                        isSpacer = true,
+                                    )
                                 )
                             }
                         }
