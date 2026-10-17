@@ -115,7 +115,7 @@ class LuaSlotLayoutTest {
         // Gap to the right of the first cell must not be mistaken for a button.
         assertNull(luaDropSlotIndexWithExtra(0, 26f, -80f, 5, w, h, gx, gy))
         // Row y gap (30px height, 10px separation).
-        assertNull(luaDropSlotIndexWithExtra(0, 0f, -50f, 5, w, h, gx, gy))
+        assertNull(luaDropSlotIndexWithExtra(0, 0f, -65f, 5, w, h, gx, gy))
         assertNull(luaDropSlotIndexWithExtra(34, 1000f, 0f, 5, w, h, gx, gy))
     }
 
