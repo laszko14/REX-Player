@@ -63,13 +63,25 @@ private fun PreviewRealLua(
     edit: Boolean, columns: Int, scale: Int,
     buttonWidth: Int = 52, buttonHeight: Int = 27,
     rowGap: Int = 2, columnGap: Int = 2,
+    populatedExtra: Boolean = false,
     outlined: Boolean = true, bold: Boolean = true,
     weightPercent: Int = if (bold) 60 else 0,
     outlinePercent: Int = if (outlined) 50 else 0,
 ) {
-    val slots = remember { demoSlots() }
+    val slots = remember(populatedExtra) {
+        demoSlots().toMutableList().also { result ->
+            if (populatedExtra) {
+                result[LUA_EXTRA_START] = CustomButton(
+                    id = "top-eq", title = "EQ+", content = "mp.commandv('show-text','EQ')",
+                )
+                result[LUA_EXTRA_START + 5] = CustomButton(
+                    id = "top-voice", title = "Głos", content = "mp.commandv('show-text','voice')",
+                )
+            }
+        }
+    }
     val store = remember { ScreenshotPreferenceStore() }
-    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, outlined, bold, weightPercent, outlinePercent) {
+    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, populatedExtra, outlined, bold, weightPercent, outlinePercent) {
         PlayerPreferences(store).also {
             it.customButtons.set(Json.encodeToString(CustomButtonSlots(slots)))
             it.luaPanelColumns.set(columns)
@@ -291,5 +303,23 @@ fun HudLayoutExtremeReadabilityScreenshot() {
 fun HudLayoutSubtleReadabilityScreenshot() {
     LayoutBackdrop(bright = true, title = "HUD / suwak grubosci 45% / obrys 20%") {
         PreviewRealHud(width = 930.dp, weightPercent = 45, outlinePercent = 20)
+    }
+}
+
+@PreviewTest
+@Preview(name = "18 Lua extra eight in editing", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaExtraSlotsEditScreenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / 8 dodatkowych pol 4x2 / edycja i stare 35") {
+        PreviewRealLua(edit = true, columns = 5, scale = 100, populatedExtra = true)
+    }
+}
+
+@PreviewTest
+@Preview(name = "19 Lua extra slots normal playback", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaExtraSlotsPlaybackScreenshot() {
+    LayoutBackdrop(bright = false, title = "LUA / odtwarzanie / puste pola bez guzika") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100, populatedExtra = true)
     }
 }

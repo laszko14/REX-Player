@@ -149,7 +149,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    // All 35 fixed slots are always shown. No search/filter rows take up screen space.
+    // 35 existing slots and the eight optional top-left slots are editable here.
     val listState = rememberLazyListState()
 
     if (selectedIndex !in 0 until LUA_SLOT_COUNT) {
@@ -174,7 +174,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             modifier = Modifier.width(28.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(button?.title ?: "Pusty przycisk",
+                            Text(button?.title ?: if (index >= LUA_EXTRA_START) "Dodatkowe pole 4×2" else "Pusty przycisk",
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
@@ -216,7 +216,28 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             verticalArrangement = Arrangement.spacedBy(7.dp),
         ) {
             OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista $LUA_SLOT_COUNT przycisków") }
-            Text("Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT" +
+                    if (index >= LUA_EXTRA_START) " • górny panel 4×2" else "",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            if (old != null && index < LUA_MAIN_SLOT_COUNT) {
+                val freeExtra = (LUA_EXTRA_START until LUA_SLOT_COUNT)
+                    .firstOrNull { slots[it] == null }
+                if (freeExtra != null) {
+                    OutlinedButton(
+                        onClick = {
+                            val latest = decodeLuaButtonSlots(prefs.customButtons.get())
+                            if (latest[index]?.id == old.id && latest[freeExtra] == null) {
+                                val moved = swapLuaSlotPositions(latest, index, freeExtra)
+                                prefs.customButtons.set(Json.encodeToString(CustomButtonSlots(moved)))
+                                selectedIndex = -1
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text("Przenieś do górnych 8 pól") }
+                }
+            }
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(), label = { Text("Nazwa przycisku") },
