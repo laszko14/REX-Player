@@ -405,10 +405,13 @@ fun PlayerControls(
     },
   )
 
-  DoubleTapToSeekOvals(
-    doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime,
-    interactionSource, modifier = Modifier.graphicsLayer { alpha = playerOverlayAlpha },
-  )
+  // At zero, do not leave invisible feedback controls that intercept taps.
+  if (playerOverlayAlpha > 0f) {
+    DoubleTapToSeekOvals(
+      doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime,
+      interactionSource, modifier = Modifier.graphicsLayer { alpha = playerOverlayAlpha },
+    )
+  }
 
   CompositionLocalProvider(
     LocalRippleConfiguration provides playerRippleConfiguration,
@@ -434,6 +437,9 @@ fun PlayerControls(
         mutableStateOf(if (isPortrait) 96.dp else 60.dp)
       }
 
+      // At 0% remove the interactive overlay entirely, not just its pixels.
+      // The independent settings sheets and gesture handler remain accessible.
+      if (playerOverlayAlpha > 0f) {
       ConstraintLayout(
         modifier =
           modifier
@@ -1981,6 +1987,7 @@ fun PlayerControls(
           }
         }
 
+      }
       }
      }
     }
