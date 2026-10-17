@@ -192,7 +192,7 @@ fun MpvAlphaV24SixBoldnessLevels() {
             Text("Pogrubienie: bez obrysu (produkcja ContrastVideoLabel)", color = Color.White)
             weights.forEach { level ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$" + "level%", modifier = Modifier.width(75.dp), color = Color.White)
+                    Text(level.toString() + "%", modifier = Modifier.width(75.dp), color = Color.White)
                     ContrastVideoLabel("1.25x  2x  ▶▶▶  Głos", Color.White, 22.sp,
                         fontWeightForReadability(level), outlined = false)
                 }
@@ -212,7 +212,7 @@ fun MpvAlphaV24OutlineLevels() {
             Text("Kontur: max 1.05 dp, bez nadmiernego halo", color = Color.White)
             outlineLevels.forEach { level ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$" + "level%", modifier = Modifier.width(75.dp), color = Color.White)
+                    Text(level.toString() + "%", modifier = Modifier.width(75.dp), color = Color.White)
                     ContrastVideoLabel("1.25x  2x  ▶▶▶  Głos", Color.White, 22.sp,
                         fontWeightForReadability(60), outlined = level > 0,
                         outlineWidthDp = outlineWidthDpForReadability(level))
