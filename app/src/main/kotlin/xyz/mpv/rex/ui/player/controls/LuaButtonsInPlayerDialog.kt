@@ -67,6 +67,8 @@ fun LuaButtonsInPlayerDialog(
     engineStatus: String,
     onDismiss: () -> Unit,
     hiddenDuringDrag: Boolean = false,
+    manualMinimized: Boolean = false,
+    onManualMinimize: (Boolean) -> Unit = {},
 ) {
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
     val savedTab by prefs.luaEditorLastTab.collectAsState()
@@ -79,7 +81,13 @@ fun LuaButtonsInPlayerDialog(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.BottomCenter,
     ) {
-            if (!hiddenDuringDrag) Surface(
+            if (!hiddenDuringDrag && manualMinimized) {
+                TextButton(
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                    onClick = { onManualMinimize(false) },
+                ) { Text("Pokaż ustawienia Lua") }
+            }
+            if (!hiddenDuringDrag && !manualMinimized) Surface(
                 modifier = Modifier
                     .fillMaxWidth(if (landscape) 0.53f else 0.96f)
                     .fillMaxHeight(if (landscape) 0.96f else 0.46f)
@@ -105,6 +113,7 @@ fun LuaButtonsInPlayerDialog(
                             fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.weight(1f),
                         )
+                        TextButton(onClick = { onManualMinimize(true) }) { Text("Schowaj") }
                         TextButton(onClick = onDismiss) { Text("✕") }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
