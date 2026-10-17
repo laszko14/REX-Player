@@ -26,6 +26,8 @@ class PlayerPreferences(
   val luaButtonWidth = preferenceStore.getInt("lua_button_width_dp", 52)
   val luaButtonHeight = preferenceStore.getInt("lua_button_height_dp", 27)
   val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
+  val luaButtonHighContrastText = preferenceStore.getBoolean("lua_button_high_contrast_text", false)
+  val luaButtonBoldText = preferenceStore.getBoolean("lua_button_bold_text", false)
   val luaButtonPositionX = preferenceStore.getInt("lua_button_position_x_dp", 0)
   val luaButtonPositionY = preferenceStore.getInt("lua_button_position_y_dp", 100)
   val luaButtonCornerRadius = preferenceStore.getInt("lua_button_corner_dp", 7)
@@ -68,6 +70,8 @@ class PlayerPreferences(
   val hudItemGapDp = preferenceStore.getInt("alpha_hud_item_gap_dp", 12) // 0..64 dp
   val hudPaddingDp = preferenceStore.getInt("alpha_hud_padding_dp", 8) // 0..40 dp
   val hudBackgroundOpacity = preferenceStore.getInt("alpha_hud_background_opacity", 70)
+  val hudHighContrastText = preferenceStore.getBoolean("alpha_hud_high_contrast_text", false)
+  val hudBoldText = preferenceStore.getBoolean("alpha_hud_bold_text", false)
   val hudCornerRadiusDp = preferenceStore.getInt("alpha_hud_corner_radius_dp", 10)
   val hudPositionX = preferenceStore.getFloat("alpha_hud_position_x", 1f)
   val hudPositionY = preferenceStore.getFloat("alpha_hud_position_y", 0.03f)
