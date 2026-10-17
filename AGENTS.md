@@ -39,3 +39,9 @@ Applies to this repository. It is guidance for development, not permission to ma
 - Start from `master` on a dedicated feature/fix branch; use small, conventional commits and a scoped PR as in `CONTRIBUTING.md`.
 - Report: root cause/goal, affected files, checks run and their actual result, APK variant (if applicable), and any unverified UI/device behavior.
 - Do not claim a test/build has passed unless logs or local execution confirm it.
+
+## Visual previews before producing an APK
+- Run the dedicated `.github/workflows/ui-screenshot-previews.yml` workflow or wait for its PR trigger. It creates a ZIP of PNG previews for the real `ContrastVideoLabel` renderer on **synthetic** bright/dark backgrounds in portrait and landscape.
+- Screenshot tests live in `app/src/screenshotTest/kotlin/`. Update their fixtures whenever HUD or Lua typography changes. Follow `docs/ui-screenshot-previews.md`.
+- Do **not** call an illustrative screenshot a live player screenshot; these tests do not decode movies or show saved private preferences. Use Android device testing for gesture and live video correctness.
+- The screenshot workflow does not sign, tag, publish or install APKs. Only the separate, explicitly authorized MPV Alpha release workflow can publish updates.
