@@ -305,6 +305,8 @@
     <string name="pref_audio_pitch_correction_summary">Zapobiega, że dźwięk staje się wysoki z szybszymi prędkościami i niski z wolniejszymi prędkościami</string>
     <string name="pref_audio_volume_normalization_title">Normalizacja objętości</string>
     <string name="pref_audio_volume_normalization_summary">Automatycznie regulować głośność dźwięku, aby utrzymać stałe poziomy głośności</string>
+    <string name="pref_audio_drc_title">Kompresja dynamiki (DRC)</string>
+    <string name="pref_audio_drc_summary">Wzmacnia ciche dialogi i łagodzi głośne dźwięki (tryb nocny)</string>
     <string name="pref_audio_channels">Kanały audio</string>
     <string name="pref_audio_channels_auto">Automatycznie</string>
     <string name="pref_audio_channels_auto_safe">Auto Safe</string>

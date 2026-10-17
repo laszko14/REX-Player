@@ -89,6 +89,7 @@ object AudioPreferencesScreen : Screen {
             val preferredLanguages by preferences.preferredLanguages.collectAsState()
             val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
             val volumeNormalization by preferences.volumeNormalization.collectAsState()
+            val drcEnabled by preferences.drcEnabled.collectAsState()
             val audioChannel by preferences.audioChannels.collectAsState()
             val volumeBoostCap by preferences.volumeBoostCap.collectAsState()
 
@@ -158,6 +159,23 @@ object AudioPreferencesScreen : Screen {
                       stringResource(R.string.pref_audio_volume_normalization_summary),
                       color = MaterialTheme.colorScheme.outline,
                     ) 
+                  },
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_audio_drc_title,
+              ) {
+                SwitchPreference(
+                  value = drcEnabled,
+                  onValueChange = { preferences.drcEnabled.set(it) },
+                  title = { Text(stringResource(R.string.pref_audio_drc_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_audio_drc_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
                   },
                 )
               }

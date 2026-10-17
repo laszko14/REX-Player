@@ -19,6 +19,7 @@ class AudioPreferences(
   val rexEqBoost = preferenceStore.getInt("rex_equalizer_boost", 0)
   val automaticBackgroundPlayback = preferenceStore.getBoolean("automatic_background_playback", false)
   val volumeNormalization = preferenceStore.getBoolean("audio_volume_normalization", false)
+  val drcEnabled = preferenceStore.getBoolean("audio_drc_enabled", false)
   val pickerPath = preferenceStore.getString("audio_picker_path")
   val openPickerAtVideoLocation = preferenceStore.getBoolean("audio_open_at_video_location", true)
 }
