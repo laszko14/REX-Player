@@ -268,6 +268,7 @@ fun PlayerControls(
   val haptic = LocalHapticFeedback.current
 
   val customButtons by viewModel.customButtons.collectAsState()
+  val luaEngineStatus by viewModel.customButtonManager.luaStatus.collectAsState()
   var luaSettingsVisible by remember { mutableStateOf(false) }
   val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
   val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
@@ -1937,6 +1938,7 @@ fun PlayerControls(
     if (luaSettingsVisible) {
       LuaButtonsInPlayerDialog(
         prefs = playerPreferences,
+        engineStatus = luaEngineStatus,
         onDismiss = {
           luaSettingsVisible = false
           resetControlsTimestamp = System.currentTimeMillis()
