@@ -66,10 +66,16 @@ object LuaOverlayPreferencesScreen : Screen {
             ) {
                 Text("Przyciski działają z kodem Lua zapisanym w aplikacji. " +
                     "Po ich zmianie nie trzeba kompilować ani instalować nowego APK.")
+                Button(onClick = { backstack.add(LuaPanelButtonsScreen) },
+                    modifier = Modifier.fillMaxWidth()) {
+                    Text("Edytuj nową nakładkę Lua (24 miejsca)")
+                }
                 Button(onClick = { backstack.add(CustomButtonScreen) },
                     modifier = Modifier.fillMaxWidth()) {
-                    Text("Dodaj / usuń / edytuj przyciski Lua (24 miejsca)")
+                    Text("Edytuj oryginalne przyciski Lua (8 miejsc)")
                 }
+                Text("Oryginalne osiem przycisków i nowa nakładka mają osobny zapis. " +
+                     "Aktualizacja zachowuje kopię starego układu.")
                 ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
                     advanced.enableLuaScripts.set(it)
                 }
