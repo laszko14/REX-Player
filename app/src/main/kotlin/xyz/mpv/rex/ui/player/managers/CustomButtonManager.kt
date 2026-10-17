@@ -105,7 +105,7 @@ class CustomButtonManager(
                     appendGroup(playerPreferences.customButtons.get(), "original", 8, uiButtons)
                     appendGroup(playerPreferences.luaOverlayButtons.get(), "overlay", 24, overlayUiButtons)
                     if (uiButtons.isNotEmpty() || overlayUiButtons.isNotEmpty()) {
-                        append("mp.set_property_native('$CUSTOM_BUTTONS_LOADED_FLAG', '1')\\n")
+                        append("mp.set_property_native('$CUSTOM_BUTTONS_LOADED_FLAG', '1')\n")
                     }
                 }
 
@@ -197,7 +197,7 @@ class CustomButtonManager(
 
         if (button.onStartup.isNotBlank()) {
             append(button.onStartup)
-            append("\\n")
+            append("\n")
         }
         if (button.content.isNotBlank()) {
             append(
@@ -207,7 +207,7 @@ class CustomButtonManager(
                 end)
                 """.trimIndent()
             )
-            append("\\n")
+            append("\n")
         }
         if (button.longPressContent.isNotBlank()) {
             append(
@@ -217,7 +217,7 @@ class CustomButtonManager(
                 end)
                 """.trimIndent()
             )
-            append("\\n")
+            append("\n")
         }
     }
 }
