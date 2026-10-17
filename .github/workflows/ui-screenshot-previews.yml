@@ -44,15 +44,15 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew :app:updateDebugScreenshotTest --stacktrace --no-daemon --no-configuration-cache
-      - name: Sprawdz obecnosc pieciu zrzutow
+      - name: Sprawdz obecnosc trzynastu zrzutow
         shell: bash
         run: |
           set -euo pipefail
           root="app/src/screenshotTestDebug/reference"
           test -d "$root"
           count=$(find "$root" -type f -name '*.png' | wc -l)
-          if (( count < 5 )); then
-            echo "::error::Oczekiwano co najmniej 5 podgladow, znaleziono $count"
+          if (( count < 13 )); then
+            echo "::error::Oczekiwano co najmniej 13 podgladow, znaleziono $count"
             exit 1
           fi
           find "$root" -type f -name '*.png' -printf '%P\n' | sort
