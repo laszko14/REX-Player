@@ -32,6 +32,7 @@ class CustomButtonManager(
     companion object {
         private const val TAG = "CustomButtonManager"
         private const val CUSTOM_BUTTONS_LOADED_FLAG = "user-data/mpvex/custombuttons_loaded"
+        private const val SHUTDOWN_MESSAGE = "mpvrex_custombuttons_shutdown_v11"
     }
 
     data class CustomButtonState(
@@ -66,6 +67,7 @@ class CustomButtonManager(
                     _customButtons.value = uiButtons
                     _overlayButtons.value = overlayUiButtons
                     scriptPath = null
+                    if (isMpvReady) runCatching { MPVLib.command("script-message", SHUTDOWN_MESSAGE) }
                     runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
                     return@launch
                 }
@@ -74,6 +76,7 @@ class CustomButtonManager(
                 // old Lua instances listen for old messages, never for the current button ID.
                 val scriptToken = System.nanoTime().toString()
                 val scriptContent = buildString {
+                    append("mp.register_script_message('$SHUTDOWN_MESSAGE', function() mp.keep_running = false end)\n")
                     fun appendGroup(
                         raw: String,
                         namespace: String,
@@ -166,6 +169,8 @@ class CustomButtonManager(
             .getOrDefault(false)
 
     private fun loadScript(file: File): Boolean {
+        // Terminate the previous generated Lua instance, including its timers and observers.
+        runCatching { MPVLib.command("script-message", SHUTDOWN_MESSAGE) }
         runCatching { MPVLib.setPropertyString(CUSTOM_BUTTONS_LOADED_FLAG, "0") }
         return runCatching {
             MPVLib.command("load-script", file.absolutePath)
