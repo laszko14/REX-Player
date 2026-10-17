@@ -34,7 +34,7 @@ import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlin.math.roundToInt
 
-/** Polish preferences for battery, clock, network Mb/s, remaining time and speed HUD. */
+/** Polish preferences for battery, clock, adjusted/original remaining time and speed HUD. */
 @Serializable
 object AlphaHudPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -48,9 +48,8 @@ object AlphaHudPreferencesScreen : Screen {
     val showSpeed by prefs.hudShowSpeed.collectAsState()
     val showRemaining by prefs.hudShowRemaining.collectAsState()
     val showClock by prefs.hudShowClock.collectAsState()
-    val showNetworkSpeed by prefs.hudShowNetworkSpeed.collectAsState()
+    val showAdjustedRemaining by prefs.hudShowAdjustedRemaining.collectAsState()
     val showBattery by prefs.hudShowBattery.collectAsState()
-    val realTimeRemaining by prefs.hudRealTimeRemaining.collectAsState()
     val scale by prefs.hudScalePercent.collectAsState()
     val gap by prefs.hudItemGapDp.collectAsState()
     val innerPadding by prefs.hudPaddingDp.collectAsState()
@@ -63,7 +62,7 @@ object AlphaHudPreferencesScreen : Screen {
     val speedColor by prefs.hudSpeedColor.collectAsState()
     val remainingColor by prefs.hudRemainingColor.collectAsState()
     val clockColor by prefs.hudClockColor.collectAsState()
-    val networkSpeedColor by prefs.hudNetworkSpeedColor.collectAsState()
+    val adjustedRemainingColor by prefs.hudNetworkSpeedColor.collectAsState()
     val batteryColor by prefs.hudBatteryColor.collectAsState()
     val backgroundColor by prefs.hudBackgroundColor.collectAsState()
 
@@ -79,8 +78,8 @@ object AlphaHudPreferencesScreen : Screen {
           .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        Text("Pasek: bateria • godzina • internet (Mb/s) • pozostały czas • prędkość. " +
-          "Wszystkie zmiany zapisują się automatycznie.")
+        Text("Pasek: bateria • godzina • czas pozostały przy bieżącej prędkości • " +
+          "czas pozostały oryginalny • prędkość. Zmiany zapisują się automatycznie.")
         HudToggle("Włącz HUD Alpha", enabled) { prefs.showPlaybackInfoOverlay.set(it) }
         HudToggle("Zawsze widoczny (także bez kontrolek)", always) {
           prefs.hudAlwaysVisible.set(it)
@@ -94,14 +93,15 @@ object AlphaHudPreferencesScreen : Screen {
         Text("Wyświetlane informacje")
         HudToggle("Poziom baterii", showBattery) { prefs.hudShowBattery.set(it) }
         HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
-        HudToggle("Prędkość pobierania filmu (Mb/s)", showNetworkSpeed) {
-          prefs.hudShowNetworkSpeed.set(it)
+        HudToggle("Czas pozostały (uwzględnia prędkość)", showAdjustedRemaining) {
+          prefs.hudShowAdjustedRemaining.set(it)
         }
-        Text("Transfer wyłącznie odtwarzanego strumienia MPV, aktualizowany co sekundę. Dla plików lokalnych lub gdy MPV nie udostępnia pomiaru: -- Mb/s.")
-        HudToggle("Czas pozostały", showRemaining) { prefs.hudShowRemaining.set(it) }
+        HudToggle("Czas pozostały (oryginalny, jak przy 1×)", showRemaining) {
+          prefs.hudShowRemaining.set(it)
+        }
         HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
-        HudToggle("Pozostały czas w rzeczywistości (uwzględnij prędkość)",
-          realTimeRemaining) { prefs.hudRealTimeRemaining.set(it) }
+        Text("Oba czasy są wyświetlane jednocześnie: pierwszy uwzględnia bieżącą " +
+          "prędkość odtwarzania, drugi odpowiada oryginalnej długości filmu.")
 
         Text("Rozmiar i odstępy")
         HudIntSlider("Skala całego HUD-u", scale, 35, 300, "%") {
@@ -150,10 +150,10 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudBatteryColor.set(it)
         }
         HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
-        HudHexInput("Prędkość pobierania filmu", networkSpeedColor) {
+        HudHexInput("Czas pozostały (uwzględnia prędkość)", adjustedRemainingColor) {
           prefs.hudNetworkSpeedColor.set(it)
         }
-        HudHexInput("Pozostały czas", remainingColor) { prefs.hudRemainingColor.set(it) }
+        HudHexInput("Czas pozostały (oryginalny)", remainingColor) { prefs.hudRemainingColor.set(it) }
         HudHexInput("Prędkość", speedColor) { prefs.hudSpeedColor.set(it) }
         HudHexInput("Tło", backgroundColor) { prefs.hudBackgroundColor.set(it) }
 
