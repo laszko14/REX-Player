@@ -83,9 +83,9 @@ internal fun LuaLeftControls(
     // Scrolling instead of clipping when 28+ buttons or wide columns are selected.
     Column(
         modifier = Modifier
-            .horizontalScroll(rememberScrollState())
+            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.55f).dp)
             .verticalScroll(rememberScrollState())
-            .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.55f).dp),
+            .horizontalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(gapY),
     ) {
         if (controlsVisible) {
