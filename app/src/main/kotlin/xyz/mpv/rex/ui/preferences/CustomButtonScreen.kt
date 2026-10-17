@@ -143,6 +143,11 @@ object CustomButtonScreen : Screen {
 
         // One unified set: slots 1–30, preserving existing imported Lua buttons.
         val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(30) { null }) }
+        // Stable keys move WITH each slot, including empty slots. Index-based keys
+        // make Compose reset a dragged item as soon as it crosses an empty position.
+        val slotKeys = remember {
+            mutableStateListOf(*Array(30) { "lua-slot-" + UUID.randomUUID().toString() })
+        }
 
         // Import dialog state
         var showImportDialog by remember { mutableStateOf(false) }
@@ -221,14 +226,23 @@ object CustomButtonScreen : Screen {
             }
         }
 
-        // Reorderable list state 
+        // The LazyColumn has TWO non-button items before the slot entries:
+        // 1) spacer, 2) appearance preferences card. Reorder indices include both.
         val lazyListState = rememberLazyListState()
-        val NON_SLOT_ITEMS_BEFORE = 1  // the Spacer item()
+        val NON_SLOT_ITEMS_BEFORE = 2
         val reorderState = rememberReorderableLazyListState(lazyListState) { from, to ->
-            val fromIdx = (from.index - NON_SLOT_ITEMS_BEFORE).coerceIn(0, buttonSlots.lastIndex)
-            val toIdx   = (to.index   - NON_SLOT_ITEMS_BEFORE).coerceIn(0, buttonSlots.lastIndex)
-            val moved = buttonSlots.removeAt(fromIdx)
-            buttonSlots.add(toIdx.coerceIn(0, buttonSlots.size), moved)
+            val fromIdx = from.index - NON_SLOT_ITEMS_BEFORE
+            val toIdx = to.index - NON_SLOT_ITEMS_BEFORE
+            // Never accidentally move a real button when hovering the header,
+            // import/export controls or anything outside the 30 slot rows.
+            if (fromIdx in buttonSlots.indices && toIdx in buttonSlots.indices &&
+                fromIdx != toIdx
+            ) {
+                val movingButton = buttonSlots.removeAt(fromIdx)
+                buttonSlots.add(toIdx, movingButton)
+                val movingKey = slotKeys.removeAt(fromIdx)
+                slotKeys.add(toIdx, movingKey)
+            }
         }
 
         Scaffold(
@@ -319,11 +333,11 @@ object CustomButtonScreen : Screen {
                 // itemsIndexed gives us the real slot position so empty-slot keys are unique
                 itemsIndexed(
                     items = buttonSlots.toList(),
-                    key = { index, item -> item?.id ?: "slot_$index" },
+                    key = { index, _ -> slotKeys[index] },
                 ) { index, button ->
                     val side = "P${index + 1}"
 
-                    ReorderableItem(reorderState, key = button?.id ?: "slot_$index") { isDragging ->
+                    ReorderableItem(reorderState, key = slotKeys[index]) { isDragging ->
                         val elevation by animateFloatAsState(
                             targetValue = if (isDragging) 8f else 0f,
                             animationSpec = spring(stiffness = Spring.StiffnessMedium),
@@ -582,16 +596,10 @@ fun ButtonSlotCard(
 
                 // Drag handle button - always show but disable when empty
                 if (isPopulated) {
-                    dragHandle(
-                        Modifier.pointerInput(Unit) {
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitFirstDown(requireUnconsumed = false)
-                                    expanded = false
-                                }
-                            }
-                        }
-                    )
+                    // Let sh.calvin.reorderable exclusively own this pointer gesture.
+                    // The custom awaitFirstDown loop intercepted pointer events and
+                    // caused jitter / springing back to the previous position.
+                    dragHandle(Modifier)
                 } else {
                     // Disabled drag handle for empty slots
                     Icon(
