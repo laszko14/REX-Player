@@ -70,3 +70,10 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Szerokość 360 dp, czcionka 100%/130%, wysokie widoki dla opcji poniżej pierwszego ekranu.
 - Sceny nie korzystają z danych użytkownika ani rzeczywistych plików: osobna pamięć preferencji, nieaktywny rejestr zewnętrznych aktywności i DAO, kontekst językowy polski.
 - To nie są atrapy przerysowane ręcznie: fixture wywołuje `Screen.Content()` dla każdego ekranu. Wynik renderowania i inspekcji PNG zostanie zapisany oddzielnie.
+
+## Wynik lokalnych testów przed renderowaniem
+
+- Kompilacja kontrolnego APK ARM64 zakończyła się powodzeniem.
+- 375 testów JVM w 39 zestawach: zero niepowodzeń, błędów i pominięć.
+- Fixture PNG wymagał przekazania kontekstu do `BrowserPreferences`; poprawiono wyłącznie konfigurację testową.
+- Android Lint nadal analizuje projekt. Nie traktujemy całego etapu jako zaliczonego przed jego zakończeniem i obejrzeniem wygenerowanych PNG.

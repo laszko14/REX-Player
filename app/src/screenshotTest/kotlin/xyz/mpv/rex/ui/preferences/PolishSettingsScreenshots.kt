@@ -83,7 +83,7 @@ private fun PolishSettingsScreen(screen: Screen) {
     val previewModule = remember(context) {
         val store = ScreenshotPreferenceStore()
         val appearance = AppearancePreferences(store).apply { darkMode.set(DarkMode.Light) }
-        val browser = BrowserPreferences(store)
+        val browser = BrowserPreferences(store, context)
         val folders = FoldersPreferences(store)
         val gestures = GesturePreferences(store)
         val audio = AudioPreferences(store).apply {
