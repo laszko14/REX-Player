@@ -2127,6 +2127,7 @@ fun PlayerControls(
           LuaButtonPanel(
             preferences = playerPreferences,
             buttons = overlayButtons,
+            currentPlaybackSpeed = playbackSpeed ?: 1f,
             onClose = { threeFingerSpeedVisible = false },
             onButtonClick = { id ->
               viewModel.callCustomButton(id)
