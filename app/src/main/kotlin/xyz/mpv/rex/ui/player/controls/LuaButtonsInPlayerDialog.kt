@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
 import android.content.res.Configuration.ORIENTATION_LANDSCAPE
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -35,7 +36,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -44,13 +44,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.mpv.rex.preferences.PlayerPreferences
@@ -71,20 +67,17 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
     val savedTab by prefs.luaEditorLastTab.collectAsState()
     val tab = savedTab.coerceIn(0, 2)
 
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+    // Same window as the playback buttons: unlike Dialog, touches on the
+    // left-side Lua grid remain available for drag-and-drop.
+    BackHandler(onBack = onDismiss)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.BottomCenter,
     ) {
-        val window = (LocalView.current.parent as? DialogWindowProvider)?.window
-        SideEffect { window?.setDimAmount(0f) }
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.Center,
-        ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth(if (landscape) 0.53f else 0.96f)
-                    .fillMaxHeight(if (landscape) 0.96f else 0.93f)
+                    .fillMaxHeight(if (landscape) 0.96f else 0.46f)
                     .padding(end = if (landscape) 6.dp else 0.dp)
                     .imePadding(),
                 shape = RoundedCornerShape(16.dp),
@@ -127,6 +120,11 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                         )
                     }
                     HorizontalDivider()
+                    Text(
+                        "Przytrzymaj guzik po lewej i przeciągnij: zajęte pole = zamiana, puste = przeniesienie.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                     when (tab) {
                         0 -> Column(
                             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
@@ -142,20 +140,13 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                     }
                 }
             }
-        }
     }
-}
-
-private fun decodeLuaSlots(serialized: String): List<CustomButton?> {
-    val loaded = runCatching { Json.decodeFromString<CustomButtonSlots>(serialized).slots }
-        .getOrElse { runCatching { Json.decodeFromString<List<CustomButton>>(serialized) }.getOrDefault(emptyList()) }
-    return List(30) { index -> loaded.getOrNull(index) }
 }
 
 @Composable
 private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier = Modifier) {
     val serialized by prefs.customButtons.collectAsState()
-    val slots = remember(serialized) { decodeLuaSlots(serialized) }
+    val slots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
     // All 30 fixed slots are always shown. No search/filter rows take up screen space.
@@ -214,7 +205,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
 
         fun write(button: CustomButton?, closeEditor: Boolean = true) {
             // Update the current serialized slot, preserving unrelated buttons.
-            val latest = decodeLuaSlots(prefs.customButtons.get()).toMutableList()
+            val latest = decodeLuaButtonSlots(prefs.customButtons.get()).toMutableList()
             latest[index] = button
             prefs.customButtons.set(Json.encodeToString(CustomButtonSlots(latest)))
             if (closeEditor) selectedIndex = -1

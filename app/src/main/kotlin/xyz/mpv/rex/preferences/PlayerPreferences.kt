@@ -76,11 +76,13 @@ class PlayerPreferences(
   val hudShowSpeed = preferenceStore.getBoolean("alpha_hud_show_speed", true)
   val hudShowRemaining = preferenceStore.getBoolean("alpha_hud_show_remaining", true)
   val hudShowClock = preferenceStore.getBoolean("alpha_hud_show_clock", true)
+  val hudShowNetworkSpeed = preferenceStore.getBoolean("alpha_hud_show_network_speed", true)
   val hudShowBattery = preferenceStore.getBoolean("alpha_hud_show_battery", true)
   val hudRealTimeRemaining = preferenceStore.getBoolean("alpha_hud_real_time_remaining", false)
   val hudSpeedColor = preferenceStore.getString("alpha_hud_speed_color", "#60E2F2")
   val hudRemainingColor = preferenceStore.getString("alpha_hud_remaining_color", "#FFFFFF")
   val hudClockColor = preferenceStore.getString("alpha_hud_clock_color", "#E2E8F0")
+  val hudNetworkSpeedColor = preferenceStore.getString("alpha_hud_network_speed_color", "#A7F3D0")
   val hudBatteryColor = preferenceStore.getString("alpha_hud_battery_color", "#4ADE80")
   val hudBackgroundColor = preferenceStore.getString("alpha_hud_background_color", "#10151C")
   val holdForMultipleSpeed = preferenceStore.getFloat("hold_for_multiple_speed", 2f)
@@ -132,6 +134,8 @@ class PlayerPreferences(
   val showSystemNavigationBar = preferenceStore.getBoolean("show_system_navigation_bar")
   val reduceMotion = preferenceStore.getBoolean("reduce_motion", true)
   val playerGradientOpacity = preferenceStore.getFloat("player_gradient_opacity", 1.0f)
+  // 0 hides the entire on-video controls layer, 100 keeps its original appearance.
+  val playerOverlayOpacityPercent = preferenceStore.getInt("player_overlay_opacity_percent", 100)
   val playerTimeToDisappear = preferenceStore.getInt("player_time_to_disappear", 4000)
 
   val defaultVideoZoom = preferenceStore.getFloat("default_video_zoom", 0f)
