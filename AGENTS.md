@@ -28,6 +28,7 @@ Applies to this repository. It is guidance for development, not permission to ma
 ## Verification before a PR
 - JDK 17 and Android SDK matching `compileSdk` are required; use the Gradle wrapper.
 - Run: `./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace`.
+- Android Lint uses the **committed** snapshot `app/lint-baseline.xml` to suppress only pre-existing findings; newly introduced lint errors still fail CI. Do not delete or regenerate this snapshot as a quick fix. Follow `docs/lint-baseline.md` for deliberate updates after reviewing the diff.
 - Run: `python3 .github/scripts/check_workflows.py` (requires PyYAML 6.x). The script checks workflow YAML and Python heredoc syntax.
 - When tracked standalone `.lua` files are added, syntax-check them with a Lua compiler matching the targeted mpv Lua runtime. The repo currently has no standalone `.lua` files; Lua snippets stored in user preferences are not covered by CI.
 - Review the diff for unintended changes. Check Kotlin tests for relevant behavior and add a regression test where practical.
