@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
@@ -145,9 +146,14 @@ fun LuaButtonPanel(
                         fontSize = (10f * factor).sp,
                         color = Color.White, modifier = Modifier.padding(8.dp))
                 } else {
-                    buttons.chunked(cols).forEach { line ->
+                    buttons.chunked(visibleColumns).forEach { line ->
                         Row(horizontalArrangement = Arrangement.spacedBy(gap)) {
                             line.forEach { button ->
+                                if (button.isSpacer) {
+                                    // Deliberate empty slot: same dimensions as a button,
+                                    // but transparent and not touchable.
+                                    Spacer(Modifier.weight(1f).heightIn(min = (26f * factor).dp))
+                                } else {
                                 // Highlight the preset that matches mpv's *actual* speed,
                                 // including speed changes made by gestures and other controls.
                                 val active = isActiveSpeedPreset(button.label, currentPlaybackSpeed)
@@ -184,6 +190,12 @@ fun LuaButtonPanel(
                                         )
                                         .padding(horizontal = 2.dp, vertical = (5f * factor).dp),
                                 )
+                                }
+                            }
+                            // Keep the last incomplete row aligned with earlier rows.
+                            // Synthetic padding is only for layout, never a button.
+                            repeat((visibleColumns - line.size).coerceAtLeast(0)) {
+                                Spacer(Modifier.weight(1f).heightIn(min = (26f * factor).dp))
                             }
                         }
                     }
