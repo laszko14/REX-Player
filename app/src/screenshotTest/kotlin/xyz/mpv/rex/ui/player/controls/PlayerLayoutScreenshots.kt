@@ -64,6 +64,7 @@ private fun PreviewRealLua(
     buttonWidth: Int = 52, buttonHeight: Int = 27,
     rowGap: Int = 2, columnGap: Int = 2,
     populatedExtra: Boolean = false,
+    previewDragging: Boolean = false,
     outlined: Boolean = true, bold: Boolean = true,
     weightPercent: Int = if (bold) 60 else 0,
     outlinePercent: Int = if (outlined) 50 else 0,
@@ -118,6 +119,7 @@ private fun PreviewRealLua(
         playbackSpeed = 1.5f,
         showAllButtons = edit,
         editMode = edit,
+        previewDragging = previewDragging,
         onButtonClick = {},
         onButtonLongClick = {},
     )
@@ -310,7 +312,7 @@ fun HudLayoutSubtleReadabilityScreenshot() {
 @Preview(name = "18 Lua extra eight in editing", widthDp = 950, heightDp = 570)
 @Composable
 fun LuaExtraSlotsEditScreenshot() {
-    LayoutBackdrop(bright = true, title = "LUA / 8 dodatkowych pol 4x2 / edycja i stare 35") {
+    LayoutBackdrop(bright = true, title = "LUA / 30 lewych + 8 prawych / edycja") {
         PreviewRealLua(edit = true, columns = 5, scale = 100, populatedExtra = true)
     }
 }
@@ -319,7 +321,17 @@ fun LuaExtraSlotsEditScreenshot() {
 @Preview(name = "19 Lua extra slots normal playback", widthDp = 950, heightDp = 570)
 @Composable
 fun LuaExtraSlotsPlaybackScreenshot() {
-    LayoutBackdrop(bright = false, title = "LUA / odtwarzanie / puste pola bez guzika") {
+    LayoutBackdrop(bright = false, title = "LUA / odtwarzanie / przezroczyste dziury") {
         PreviewRealLua(edit = false, columns = 5, scale = 100, populatedExtra = true)
+    }
+}
+
+@PreviewTest
+@Preview(name = "20 Lua drag right with settings hidden", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaDragRightSettingsHiddenScreenshot() {
+    LayoutBackdrop(bright = true, title = "PRZENOSZENIE / panel ustawien schowany / 30 + 8") {
+        PreviewRealLua(edit = true, columns = 5, scale = 100,
+            populatedExtra = true, previewDragging = true)
     }
 }
