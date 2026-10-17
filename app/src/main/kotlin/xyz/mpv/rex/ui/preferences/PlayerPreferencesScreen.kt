@@ -787,6 +787,15 @@ object PlayerPreferencesScreen : Screen {
           }
 
           item {
+            androidx.compose.material3.OutlinedButton(
+              onClick = { backstack.add(AlphaHudPreferencesScreen) },
+              modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+              Text("HUD Alpha — rozmiar, odstępy, pozycja, kolory")
+            }
+          }
+
+          item {
             val showSystemStatusBar by preferences.showSystemStatusBar.collectAsState()
             val showPlaybackInfoOverlay by preferences.showPlaybackInfoOverlay.collectAsState()
             val invertDuration by preferences.invertDuration.collectAsState()
