@@ -364,8 +364,9 @@ fun PlayerControls(
     areControlsLocked,
     isUnlockSliderDragging,
     playerTimeToDisappear,
+    luaSettingsVisible,
   ) {
-    if (controlsShown && paused == false && !isSeeking && !isUnlockSliderDragging) {
+    if (controlsShown && !luaSettingsVisible && paused == false && !isSeeking && !isUnlockSliderDragging) {
       if (areControlsLocked) {
         // Use 2 second delay when controls are locked
         delay(2000L)
@@ -391,6 +392,7 @@ fun PlayerControls(
           viewModel.sheetShown.value == Sheets.None &&
           viewModel.panelShown.value == Panels.None) {
         resetControlsTimestamp = System.currentTimeMillis()
+        viewModel.showControls()
         luaSettingsVisible = true
       }
     },
