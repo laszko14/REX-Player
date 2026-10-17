@@ -18,8 +18,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: mpv-alpha-ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  group: mpv-alpha-ci-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
   sources:
@@ -109,10 +109,145 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      - name: Wyslij tylko jeden APK arm64-v8a
+      - name: Zachowaj APK testowy (nie instaluj jako aktualizacji)
+        if: github.event_name != 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: MPV-Alpha-arm64-debug
+          name: MPV-Alpha-CI-debug-nie-do-aktualizacji
           path: app/build/outputs/apk/debug/*arm64-v8a*.apk
           if-no-files-found: error
           retention-days: 7
+
+signed_apk:
+    name: MPV Alpha - podpisany APK do aktualizacji
+    # Signing secrets and a write-capable GitHub token are NEVER exposed to PRs.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
+    needs: [sources, android]
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: write
+    concurrency:
+      group: mpv-alpha-signed-apk
+      cancel-in-progress: false
+    steps:
+      - name: Pobierz kod i dotychczasowe znaczniki wersji
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Przygotuj kolejny nieuzywany numer od v15
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --tags --force
+          latest=14
+          while IFS= read -r tag; do
+            if [[ "$tag" =~ ^mpv-alpha-v([0-9]+)$ ]]; then
+              number=$((10#${BASH_REMATCH[1]}))
+              if (( number > latest )); then latest="$number"; fi
+            fi
+          done < <(git tag -l 'mpv-alpha-v*')
+          next=$((latest + 1))
+          # ABI-specific version codes are calculated as base * 10 + 2 (ARM64).
+          # Choose a value larger than existing REX debug builds (214 * 10 + 2).
+          base_code=$((100000 + next))
+          if (( base_code > 214748364 )); then
+            echo "::error::versionCode poza dopuszczalnym zakresem"
+            exit 1
+          fi
+          echo "number=$next" >> "$GITHUB_OUTPUT"
+          echo "tag=mpv-alpha-v$next" >> "$GITHUB_OUTPUT"
+          echo "MPV_ALPHA_VERSION_NAME=v$next" >> "$GITHUB_ENV"
+          echo "MPV_ALPHA_VERSION_CODE=$base_code" >> "$GITHUB_ENV"
+
+      - name: Sprawdz sekrety i odtworz staly klucz podpisu
+        shell: bash
+        env:
+          MPV_ALPHA_KEYSTORE_BASE64: ${{ secrets.MPV_ALPHA_KEYSTORE_BASE64 }}
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in MPV_ALPHA_KEYSTORE_BASE64 MPV_ALPHA_KEYSTORE_PASSWORD MPV_ALPHA_KEY_ALIAS MPV_ALPHA_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Brak sekretu GitHub Actions: $name"
+              exit 1
+            fi
+          done
+          install -d -m 700 "$RUNNER_TEMP/mpv-alpha-signing"
+          keystore="$RUNNER_TEMP/mpv-alpha-signing/release.jks"
+          printf '%s' "$MPV_ALPHA_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          test -s "$keystore"
+          echo "MPV_ALPHA_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+
+      - name: Java 17 i cache Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Zbuduj podpisany APK ARM64
+        env:
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug --stacktrace --no-daemon \
+            -PmpvAlphaVersionCode="$MPV_ALPHA_VERSION_CODE" \
+            -PmpvAlphaVersionName="$MPV_ALPHA_VERSION_NAME"
+
+      - name: Zweryfikuj podpis, pakiet, wersje i jeden APK
+        id: apk
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/debug/*.apk)
+          if (( ${#apks[@]} != 1 )); then
+            echo "::error::Oczekiwano dokladnie jednego APK ARM64, znaleziono ${#apks[@]}"
+            exit 1
+          fi
+          apk="${apks[0]}"
+          [[ "$apk" == *arm64-v8a*.apk ]] || { echo "::error::To nie APK ARM64"; exit 1; }
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
+          package=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep '^package:')
+          expected_code=$((MPV_ALPHA_VERSION_CODE * 10 + 2))
+          [[ "$package" == *"name='xyz.mpv.rex.debug'"* ]] || { echo "::error::Zmiana ID pakietu"; exit 1; }
+          [[ "$package" == *"versionCode='$expected_code'"* ]] || { echo "::error::Niepoprawny versionCode"; exit 1; }
+          [[ "$package" == *"versionName='$MPV_ALPHA_VERSION_NAME'"* ]] || { echo "::error::Niepoprawny versionName"; exit 1; }
+          mkdir -p dist
+          filename="MPV-Alpha-${MPV_ALPHA_VERSION_NAME}-arm64-v8a.apk"
+          cp "$apk" "dist/$filename"
+          echo "path=dist/$filename" >> "$GITHUB_OUTPUT"
+          echo "Podpisana wersja: $filename"
+
+      - name: Zarezerwuj numer wersji w Git (nie uzywaj ponownie)
+        shell: bash
+        env:
+          ALPHA_TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git tag "$ALPHA_TAG" "$GITHUB_SHA"
+          git push origin "refs/tags/$ALPHA_TAG"
+
+      - name: Udostepnij jeden podpisany APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-v${{ steps.version.outputs.number }}-ARM64-AKTUALIZACJA
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
