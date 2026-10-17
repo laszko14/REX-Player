@@ -26,7 +26,7 @@ We welcome bug fixes, performance optimizations, and feature enhancements.
   ```
 
 #### Verification
-There is no automated test suite. Contributors must perform manual verification on a physical Android device or emulator before submitting a Pull Request. Check Android Logcat during playback to ensure no unexpected exceptions or errors are thrown.
+JVM unit tests live in `app/src/test/kotlin/`. Pull requests run `:app:assembleDebug`, `:app:testDebugUnitTest`, `:app:lintDebug`, and workflow/Python syntax checks via `.github/workflows/build.yml`. Run these checks locally when possible. These checks do not replace manual verification on a physical Android device or emulator; inspect Android Logcat during playback for errors. For agent-specific guardrails, see [AGENTS.md](AGENTS.md).
 
 ---
 
