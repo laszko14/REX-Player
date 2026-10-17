@@ -72,6 +72,7 @@ import xyz.mpv.rex.preferences.AppearancePreferences
 import xyz.mpv.rex.preferences.AudioPreferences
 import xyz.mpv.rex.preferences.GesturePreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.preferences.holdSpeedGesturePresets
 import xyz.mpv.rex.preferences.SubtitlesPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.ui.player.controls.components.glassSurface
@@ -131,6 +132,7 @@ fun GestureHandler(
     viewModel.hideSeekBar()
   }
   val multipleSpeedGesture by playerPreferences.holdForMultipleSpeed.collectAsState()
+  val holdSpeedQuarterSteps by playerPreferences.holdSpeedQuarterSteps.collectAsState()
   val rememberLongPressSpeed by playerPreferences.rememberLongPressSpeed.collectAsState()
   val showDynamicSpeedOverlay by playerPreferences.showDynamicSpeedOverlay.collectAsState()
   val brightnessGesture by playerPreferences.brightnessGesture.collectAsState()
@@ -485,7 +487,7 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, brightnessGesture, volumeGesture, brightnessSwipeSensitivity) {
+      .pointerInput(areControlsLocked, multipleSpeedGesture, holdSpeedQuarterSteps, brightnessGesture, volumeGesture, brightnessSwipeSensitivity) {
         if ((!brightnessGesture && !volumeGesture && multipleSpeedGesture <= 0f) || areControlsLocked) return@pointerInput
 
         awaitEachGesture {
@@ -629,7 +631,7 @@ fun GestureHandler(
                       if (isLongPressing && isDynamicSpeedControlActive && paused == false) {
                         change.consume()
 
-                        val speedPresets = listOf(0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f)
+                        val speedPresets = holdSpeedGesturePresets(holdSpeedQuarterSteps)
                         val screenWidth = size.width.toFloat()
 
                         val deltaX = currentPosition.x - dynamicSpeedStartX
