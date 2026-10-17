@@ -386,9 +386,11 @@ fun PlayerControls(
     viewModel = viewModel,
     interactionSource = interactionSource,
     onThreeFingerTap = {
-      if (!areControlsLocked) {
-        viewModel.showControls()
+      if (!areControlsLocked &&
+          viewModel.sheetShown.value == Sheets.None &&
+          viewModel.panelShown.value == Panels.None) {
         resetControlsTimestamp = System.currentTimeMillis()
+        luaSettingsVisible = true
       }
     },
   )
@@ -825,7 +827,7 @@ fun PlayerControls(
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier
-            .offset(x = luaPositionX.coerceIn(0, 240).dp, y = luaPositionY.coerceIn(0, 240).dp)
+            .offset(x = luaPositionX.coerceIn(0, 240).dp, y = (luaPositionY.coerceIn(0, 240) + 20).dp)
             .constrainAs(customLeftButtonsRef) {
               start.linkTo(parent.start, spacing.large)
               top.linkTo(topLeftControls.bottom, 4.dp)
@@ -837,10 +839,6 @@ fun PlayerControls(
             preferences = playerPreferences,
             buttons = customButtons,
             playbackSpeed = playbackSpeed ?: 1f,
-            onOpenSettings = {
-              resetControlsTimestamp = System.currentTimeMillis()
-              luaSettingsVisible = true
-            },
             onButtonClick = { id ->
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.callCustomButton(id)
@@ -1937,7 +1935,7 @@ fun PlayerControls(
     }
 
     if (luaSettingsVisible) {
-      LuaButtonSettingsDialog(
+      LuaButtonsInPlayerDialog(
         prefs = playerPreferences,
         onDismiss = {
           luaSettingsVisible = false
