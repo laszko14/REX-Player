@@ -207,9 +207,10 @@ fun PlayerControls(
   val threeFingerSpeedAutoHide by playerPreferences.threeFingerSpeedAutoHide.collectAsState()
   val threeFingerSpeedSeekBack by playerPreferences.threeFingerSpeedSeekBack.collectAsState()
   var threeFingerSpeedVisible by remember { mutableStateOf(false) }
+  var luaInPlayerEditorOpen by remember { mutableStateOf(false) }
   var threeFingerSpeedInteractionCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount) {
-    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent) {
+  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount, luaInPlayerEditorOpen) {
+    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent && !luaInPlayerEditorOpen) {
       delay(threeFingerSpeedAutoHide.coerceIn(3, 30) * 1000L)
       threeFingerSpeedVisible = false
     }
@@ -2128,6 +2129,7 @@ fun PlayerControls(
             preferences = playerPreferences,
             buttons = overlayButtons,
             currentPlaybackSpeed = playbackSpeed ?: 1f,
+            onEditorVisibilityChanged = { luaInPlayerEditorOpen = it },
             onClose = { threeFingerSpeedVisible = false },
             onButtonClick = { id ->
               viewModel.callCustomButton(id)
