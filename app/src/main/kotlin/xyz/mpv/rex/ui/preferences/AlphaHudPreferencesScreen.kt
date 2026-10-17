@@ -55,6 +55,8 @@ object AlphaHudPreferencesScreen : Screen {
     val gap by prefs.hudItemGapDp.collectAsState()
     val innerPadding by prefs.hudPaddingDp.collectAsState()
     val opacity by prefs.hudBackgroundOpacity.collectAsState()
+    val highContrastText by prefs.hudHighContrastText.collectAsState()
+    val boldText by prefs.hudBoldText.collectAsState()
     val radius by prefs.hudCornerRadiusDp.collectAsState()
     val x by prefs.hudPositionX.collectAsState()
     val y by prefs.hudPositionY.collectAsState()
@@ -118,6 +120,16 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudCornerRadiusDp.set(it)
         }
 
+        Text("Czytelność napisów")
+        HudToggle("Kontrastowy obrys czcionki", highContrastText) {
+          prefs.hudHighContrastText.set(it)
+        }
+        HudToggle("Pogrubiona czcionka", boldText) {
+          prefs.hudBoldText.set(it)
+        }
+        Text("Obrys jest czarny dla jasnych liter i biały dla ciemnych. " +
+          "Zachowuje ustawione kolory i nie analizuje klatek filmu.")
+
         Text("Położenie (niezależne od przycisków Lua)")
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           OutlinedButton(onClick = { prefs.hudPositionX.set(0f) }, modifier = Modifier.weight(1f)) {
@@ -150,6 +162,8 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudItemGapDp.set(12)
           prefs.hudPaddingDp.set(8)
           prefs.hudBackgroundOpacity.set(70)
+          prefs.hudHighContrastText.set(false)
+          prefs.hudBoldText.set(false)
           prefs.hudCornerRadiusDp.set(10)
           prefs.hudPositionX.set(1f)
           prefs.hudPositionY.set(0.03f)
