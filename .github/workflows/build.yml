@@ -1,4 +1,4 @@
-name: MPV Alpha — testy i jeden APK ARM64
+name: MPV Alpha v12 — jeden APK arm64
 
 on:
   pull_request:
@@ -46,12 +46,12 @@ jobs:
             exit 1
           fi
           mkdir -p dist
-          cp "${apks[0]}" dist/MPV-Alpha-Lua-Fix-arm64-v8a.apk
+          cp "${apks[0]}" dist/MPV-Alpha-v12-arm64-v8a.apk
       - name: Udostępnij tylko pojedynczą aplikację
         uses: actions/upload-artifact@v4
         with:
-          name: MPV-Alpha-Lua-Fix-arm64
-          path: dist/MPV-Alpha-Lua-Fix-arm64-v8a.apk
+          name: MPV-Alpha-v12-arm64
+          path: dist/MPV-Alpha-v12-arm64-v8a.apk
           if-no-files-found: error
           compression-level: 0
           retention-days: 14

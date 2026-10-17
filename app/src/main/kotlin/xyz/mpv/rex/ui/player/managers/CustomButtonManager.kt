@@ -7,6 +7,7 @@ import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 import xyz.mpv.rex.ui.preferences.LuaButtonMigration
+import xyz.mpv.rex.ui.preferences.LuaV12XmlPresets
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,7 @@ class CustomButtonManager(
         val textColor: String? = null,
         val backgroundColor: String? = null,
         val isSpacer: Boolean = false,
+        val alwaysVisible: Boolean = false,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
@@ -61,6 +63,7 @@ class CustomButtonManager(
 
     fun setup() {
         LuaButtonMigration.ensure(playerPreferences, json)
+        LuaV12XmlPresets.ensure(playerPreferences, json)
         setupJob?.cancel()
         setupJob = scope.launch(Dispatchers.IO) {
             try {
@@ -222,7 +225,7 @@ class CustomButtonManager(
         uiList: MutableList<CustomButtonState>,
     ) {
         if (button.title.isBlank()) return
-        uiList.add(CustomButtonState(actionName, button.title, isLeft, button.textColor, button.backgroundColor))
+        uiList.add(CustomButtonState(actionName, button.title, isLeft, button.textColor, button.backgroundColor, alwaysVisible = button.alwaysVisible))
 
         if (button.onStartup.isNotBlank()) {
             append(button.onStartup)

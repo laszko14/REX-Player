@@ -126,6 +126,7 @@ data class CustomButton(
     val enabled: Boolean = true,
     val textColor: String? = null,
     val backgroundColor: String? = null,
+    val alwaysVisible: Boolean = false,
 )
 
 @Serializable
@@ -468,6 +469,7 @@ fun ButtonSlotCard(
     var draftEnabled   by remember(button?.id) { mutableStateOf(button?.enabled ?: true) }
     var draftTextColor by remember(button?.id) { mutableStateOf(button?.textColor ?: "") }
     var draftBackgroundColor by remember(button?.id) { mutableStateOf(button?.backgroundColor ?: "") }
+    var draftAlwaysVisible by remember(button?.id) { mutableStateOf(button?.alwaysVisible ?: false) }
 
     var activeLuaField by remember { mutableStateOf<String?>(null) }
 
@@ -601,6 +603,8 @@ fun ButtonSlotCard(
                     draftEnabled   = draftEnabled,
                     draftTextColor = draftTextColor,
                     draftBackgroundColor = draftBackgroundColor,
+                    draftAlwaysVisible = draftAlwaysVisible,
+                    onAlwaysVisibleChange = { draftAlwaysVisible = it },
                     onTextColorChange = { draftTextColor = it },
                     onBackgroundColorChange = { draftBackgroundColor = it },
                     onTitleChange   = { draftTitle   = it },
@@ -617,6 +621,7 @@ fun ButtonSlotCard(
                                 enabled          = draftEnabled,
                                 textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
                                 backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
+                                alwaysVisible = draftAlwaysVisible,
                             )
                         )
                         expanded = false
@@ -656,6 +661,7 @@ fun ButtonSlotCard(
                         enabled          = draftEnabled,
                         textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
                         backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
+                                alwaysVisible = draftAlwaysVisible,
                     )
                 )
             }
@@ -749,6 +755,8 @@ fun ButtonExpandedContent(
     draftEnabled: Boolean,
     draftTextColor: String,
     draftBackgroundColor: String,
+    draftAlwaysVisible: Boolean,
+    onAlwaysVisibleChange: (Boolean) -> Unit,
     onTextColorChange: (String) -> Unit,
     onBackgroundColorChange: (String) -> Unit,
     onTitleChange: (String) -> Unit,
@@ -820,6 +828,13 @@ fun ButtonExpandedContent(
                 .background(parseCustomButtonColor(draftBackgroundColor) ?: Color.White.copy(alpha = 0.09f))
                 .padding(horizontal = 16.dp, vertical = 10.dp),
         )
+
+        Row(modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically) {
+            Text("Nie wygaszaj tego przycisku", modifier = Modifier.weight(1f))
+            Switch(checked = draftAlwaysVisible, onCheckedChange = onAlwaysVisibleChange)
+        }
 
         // Enable / Disable row
         Row(
@@ -1230,6 +1245,7 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             sb.appendLine("    <id>${escapeXml(button.id)}</id>")
             sb.appendLine("    <title>${escapeXml(button.title)}</title>")
             sb.appendLine("    <enabled>${button.enabled}</enabled>")
+            sb.appendLine("    <alwaysVisible>${button.alwaysVisible}</alwaysVisible>")
             button.textColor?.let { sb.appendLine("    <textColor>${escapeXml(it)}</textColor>") }
             button.backgroundColor?.let { sb.appendLine("    <backgroundColor>${escapeXml(it)}</backgroundColor>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
@@ -1251,6 +1267,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     val idPattern = """<id>(.*?)</id>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val titlePattern = """<title>(.*?)</title>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val enabledPattern = """<enabled>(.*?)</enabled>""".toRegex(RegexOption.DOT_MATCHES_ALL)
+    val alwaysVisiblePattern = """<alwaysVisible>(.*?)</alwaysVisible>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val textColorPattern = """<textColor>(.*?)</textColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val backgroundColorPattern = """<backgroundColor>(.*?)</backgroundColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val contentPattern = """<content><!\[CDATA\[(.*?)\]\]></content>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1266,6 +1283,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
         val id = idPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: UUID.randomUUID().toString()
         val title = titlePattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: ""
         val enabled = enabledPattern.find(buttonXml)?.groupValues?.get(1)?.toBoolean() ?: true
+        val alwaysVisible = alwaysVisiblePattern.find(buttonXml)?.groupValues?.get(1)?.toBoolean() ?: false
         val textColor = textColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
         val backgroundColor = backgroundColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
         val content = contentPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
@@ -1281,6 +1299,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
             enabled = enabled,
             textColor = textColor,
             backgroundColor = backgroundColor,
+            alwaysVisible = alwaysVisible,
         )
     }
     

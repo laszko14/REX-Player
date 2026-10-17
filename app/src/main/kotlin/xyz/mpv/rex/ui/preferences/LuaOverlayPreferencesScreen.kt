@@ -60,7 +60,7 @@ object LuaOverlayPreferencesScreen : Screen {
         val prefs = koinInject<PlayerPreferences>()
         val advanced = koinInject<AdvancedPreferences>()
         Scaffold(topBar = {
-            TopAppBar(title = { Text("Nakładka Lua") }, navigationIcon = {
+            TopAppBar(title = { Text("Przyciski Lua v12") }, navigationIcon = {
                 IconButton(onClick = backstack::removeLastOrNull) {
                     Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Wróć")
                 }
@@ -75,17 +75,16 @@ object LuaOverlayPreferencesScreen : Screen {
                     "Po ich zmianie nie trzeba kompilować ani instalować nowego APK.")
                 Button(onClick = { backstack.add(LuaPanelButtonsScreen) },
                     modifier = Modifier.fillMaxWidth()) {
-                    Text("Edytuj nową nakładkę Lua (24 miejsca)")
+                    Text("Edytuj dodatkowe Lua po lewej (20 + 4 zapasowe)")
                 }
                 Button(onClick = { backstack.add(CustomButtonScreen) },
                     modifier = Modifier.fillMaxWidth()) {
                     Text("Edytuj oryginalne przyciski Lua (8 miejsc)")
                 }
-                Text("Oryginalne osiem przycisków i nowa nakładka mają osobny zapis. " +
-                     "Aktualizacja zachowuje kopię starego układu.")
-                Text("Odstępy między guzikami: w edytorze nowej nakładki zostaw puste miejsca " +
-                     "(np. P9 albo P11). Panel zachowa te przerwy, a puste miejsca za " +
-                     "ostatnim guzikiem nie powiększą okna.")
+                Text("Obie grupy są wyświetlane po lewej stronie ekranu; ich zapis " +
+                     "pozostaje oddzielny dla zgodności ze starszymi wersjami.")
+                Text("Puste sloty w środku grupy to niewidoczne odstępy. " +
+                     "W trakcie filmu stuknij ołówek przy guzikach, by je zmienić.")
                 LuaOverlaySettingsControls(prefs = prefs, advanced = advanced)
 
             }
@@ -108,9 +107,12 @@ fun LuaOverlaySettingsControls(
     val autoShow by prefs.threeFingerSpeedAutoShow.collectAsState()
     val persistent by prefs.threeFingerSpeedPersistent.collectAsState()
     val hideAfter by prefs.threeFingerSpeedAutoHide.collectAsState()
-    val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+    val width by prefs.luaLeftButtonWidth.collectAsState()
+    val height by prefs.luaLeftButtonHeight.collectAsState()
+    val gapX by prefs.luaLeftColumnGap.collectAsState()
+    val gapY by prefs.luaLeftRowGap.collectAsState()
     val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
-    val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
+
     val columns by prefs.luaPanelColumns.collectAsState()
     val highlightHex by prefs.luaActiveSpeedHighlightColor.collectAsState()
     val highlightTransparency by prefs.luaActiveSpeedHighlightTransparency.collectAsState()
@@ -124,33 +126,29 @@ fun LuaOverlaySettingsControls(
         ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
             advanced.enableLuaScripts.set(it)
         }
-        ToggleLine("Włącz nakładkę (gest trzech palców)", panelEnabled) {
+        ToggleLine("Gest trzech palców otwiera edytor Lua", panelEnabled) {
             prefs.threeFingerSpeedEnabled.set(it)
         }
-        ToggleLine("Pokaż panel po uruchomieniu filmu", autoShow) {
-            prefs.threeFingerSpeedAutoShow.set(it)
-        }
-        ToggleLine("Pozostań widoczny do zamknięcia X", persistent) {
-            prefs.threeFingerSpeedPersistent.set(it)
-        }
-        if (!persistent) {
-            LuaNumberSlider("Automatyczne ukrywanie", hideAfter, 3, 30, " s") {
-                prefs.threeFingerSpeedAutoHide.set(it)
-            }
-        }
-        LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
+        Text("Układ wszystkich przycisków po LEWEJ stronie", fontWeight = FontWeight.Bold)
+        LuaNumberSlider("Liczba kolumn", columns, 1, 6, "") {
             prefs.luaPanelColumns.set(it)
         }
-        LuaNumberSlider("Wielkość panelu", scale, 70, 150, "%") {
-            prefs.threeFingerSpeedPanelSize.set(it)
+        LuaNumberSlider("Szerokość przycisku", width, 38, 110, " dp") {
+            prefs.luaLeftButtonWidth.set(it)
         }
-        LuaNumberSlider("Przezroczystość tła", transparency, 0, 100, "%") {
+        LuaNumberSlider("Wysokość przycisku", height, 28, 75, " dp") {
+            prefs.luaLeftButtonHeight.set(it)
+        }
+        LuaNumberSlider("Odstęp w poziomie (kolumny)", gapX, 0, 25, " dp") {
+            prefs.luaLeftColumnGap.set(it)
+        }
+        LuaNumberSlider("Odstęp w pionie (wiersze)", gapY, 0, 25, " dp") {
+            prefs.luaLeftRowGap.set(it)
+        }
+        LuaNumberSlider("Przezroczystość tła guzików", transparency, 0, 100, "%") {
             prefs.threeFingerSpeedPanelTransparency.set(it)
         }
-        LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
-            prefs.threeFingerSpeedPanelGap.set(it)
-        }
-
+        Text("Każdy guzik ma własną opcję 'Nie wygaszaj'. Włączysz ją w edycji przycisku.")
         // Visual settings for the active playback-speed preset only.
         Text("Podświetlenie aktywnej prędkości", fontWeight = FontWeight.Bold)
         LuaNumberSlider(
@@ -230,12 +228,8 @@ fun LuaOverlaySettingsControls(
                 )
                 .padding(horizontal = 20.dp, vertical = 10.dp),
         )
-        Button(onClick = {
-            prefs.threeFingerSpeedPositionX.set(0.5f)
-            prefs.threeFingerSpeedPositionY.set(0.16f)
-        }) { Text("Przywróć pozycję panelu") }
-        Text("Pozycję zmienisz również, przeciągając uchwyt u góry nakładki. " +
-             "Kliknięcie i przytrzymanie przycisku mają osobne skrypty.")
+        Text("MPV Alpha v12: brak osobnego wysuwanego panelu. " +
+             "Przyciski, ich kolory i podświetlenie prędkości działają bezpośrednio na filmie.")
     }
 }
 

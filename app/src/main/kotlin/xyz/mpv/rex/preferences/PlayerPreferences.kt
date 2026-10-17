@@ -17,9 +17,15 @@ class PlayerPreferences(
   val backgroundPlayback = preferenceStore.getEnum("background_playback_mode", BackgroundPlaybackMode.AudioOnly)
   val invertDuration = preferenceStore.getBoolean("invert_duration")
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
-  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
+  val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 5)
+  // MPV Alpha v12: button grid on the left, without a floating Lua panel.
+  val luaLeftButtonWidth = preferenceStore.getInt("lua_left_button_width_dp_v12", 54)
+  val luaLeftButtonHeight = preferenceStore.getInt("lua_left_button_height_dp_v12", 38)
+  val luaLeftColumnGap = preferenceStore.getInt("lua_left_button_column_gap_dp_v12", 4)
+  val luaLeftRowGap = preferenceStore.getInt("lua_left_button_row_gap_dp_v12", 3)
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
   val luaSeparateInitialized = preferenceStore.getBoolean("lua_separate_initialized_v11", false)
+  val luaXmlV12Imported = preferenceStore.getBoolean("lua_xml_buttons_imported_v12", false)
   val luaOverlayButtons = preferenceStore.getString("lua_overlay_buttons_json_v11", "")
   val luaButtonBackup = preferenceStore.getString("lua_legacy_buttons_backup_v11", "")
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
