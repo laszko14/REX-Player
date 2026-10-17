@@ -107,6 +107,8 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonFontSize.set(11)
                 prefs.luaButtonHighContrastText.set(false)
                 prefs.luaButtonBoldText.set(false)
+                prefs.luaButtonFontWeightPercent.set(0)
+                prefs.luaButtonOutlinePercent.set(0)
                 prefs.threeFingerSpeedPanelSize.set(100)
                 prefs.luaButtonColumnGap.set(2)
                 prefs.luaButtonRowGap.set(2)
@@ -205,26 +207,37 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
  * They move with a button when the list is reordered. A null color inherits
  * the current global value; pressing Reset returns all attributes to defaults.
  */
-/** Shared readability settings in the original and landscape Lua editors. */
+/** Independent 0–100% sliders shown in both the original and landscape Lua editors. */
 @Composable
 private fun LuaFontReadabilitySettings(prefs: PlayerPreferences, compact: Boolean) {
-    val contrast by prefs.luaButtonHighContrastText.collectAsState()
-    val bold by prefs.luaButtonBoldText.collectAsState()
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Text(
-            "Kontrastowy obrys czcionki",
-            modifier = Modifier.weight(1f),
-            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
-        )
-        Switch(checked = contrast, onCheckedChange = prefs.luaButtonHighContrastText::set)
+    val weight by prefs.luaButtonFontWeightPercent.collectAsState()
+    val outline by prefs.luaButtonOutlinePercent.collectAsState()
+    LuaOptionSlider("Pogrubienie czcionki", weight, 0, 100, "%", compact = compact) {
+        prefs.luaButtonFontWeightPercent.set(it)
     }
-    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+    LuaOptionSlider("Siła kontrastowego obrysu", outline, 0, 100, "%", compact = compact) {
+        prefs.luaButtonOutlinePercent.set(it)
+    }
+    if (!compact) {
         Text(
-            "Pogrubiona czcionka",
-            modifier = Modifier.weight(1f),
-            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
+            "0% = brak obrysu lub zwykła czcionka, 50% obrysu = dawny kontrast, " +
+                "60% pogrubienia = dawny Bold. Kolory napisów nie są zmieniane.",
+            style = MaterialTheme.typography.labelSmall,
         )
-        Switch(checked = bold, onCheckedChange = prefs.luaButtonBoldText::set)
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            OutlinedButton(onClick = {
+                prefs.luaButtonFontWeightPercent.set(0)
+                prefs.luaButtonOutlinePercent.set(0)
+            }) { Text("Naturalny") }
+            OutlinedButton(onClick = {
+                prefs.luaButtonFontWeightPercent.set(60)
+                prefs.luaButtonOutlinePercent.set(50)
+            }) { Text("Czytelny") }
+            OutlinedButton(onClick = {
+                prefs.luaButtonFontWeightPercent.set(90)
+                prefs.luaButtonOutlinePercent.set(85)
+            }) { Text("Mocny") }
+        }
     }
 }
 
@@ -573,6 +586,8 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.luaButtonActiveTextColor.set(0xFF071426.toInt())
                 prefs.luaButtonHighContrastText.set(false)
                 prefs.luaButtonBoldText.set(false)
+                prefs.luaButtonFontWeightPercent.set(0)
+                prefs.luaButtonOutlinePercent.set(0)
             }) { Text("Resetuj wygląd czcionki") }
         }
         LuaAppearanceSection("Kolory tła") {
