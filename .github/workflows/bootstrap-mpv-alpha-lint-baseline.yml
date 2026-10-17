@@ -56,5 +56,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/lint-baseline.xml
-          git commit -m "chore(lint): snapshot existing Android issues as reviewable baseline"
+          # The bootstrap is single-use: do not ship a source-patching workflow.
+          git rm .github/workflows/bootstrap-mpv-alpha-lint-baseline.yml
+          git commit -m "chore(lint): commit frozen baseline and remove bootstrap"
+          git fetch origin chore/mpv-alpha-agent-ci-20261017
+          git rebase origin/chore/mpv-alpha-agent-ci-20261017
           git push origin HEAD:chore/mpv-alpha-agent-ci-20261017
