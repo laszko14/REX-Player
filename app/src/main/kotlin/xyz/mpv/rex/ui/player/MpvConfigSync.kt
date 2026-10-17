@@ -41,6 +41,21 @@ object MpvConfigSync : KoinComponent {
     runCatching {
       Utils.copyAssets(context)
       syncFromUserMpvDirectory(context)
+      // Earlier builds saved generated button scripts inside the auto-load
+      // directory. Remove ONLY known generated files before libmpv starts.
+      val legacyScriptsDir = File(context.filesDir, "scripts")
+      legacyScriptsDir.listFiles()?.filter { file ->
+        file.isFile &&
+            (file.name.startsWith("alpha_lua_") && file.name.endsWith(".lua") ||
+             file.name == "custombuttons.lua" &&
+                 runCatching {
+                   val header = file.inputStream().bufferedReader().use { it.readLine().orEmpty() }
+                   header.contains("user_button_generation") ||
+                       header.contains("MPV Alpha button client")
+                 }.getOrDefault(false))
+      }?.forEach { file ->
+        if (file.delete()) Log.d(TAG, "Removed stale generated Lua: " + file.name)
+      }
 
       // Configure hdr-toys conditional profile in mpv.conf if enabled
       val isEnabled = decoderPreferences.enableHdrToys.get()
