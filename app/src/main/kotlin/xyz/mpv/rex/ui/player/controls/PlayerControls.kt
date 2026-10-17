@@ -268,6 +268,9 @@ fun PlayerControls(
   val haptic = LocalHapticFeedback.current
 
   val customButtons by viewModel.customButtons.collectAsState()
+  var luaSettingsVisible by remember { mutableStateOf(false) }
+  val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
+  val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
     
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
@@ -821,17 +824,23 @@ fun PlayerControls(
           visible = areButtonsVisible && !areControlsLocked && customButtons.isNotEmpty(),
           enter = fadeIn(),
           exit = fadeOut(),
-          modifier = Modifier.constrainAs(customLeftButtonsRef) {
-            start.linkTo(parent.start, spacing.large)
-            top.linkTo(topLeftControls.bottom, 4.dp)
-            width = Dimension.wrapContent
-            height = Dimension.wrapContent
-          },
+          modifier = Modifier
+            .offset(x = luaPositionX.coerceIn(0, 240).dp, y = luaPositionY.coerceIn(0, 240).dp)
+            .constrainAs(customLeftButtonsRef) {
+              start.linkTo(parent.start, spacing.large)
+              top.linkTo(topLeftControls.bottom, 4.dp)
+              width = Dimension.preferredWrapContent
+              height = Dimension.wrapContent
+            },
         ) {
           LuaButtonGrid(
             preferences = playerPreferences,
             buttons = customButtons,
             playbackSpeed = playbackSpeed ?: 1f,
+            onOpenSettings = {
+              resetControlsTimestamp = System.currentTimeMillis()
+              luaSettingsVisible = true
+            },
             onButtonClick = { id ->
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.callCustomButton(id)
@@ -1418,9 +1427,10 @@ fun PlayerControls(
               )
               .constrainAs(topLeftControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
+                // The back arrow and title always start at the left edge.
                 start.linkTo(parent.start, spacing.large)
-                width = Dimension.preferredWrapContent
                 end.linkTo(topRightControls.start, spacing.extraSmall)
+                width = Dimension.preferredWrapContent
                 horizontalBias = 0f
               },
         ) {
@@ -1924,6 +1934,17 @@ fun PlayerControls(
 
       }
      }
+    }
+
+    if (luaSettingsVisible) {
+      LuaButtonSettingsDialog(
+        prefs = playerPreferences,
+        onDismiss = {
+          luaSettingsVisible = false
+          resetControlsTimestamp = System.currentTimeMillis()
+          viewModel.showControls()
+        },
+      )
     }
 
     val sheetShown by viewModel.sheetShown.collectAsState()
