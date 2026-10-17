@@ -25,6 +25,7 @@ class PlayerPreferences(
   val luaLeftRowGap = preferenceStore.getInt("lua_left_button_row_gap_dp_v12", 3)
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
   val luaSeparateInitialized = preferenceStore.getBoolean("lua_separate_initialized_v11", false)
+  val luaXmlV12Imported = preferenceStore.getBoolean("lua_xml_buttons_imported_v12", false)
   val luaOverlayButtons = preferenceStore.getString("lua_overlay_buttons_json_v11", "")
   val luaButtonBackup = preferenceStore.getString("lua_legacy_buttons_backup_v11", "")
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
