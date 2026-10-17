@@ -413,6 +413,7 @@ object PlayerControlsPreferencesScreen : Screen {
                         var customTimeValue by remember { mutableStateOf("") }
                         val showControlsOnPlay by playerPrefs.showControlsOnPlay.collectAsState()
                         val playerGradientOpacity by playerPrefs.playerGradientOpacity.collectAsState()
+                        val globalOverlayOpacityPercent by playerPrefs.playerOverlayOpacityPercent.collectAsState()
 
                         GroupedListColumn {
                             GroupedPreferenceCard(
@@ -577,6 +578,32 @@ object PlayerControlsPreferencesScreen : Screen {
                                     },
                                     onSliderValueChange = { playerPrefs.playerGradientOpacity.set(it.toFixed(2)) },
                                     sliderValue = playerGradientOpacity,
+                                )
+                            }
+
+                            // Recovery path for 0%: also available outside the player.
+                            GroupedPreferenceCard(
+                                position = GroupPosition.MIDDLE,
+                                highlightKey = R.string.pref_appearance_player_gradient_opacity_title,
+                            ) {
+                                SliderPreference(
+                                    value = globalOverlayOpacityPercent.toFloat(),
+                                    onValueChange = {
+                                        playerPrefs.playerOverlayOpacityPercent.set(it.toInt().coerceIn(0, 100))
+                                    },
+                                    title = { Text("Widoczność całej nakładki odtwarzacza") },
+                                    valueRange = 0f..100f,
+                                    summary = {
+                                        Text(
+                                            "$"+"{globalOverlayOpacityPercent.coerceIn(0, 100)}% — " +
+                                                "przyciski, Play, pasek czasu, HUD i Lua",
+                                            color = MaterialTheme.colorScheme.outline,
+                                        )
+                                    },
+                                    onSliderValueChange = {
+                                        playerPrefs.playerOverlayOpacityPercent.set(it.toInt().coerceIn(0, 100))
+                                    },
+                                    sliderValue = globalOverlayOpacityPercent.toFloat(),
                                 )
                             }
 
