@@ -829,7 +829,8 @@ fun PlayerControls(
         AnimatedVisibility(
           // Independent of mpv's ordinary controls auto-hide when persistent
           // mode is enabled. Still hide on explicit screen lock.
-          visible = (luaAlwaysVisible || luaSettingsVisible || areButtonsVisible) &&
+          visible = (areButtonsVisible || luaSettingsVisible ||
+              customButtons.any { it.alwaysVisible ?: luaAlwaysVisible }) &&
             !areControlsLocked && customButtons.isNotEmpty(),
           enter = fadeIn(),
           exit = fadeOut(),
@@ -846,6 +847,7 @@ fun PlayerControls(
             preferences = playerPreferences,
             buttons = customButtons,
             playbackSpeed = playbackSpeed ?: 1f,
+            showAllButtons = areButtonsVisible || luaSettingsVisible,
             onButtonClick = { id ->
               resetControlsTimestamp = System.currentTimeMillis()
               viewModel.callCustomButton(id)
