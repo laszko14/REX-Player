@@ -5,9 +5,9 @@ import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 import kotlin.math.floor
 
-internal const val LUA_SLOT_COUNT = 30
+internal const val LUA_SLOT_COUNT = 35
 
-/** Preserve holes from the saved 30-slot layout; also read legacy flat lists. */
+/** Preserve saved slots, expanding old 30-slot layouts with five empty slots. */
 internal fun decodeLuaButtonSlots(serialized: String): List<CustomButton?> {
     val saved = runCatching { Json.decodeFromString<CustomButtonSlots>(serialized).slots }
         .getOrElse {

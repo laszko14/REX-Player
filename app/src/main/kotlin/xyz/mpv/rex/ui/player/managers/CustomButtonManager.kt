@@ -6,6 +6,7 @@ import xyz.mpv.rex.preferences.AdvancedPreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
+import xyz.mpv.rex.ui.player.controls.LUA_SLOT_COUNT
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -89,16 +90,16 @@ class CustomButtonManager(
                 if (!playerPreferences.luaPanelInitialized.get()) {
                     val current = playerPreferences.customButtons.get()
                     val slots = try {
-                        json.decodeFromString<CustomButtonSlots>(current).slots.take(30).toMutableList()
+                        json.decodeFromString<CustomButtonSlots>(current).slots.take(LUA_SLOT_COUNT).toMutableList()
                     } catch (_: Exception) {
                         try {
-                            json.decodeFromString<List<CustomButton>>(current).take(30)
+                            json.decodeFromString<List<CustomButton>>(current).take(LUA_SLOT_COUNT)
                                 .map { it as CustomButton? }.toMutableList()
                         } catch (_: Exception) {
                             mutableListOf<CustomButton?>()
                         }
                     }
-                    while (slots.size < 30) slots.add(null)
+                    while (slots.size < LUA_SLOT_COUNT) slots.add(null)
                     val speeds = playerPreferences.threeFingerSpeedPresets.get().split(',')
                         .mapNotNull { it.trim().toFloatOrNull()?.takeIf { v -> v in 0.25f..6f } }
                         .take(9)
@@ -135,7 +136,7 @@ class CustomButtonManager(
                         .getOrDefault(emptyList())
                 }
                 uiButtons.addAll(allButtons.filter { it.enabled && it.title.isNotBlank() }
-                    .take(30).map {
+                    .take(LUA_SLOT_COUNT).map {
                         CustomButtonState(
                             id = it.id,
                             label = it.title,
@@ -175,7 +176,7 @@ class CustomButtonManager(
             runCatching { json.decodeFromString<List<CustomButton>>(saved) }
                 .getOrDefault(emptyList())
         }
-        buttons.filter { it.enabled && it.onStartup.isNotBlank() }.take(30).forEach { button ->
+        buttons.filter { it.enabled && it.onStartup.isNotBlank() }.take(LUA_SLOT_COUNT).forEach { button ->
             runCatching {
                 MPVLib.command("script-message", "mpv_alpha_eval", button.onStartup)
             }.onFailure { error ->

@@ -95,6 +95,7 @@ import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonIndividualAppearance
+import xyz.mpv.rex.ui.player.controls.LUA_SLOT_COUNT
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -133,7 +134,7 @@ data class CustomButton(
 
 @Serializable
 data class CustomButtonSlots(
-    val slots: List<CustomButton?> = List(30) { null }
+    val slots: List<CustomButton?> = List(LUA_SLOT_COUNT) { null }
 )
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -149,12 +150,12 @@ object CustomButtonScreen : Screen {
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // One unified set: slots 1–30, preserving existing imported Lua buttons.
-        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(30) { null }) }
+        // One unified set: slots 1–35, preserving existing imported Lua buttons.
+        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(LUA_SLOT_COUNT) { null }) }
         // Stable keys move WITH each slot, including empty slots. Index-based keys
         // make Compose reset a dragged item as soon as it crosses an empty position.
         val slotKeys = remember {
-            mutableStateListOf(*Array(30) { "lua-slot-" + UUID.randomUUID().toString() })
+            mutableStateListOf(*Array(LUA_SLOT_COUNT) { "lua-slot-" + UUID.randomUUID().toString() })
         }
 
         // Import dialog state
@@ -209,15 +210,15 @@ object CustomButtonScreen : Screen {
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(30).toMutableList()
-                    while (slots.size < 30) slots.add(null)
+                    val slots = loaded.slots.take(LUA_SLOT_COUNT).toMutableList()
+                    while (slots.size < LUA_SLOT_COUNT) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
                 }.onFailure {
                     runCatching {
                         val old: List<CustomButton> = Json.decodeFromString(jsonString)
-                        val slots = MutableList<CustomButton?>(30) { null }
-                        old.forEachIndexed { i, b -> if (i < 30) slots[i] = b }
+                        val slots = MutableList<CustomButton?>(LUA_SLOT_COUNT) { null }
+                        old.forEachIndexed { i, b -> if (i < LUA_SLOT_COUNT) slots[i] = b }
                         buttonSlots.clear()
                         buttonSlots.addAll(slots)
                     }
@@ -242,7 +243,7 @@ object CustomButtonScreen : Screen {
             val fromIdx = from.index - NON_SLOT_ITEMS_BEFORE
             val toIdx = to.index - NON_SLOT_ITEMS_BEFORE
             // Never accidentally move a real button when hovering the header,
-            // import/export controls or anything outside the 30 slot rows.
+            // import/export controls or anything outside the 35 slot rows.
             if (fromIdx in buttonSlots.indices && toIdx in buttonSlots.indices &&
                 fromIdx != toIdx
             ) {
@@ -321,7 +322,7 @@ object CustomButtonScreen : Screen {
                                 onClick = { appearanceExpanded = !appearanceExpanded },
                             ) {
                                 Text(
-                                    "Wygląd i położenie 30 przycisków " +
+                                    ""Wygląd i położenie $LUA_SLOT_COUNT przycisków " +
                                         if (appearanceExpanded) "▲" else "▼"
                                 )
                             }
@@ -1237,7 +1238,7 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
 }
 
 private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
-    val slots = MutableList<CustomButton?>(30) { null }
+    val slots = MutableList<CustomButton?>(LUA_SLOT_COUNT) { null }
     
     // Simple XML parsing using regex (for basic structure)
     val buttonPattern = """<button\s+slot="(\d+)">(.*?)</button>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1250,7 +1251,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     
     buttonPattern.findAll(xmlContent).forEach { buttonMatch ->
         val slotIndex = buttonMatch.groupValues[1].toIntOrNull() ?: return@forEach
-        if (slotIndex !in 0..29) return@forEach
+        if (slotIndex !in 0 until LUA_SLOT_COUNT) return@forEach
         
         val buttonXml = buttonMatch.groupValues[2]
         
