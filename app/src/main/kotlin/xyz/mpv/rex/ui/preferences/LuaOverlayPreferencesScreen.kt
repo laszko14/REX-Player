@@ -31,6 +31,7 @@ import xyz.mpv.rex.preferences.AdvancedPreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.presentation.Screen
+import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlin.math.roundToInt
 
@@ -43,11 +44,6 @@ object LuaOverlayPreferencesScreen : Screen {
         val prefs = koinInject<PlayerPreferences>()
         val advanced = koinInject<AdvancedPreferences>()
         val luaEnabled by advanced.enableLuaScripts.collectAsState()
-        val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
-        val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
-        val rowGap by prefs.luaButtonRowGap.collectAsState()
-        val columnGap by prefs.luaButtonColumnGap.collectAsState()
-        val columns by prefs.luaPanelColumns.collectAsState()
 
         Scaffold(topBar = {
             TopAppBar(title = { Text("Przyciski Lua") }, navigationIcon = {
@@ -70,21 +66,7 @@ object LuaOverlayPreferencesScreen : Screen {
                 ToggleLine("Włącz wykonywanie skryptów Lua", luaEnabled) {
                     advanced.enableLuaScripts.set(it)
                 }
-                LuaNumberSlider("Liczba kolumn", columns, 2, 6, "") {
-                    prefs.luaPanelColumns.set(it)
-                }
-                LuaNumberSlider("Wielkość przycisków", scale, 70, 150, "%") {
-                    prefs.threeFingerSpeedPanelSize.set(it)
-                }
-                LuaNumberSlider("Przezroczystość przycisków", transparency, 0, 100, "%") {
-                    prefs.threeFingerSpeedPanelTransparency.set(it)
-                }
-                LuaNumberSlider("Odstęp w poziomie", columnGap, 0, 16, " dp") {
-                    prefs.luaButtonColumnGap.set(it)
-                }
-                LuaNumberSlider("Odstęp w pionie", rowGap, 0, 16, " dp") {
-                    prefs.luaButtonRowGap.set(it)
-                }
+                LuaButtonAppearanceSettings(prefs)
                 Text("Kliknięcie i przytrzymanie przycisku mają osobne skrypty. " +
                      "Kolejność i widoczność zmienisz w edytorze.")
             }
@@ -101,14 +83,3 @@ private fun ToggleLine(title: String, checked: Boolean, onCheckedChange: (Boolea
     }
 }
 
-@Composable
-private fun LuaNumberSlider(
-    title: String, value: Int, min: Int, max: Int, suffix: String,
-    onChange: (Int) -> Unit
-) {
-    Column {
-        Text("$title: $value$suffix")
-        Slider(value = value.toFloat(), onValueChange = { onChange(it.roundToInt()) },
-            valueRange = min.toFloat()..max.toFloat())
-    }
-}
