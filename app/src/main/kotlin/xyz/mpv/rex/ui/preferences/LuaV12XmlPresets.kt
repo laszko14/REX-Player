@@ -28,10 +28,18 @@ object LuaV12XmlPresets {
         val output = saved.take(24).toMutableList()
         while (output.size < 24) output.add(null)
         for (button in presets) {
-            if (output.any { it?.id == button.id || (it?.title == button.title && it.content == button.content) }) continue
+            // Existing equivalent commands need no duplicate entry. Some v11
+            // generated IDs were reused with different speeds in supplied XML.
+            // Preserve BOTH actions by assigning the imported one a unique ID.
+            if (output.any { it?.title == button.title && it.content == button.content }) continue
             val index = output.indexOfFirst { it == null }
             if (index == -1) break
-            output[index] = button
+            val imported = if (output.any { it?.id == button.id }) {
+                button.copy(id = "v12-xml-" + button.id)
+            } else {
+                button
+            }
+            output[index] = imported
         }
         return output
     }
