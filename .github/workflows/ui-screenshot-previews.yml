@@ -1,0 +1,66 @@
+name: MPV Alpha - podglad HUD i Lua (PNG)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths:
+      - ".github/workflows/ui-screenshot-previews.yml"
+      - "app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/**"
+      - "app/src/screenshotTest/**"
+      - "app/build.gradle.kts"
+      - "gradle/libs.versions.toml"
+      - "gradle.properties"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alpha-screenshots-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  preview-png:
+    name: Wygeneruj podglady PNG bez APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Wygeneruj podglady Android Compose
+        run: |
+          chmod +x gradlew
+          ./gradlew :app:updateDebugScreenshotTest --stacktrace --no-daemon --no-configuration-cache
+      - name: Sprawdz obecnosc pieciu zrzutow
+        shell: bash
+        run: |
+          set -euo pipefail
+          root="app/src/screenshotTestDebug/reference"
+          test -d "$root"
+          count=$(find "$root" -type f -name '*.png' | wc -l)
+          if (( count < 5 )); then
+            echo "::error::Oczekiwano co najmniej 5 podgladow, znaleziono $count"
+            exit 1
+          fi
+          find "$root" -type f -name '*.png' -printf '%P\n' | sort
+      - name: Pobierz PNG - HUD i Lua (bez APK)
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-HUD-Lua-podglady-PNG
+          path: app/src/screenshotTestDebug/reference/**/*.png
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

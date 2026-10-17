@@ -7,9 +7,12 @@ plugins {
   alias(libs.plugins.kotlinx.serialization)
   alias(libs.plugins.ksp)
   alias(libs.plugins.room)
+  alias(libs.plugins.screenshot)
 }
 
 android {
+  // Host-side Compose preview screenshots: separate from the signed APK pipeline.
+  experimentalProperties["android.experimental.enableScreenshotTest"] = true
   namespace = "xyz.mpv.rex"
   compileSdk = 36
 
@@ -187,6 +190,11 @@ room {
 }
 
 dependencies {
+  // Official AndroidX Compose Preview Screenshot Testing (no emulator / APK release).
+  screenshotTestImplementation(platform(libs.androidx.compose.bom))
+  screenshotTestImplementation(libs.screenshot.validation.api)
+  screenshotTestImplementation(libs.androidx.ui.tooling)
+
   implementation(libs.splashScreen)
   implementation(libs.androidx.activity.compose)
   implementation(platform(libs.androidx.compose.bom))
