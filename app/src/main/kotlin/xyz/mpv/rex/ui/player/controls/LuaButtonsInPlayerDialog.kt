@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,11 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.koin.compose.koinInject
@@ -53,8 +56,10 @@ import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 import java.util.UUID
 
 /**
- * During landscape playback, appearance and editable Lua buttons are side-by-side.
- * Both panels scroll independently; the video and playback activity stay alive.
+ * Compact right-side configuration, leaving the original Lua buttons exposed
+ * to the LEFT for visual adjustment during a landscape movie.
+ *
+ * Appearance and script editing use separate tabs so neither wastes space.
  */
 @Composable
 fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onDismiss: () -> Unit) {
@@ -67,74 +72,71 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth(if (landscape) 0.95f else 0.96f)
-                .fillMaxHeight(if (landscape) 0.90f else 0.91f)
-                .imePadding(),
-            shape = RoundedCornerShape(18.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 3.dp,
+        // A nearly transparent dim layer lets the actual playback buttons
+        // remain visible while the user changes their size and location.
+        val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
+        SideEffect { dialogWindow?.setDimAmount(0.06f) }
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.Center,
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(7.dp),
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(if (landscape) 0.60f else 0.96f)
+                    .fillMaxHeight(if (landscape) 0.87f else 0.93f)
+                    .padding(end = if (landscape) 8.dp else 0.dp)
+                    .imePadding(),
+                shape = RoundedCornerShape(16.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 3.dp,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Przyciski Lua", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                        Text("30 miejsc • ustawienia na żywo • zapis kodów bez restartu",
-                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                    Text("Lua", style = MaterialTheme.typography.labelMedium)
-                    Switch(checked = luaEnabled, onCheckedChange = advanced.enableLuaScripts::set)
-                }
-                Text(
-                    text = "Silnik: " + engineStatus,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (engineStatus.startsWith("Lua gotowe")) Color(0xFF84DFA2)
-                            else MaterialTheme.colorScheme.error,
-                )
-                HorizontalDivider()
-                if (landscape) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Column(modifier = Modifier.weight(0.46f)) {
-                            Text("WYGLĄD I POZYCJA", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary)
-                            Column(
-                                modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                            ) { LuaButtonAppearanceSettings(prefs) }
-                        }
-                        Box(
-                            Modifier.width(1.dp).fillMaxHeight().background(MaterialTheme.colorScheme.outlineVariant)
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Przyciski Lua",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
                         )
-                        Column(modifier = Modifier.weight(0.54f)) {
-                            Text("PRZYCISKI I KODY LUA", style = MaterialTheme.typography.labelLarge,
-                                color = MaterialTheme.colorScheme.primary)
-                            LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
-                        }
+                        Text("Lua", style = MaterialTheme.typography.labelSmall)
+                        Switch(checked = luaEnabled, onCheckedChange = advanced.enableLuaScripts::set)
                     }
-                } else {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Wygląd") })
-                        FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Przyciski i kody Lua") })
+                    Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+                        FilterChip(selected = tab == 0, onClick = { tab = 0 }, label = { Text("Wygląd i pozycja") })
+                        FilterChip(selected = tab == 1, onClick = { tab = 1 }, label = { Text("Kody Lua (30)") })
                     }
+                    val statusOk = engineStatus.startsWith("Lua gotowe")
+                    val statusNeutral = engineStatus.startsWith("Lua:") ||
+                        engineStatus.contains("oczekiwanie", ignoreCase = true) ||
+                        engineStatus.contains("niepotwierdzony", ignoreCase = true)
+                    Text(
+                        text = engineStatus,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when {
+                            statusOk -> Color(0xFF84DFA2)
+                            statusNeutral -> MaterialTheme.colorScheme.onSurfaceVariant
+                            else -> MaterialTheme.colorScheme.error
+                        },
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    HorizontalDivider()
                     if (tab == 0) {
                         Column(modifier = Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                            LuaButtonAppearanceSettings(prefs)
+                            LuaButtonAppearanceSettings(prefs, compact = true)
                         }
                     } else {
                         LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
                     }
+                    HorizontalDivider()
+                    Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(38.dp)) {
+                        Text("Gotowe")
+                    }
                 }
-                HorizontalDivider()
-                Button(
-                    onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth().height(42.dp),
-                ) { Text("Gotowe — wróć do filmu") }
             }
         }
     }
