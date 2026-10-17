@@ -1,18 +1,21 @@
 package xyz.mpv.rex.ui.player.controls
 
+import java.util.Locale
+
 /**
- * Convert a change in Android TrafficStats received bytes into Mb/s.
- * Mb is megabits (8 bits per byte), not megabytes.
- * Null means the system counter is unsupported, invalid, or has reset.
+ * MPV cache-speed is a rate in bytes/s for the active media input.
+ * Restrict the HUD to network URLs so local file reads are not labeled downloads.
+ * Null means the stream rate is not available (do not fall back to device traffic).
  */
-internal fun networkDownloadMbps(
-  previousBytes: Long,
-  currentBytes: Long,
-  elapsedMillis: Long,
+internal fun mpvStreamDownloadMbps(
+  bytesPerSecond: Int?,
+  playbackPath: String?,
 ): Float? {
-  if (previousBytes < 0L || currentBytes < previousBytes || elapsedMillis <= 0L) {
+  val scheme = playbackPath?.substringBefore("://", "")?.lowercase(Locale.ROOT)
+  if (scheme !in setOf("http", "https", "ftp", "sftp", "smb", "rtsp", "rtmp", "rtp",
+      "udp", "tcp", "mms", "mmsh", "dav", "davs", "webdav", "ytdl")) {
     return null
   }
-  return ((currentBytes - previousBytes).toDouble() * 8_000.0 /
-    (elapsedMillis.toDouble() * 1_000_000.0)).toFloat()
+  if (bytesPerSecond == null || bytesPerSecond < 0) return null
+  return bytesPerSecond * 8f / 1_000_000f
 }
