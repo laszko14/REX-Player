@@ -201,7 +201,7 @@ fun PlayerControls(
   val enableReleaseToCancel by gesturePreferences.enableReleaseToCancel.collectAsState()
   val showSystemStatusBar by playerPreferences.showSystemStatusBar.collectAsState()
   val showPlaybackInfoOverlay by playerPreferences.showPlaybackInfoOverlay.collectAsState()
-  val showRemainingTimeInOverlay by playerPreferences.invertDuration.collectAsState()
+  val hudAlwaysVisible by playerPreferences.hudAlwaysVisible.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
   val interactionSource = remember { MutableInteractionSource() }
@@ -1248,21 +1248,27 @@ fun PlayerControls(
               }
         }
 
-        // Compact information bar; kept below the title and away from 8 custom buttons.
+        // HUD Alpha uses its own non-interactive layer, independent of the
+        // standalone LuaButtonGrid and ordinary controller auto-hide behavior.
         AnimatedVisibility(
-          visible = controlsShown && !areControlsLocked && showPlaybackInfoOverlay,
+          visible = showPlaybackInfoOverlay && (hudAlwaysVisible || controlsShown),
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier.constrainAs(playbackInfoOverlayRef) {
-            top.linkTo(topLeftControls.bottom, spacing.small)
+            top.linkTo(parent.top)
+            bottom.linkTo(parent.bottom)
             start.linkTo(parent.start)
             end.linkTo(parent.end)
+            width = Dimension.fillToConstraints
+            height = Dimension.fillToConstraints
           },
         ) {
           PlaybackInfoOverlay(
             positionSeconds = precisePosition,
             durationSeconds = if (preciseDuration > 0f) preciseDuration else (duration ?: 0).toFloat(),
-            showRemaining = showRemainingTimeInOverlay,
+            playbackSpeed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
+            preferences = playerPreferences,
+            modifier = Modifier.fillMaxSize(),
           )
         }
 
