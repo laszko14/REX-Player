@@ -34,7 +34,7 @@ import kotlin.math.abs
 
 /**
  * One set of up to 30 Lua buttons, anchored to the left of the player.
- * The clearly labeled gear opens settings without leaving playback.
+ * Settings are opened exclusively by a three-finger tap during playback.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,7 +44,6 @@ fun LuaButtonGrid(
     playbackSpeed: Float,
     onButtonClick: (String) -> Unit,
     onButtonLongClick: (String) -> Unit,
-    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val columns by preferences.luaPanelColumns.collectAsState()
@@ -72,18 +71,7 @@ fun LuaButtonGrid(
     val maxWidth = (availableScreen.screenWidthDp * 0.85f).dp
     Column(
         modifier = modifier.heightIn(max = maxHeight).widthIn(max = maxWidth),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Text(
-            text = "⚙ Ustawienia guzików",
-            fontSize = 11.sp,
-            color = Color.White,
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xEE323541))
-                .combinedClickable(onClick = onOpenSettings)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        )
         // Both axes can scroll if the user chooses extra-large buttons or many columns.
         Column(
             modifier = Modifier.verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()),
