@@ -94,10 +94,10 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
         background = previous?.backgroundColor ?: ""
     }
     fun move(from: Int, to: Int) {
-        if (from !in slots.indices || to !in slots.indices) return
-        val previous = slots[from]
-        slots[from] = slots[to]
-        slots[to] = previous
+        if (from !in slots.indices || to !in slots.indices || from == to) return
+        val updated = swapLuaOverlaySlots(slots.toList(), from, to)
+        slots.clear()
+        slots.addAll(updated)
         saveSlots()
     }
     val closeOrBack: () -> Unit = {
