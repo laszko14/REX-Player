@@ -22,9 +22,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DragHandle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -59,11 +61,19 @@ fun LuaButtonPanel(
     preferences: PlayerPreferences,
     buttons: List<CustomButtonManager.CustomButtonState>,
     currentPlaybackSpeed: Float,
+    onEditorVisibilityChanged: (Boolean) -> Unit,
     onClose: () -> Unit,
     onButtonClick: (String) -> Unit,
     onButtonLongClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var editorOpen by remember { mutableStateOf(false) }
+    // While an editor window is open, the parent must suspend panel auto-hide.
+    // The onDispose path also resets that state if the player closes the panel.
+    DisposableEffect(editorOpen) {
+        onEditorVisibilityChanged(editorOpen)
+        onDispose { if (editorOpen) onEditorVisibilityChanged(false) }
+    }
     val sizePercent by preferences.threeFingerSpeedPanelSize.collectAsState()
     val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
     val highlightHex by preferences.luaActiveSpeedHighlightColor.collectAsState()
@@ -130,6 +140,12 @@ fun LuaButtonPanel(
                 Text("Lua · ${String.format(Locale.US, "%.2f", currentPlaybackSpeed).trimEnd('0').trimEnd('.')}×", color = Color.White.copy(alpha = 0.8f),
                     fontSize = (10f * factor).sp, modifier = Modifier.weight(2f),
                     textAlign = TextAlign.Center)
+                Icon(Icons.Default.Edit, contentDescription = "Edytuj przyciski podczas filmu",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .weight(1f)
+                        .heightIn(min = (22f * factor).dp)
+                        .combinedClickable(onClick = { editorOpen = true }))
                 Icon(Icons.Default.Close, contentDescription = "Zamknij nakładkę",
                     tint = Color.White,
                     modifier = Modifier
@@ -202,5 +218,10 @@ fun LuaButtonPanel(
                 }
             }
         }
+    }
+    if (editorOpen) {
+        LuaInPlayerButtonEditor(preferences = preferences, onDismiss = {
+            editorOpen = false
+        })
     }
 }
