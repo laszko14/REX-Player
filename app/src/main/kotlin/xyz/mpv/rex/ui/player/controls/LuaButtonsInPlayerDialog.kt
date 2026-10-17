@@ -155,7 +155,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    // 35 existing slots and the eight optional top-left slots are editable here.
+    // 30 left + 8 right, five archived legacy slots remain editable (no lost codes).
     val listState = rememberLazyListState()
 
     if (selectedIndex !in 0 until LUA_SLOT_COUNT) {
@@ -176,11 +176,19 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                             .padding(horizontal = 9.dp, vertical = 5.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text((index + 1).toString() + ".", style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.width(28.dp),
+                        Text(when {
+                                index >= LUA_EXTRA_START -> "P${index - LUA_EXTRA_START + 1}."
+                                index >= LUA_MAIN_SLOT_COUNT -> "ARCH${index - LUA_MAIN_SLOT_COUNT + 1}."
+                                else -> "L${index + 1}."
+                            }, style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(47.dp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(button?.title ?: if (index >= LUA_EXTRA_START) "Prawe pole 4×2" else "Pusty przycisk",
+                            Text(button?.title ?: when {
+                                index >= LUA_EXTRA_START -> "Prawe pole 4×2"
+                                index >= LUA_MAIN_SLOT_COUNT -> "Archiwum v23 (niewidoczne)"
+                                else -> "Pusty przycisk"
+                            },
                                 maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
@@ -224,10 +232,14 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             OutlinedButton(onClick = { selectedIndex = -1 }) { Text("‹ Lista $LUA_SLOT_COUNT przycisków") }
             Text(
                 "Przycisk " + (index + 1) + " / $LUA_SLOT_COUNT" +
-                    if (index >= LUA_EXTRA_START) " • prawy panel 4×2" else "",
+                    when {
+                        index >= LUA_EXTRA_START -> " • prawa strona 4×2"
+                        index >= LUA_MAIN_SLOT_COUNT -> " • archiwum v23, nie na ekranie"
+                        else -> " • lewa strona"
+                    },
                 style = MaterialTheme.typography.titleMedium,
             )
-            if (old != null && index < LUA_MAIN_SLOT_COUNT) {
+            if (old != null && index < LUA_EXTRA_START) {
                 val freeExtra = (LUA_EXTRA_START until LUA_SLOT_COUNT)
                     .firstOrNull { slots[it] == null }
                 if (freeExtra != null) {
