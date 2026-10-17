@@ -291,6 +291,7 @@ fun PlayerControls(
   val haptic = LocalHapticFeedback.current
 
   val customButtons by viewModel.customButtons.collectAsState()
+  val overlayButtons by viewModel.overlayButtons.collectAsState()
     
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
@@ -842,7 +843,7 @@ fun PlayerControls(
       }
 
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
+            visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customLeftButtonsRef) {
@@ -867,73 +868,6 @@ fun PlayerControls(
                 modifier = Modifier
                     .padding(vertical = 6.dp)
                     .horizontalScroll(leftScrollState)
-            ) {
-                customButtons.filter { it.isLeft }.forEach { button ->
-                    val buttonInteractionSource = remember { MutableInteractionSource() }
-                    val customButtonShape = RoundedCornerShape(14.dp)
-                    Surface(
-                        shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-                        modifier = Modifier
-                            .clip(customButtonShape)
-                            .combinedClickable(
-                                interactionSource = buttonInteractionSource,
-                                indication = ripple(),
-                                onClick = {
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButton(button.id)
-                                },
-                                onLongClick = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                    resetControlsTimestamp = System.currentTimeMillis()
-                                    viewModel.callCustomButtonLongPress(button.id)
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = button.label,
-                            modifier = Modifier
-                                .padding(horizontal = 10.dp, vertical = 6.dp)
-                                .basicMarquee(),
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            maxLines = 1,
-                            softWrap = false
-                        )
-                    }
-                }
-            }
-        }
-
-        AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
-            enter = fadeIn(),
-            exit = fadeOut(),
-            modifier = Modifier.constrainAs(customRightButtonsRef) {
-                start.linkTo(parent.start, spacing.large)
-                top.linkTo(parent.top)
-                bottom.linkTo(parent.bottom)
-                verticalBias = 0.57f
-                width = Dimension.preferredWrapContent
-                height = Dimension.wrapContent
-            }
-        ) {
-            val rightScrollState = rememberScrollState()
-            LaunchedEffect(rightScrollState.isScrollInProgress) {
-                if (rightScrollState.isScrollInProgress) {
-                    while (rightScrollState.isScrollInProgress) {
-                        resetControlsTimestamp = System.currentTimeMillis()
-                        delay(1000)
-                    }
-                }
-            }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .padding(vertical = 6.dp)
-                    .horizontalScroll(rightScrollState)
             ) {
                 customButtons.filter { !it.isLeft }.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
@@ -972,23 +906,24 @@ fun PlayerControls(
                 }
             }
         }
-        
+
         AnimatedVisibility(
-            visible = areButtonsVisible && isPortrait && !threeFingerSpeedEnabled,
+            visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.constrainAs(customButtonsPortraitRef) {
+            modifier = Modifier.constrainAs(customRightButtonsRef) {
                 start.linkTo(parent.start, spacing.large)
-                end.linkTo(parent.end, spacing.large)
-                bottom.linkTo(seekbar.top, spacing.medium)
-                width = Dimension.fillToConstraints
+                top.linkTo(parent.top)
+                bottom.linkTo(parent.bottom)
+                verticalBias = 0.57f
+                width = Dimension.preferredWrapContent
                 height = Dimension.wrapContent
             }
         ) {
-            val portraitScrollState = rememberScrollState()
-            LaunchedEffect(portraitScrollState.isScrollInProgress) {
-                if (portraitScrollState.isScrollInProgress) {
-                    while (portraitScrollState.isScrollInProgress) {
+            val rightScrollState = rememberScrollState()
+            LaunchedEffect(rightScrollState.isScrollInProgress) {
+                if (rightScrollState.isScrollInProgress) {
+                    while (rightScrollState.isScrollInProgress) {
                         resetControlsTimestamp = System.currentTimeMillis()
                         delay(1000)
                     }
@@ -999,9 +934,9 @@ fun PlayerControls(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .padding(vertical = 6.dp)
-                    .horizontalScroll(portraitScrollState)
+                    .horizontalScroll(rightScrollState)
             ) {
-                customButtons.forEach { button ->
+                customButtons.filter { it.isLeft }.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
@@ -1036,6 +971,76 @@ fun PlayerControls(
                         )
                     }
                 }
+            }
+        }
+        
+        AnimatedVisibility(
+            visible = areButtonsVisible && isPortrait,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.constrainAs(customButtonsPortraitRef) {
+                start.linkTo(parent.start, spacing.large)
+                end.linkTo(parent.end, spacing.large)
+                bottom.linkTo(seekbar.top, spacing.medium)
+                width = Dimension.fillToConstraints
+                height = Dimension.wrapContent
+            }
+        ) {
+            val portraitScrollState = rememberScrollState()
+            LaunchedEffect(portraitScrollState.isScrollInProgress) {
+                if (portraitScrollState.isScrollInProgress) {
+                    while (portraitScrollState.isScrollInProgress) {
+                        resetControlsTimestamp = System.currentTimeMillis()
+                        delay(1000)
+                    }
+                }
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+              customButtons.chunked(4).forEach { rowButtons ->
+                Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(vertical = 6.dp)
+                    .horizontalScroll(portraitScrollState)
+            ) {
+                rowButtons.forEach { button ->
+                    val buttonInteractionSource = remember { MutableInteractionSource() }
+                    val customButtonShape = RoundedCornerShape(14.dp)
+                    Surface(
+                        shape = customButtonShape,
+                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+                        modifier = Modifier
+                            .clip(customButtonShape)
+                            .combinedClickable(
+                                interactionSource = buttonInteractionSource,
+                                indication = ripple(),
+                                onClick = {
+                                    resetControlsTimestamp = System.currentTimeMillis()
+                                    viewModel.callCustomButton(button.id)
+                                },
+                                onLongClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    resetControlsTimestamp = System.currentTimeMillis()
+                                    viewModel.callCustomButtonLongPress(button.id)
+                                }
+                            )
+                    ) {
+                        Text(
+                            text = button.label,
+                            modifier = Modifier
+                                .padding(horizontal = 10.dp, vertical = 6.dp)
+                                .basicMarquee(),
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                    }
+                }
+                }
+              }
             }
         }
 
@@ -2120,7 +2125,7 @@ fun PlayerControls(
         if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
           LuaButtonPanel(
             preferences = playerPreferences,
-            buttons = customButtons,
+            buttons = overlayButtons,
             onClose = { threeFingerSpeedVisible = false },
             onButtonClick = { id ->
               viewModel.callCustomButton(id)
