@@ -192,7 +192,7 @@ fun LuaButtonGrid(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = boundModifier
-                    .graphicsLayer { alpha = if (isDragging) .25f else 1f }
+                    .graphicsLayer { this.alpha = if (isDragging) .25f else 1f }
                     .background(Color(bg).copy(alpha = if (active) activeOpacity else alpha), shape)
                     .border(
                         if (isDragging || dropTarget == index) 2.dp else 1.dp,
