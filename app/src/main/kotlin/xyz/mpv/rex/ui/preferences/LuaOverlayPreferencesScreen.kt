@@ -1,7 +1,15 @@
 package xyz.mpv.rex.ui.preferences
 
 // MPV_ALPHA_LUA_PANEL_V10
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,14 +23,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
@@ -51,6 +68,10 @@ object LuaOverlayPreferencesScreen : Screen {
         val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
         val gap by prefs.threeFingerSpeedPanelGap.collectAsState()
         val columns by prefs.luaPanelColumns.collectAsState()
+        val highlightHex by prefs.luaActiveSpeedHighlightColor.collectAsState()
+        val highlightTransparency by prefs.luaActiveSpeedHighlightTransparency.collectAsState()
+        var highlightDraft by remember { mutableStateOf(highlightHex) }
+        LaunchedEffect(highlightHex) { highlightDraft = highlightHex }
 
         Scaffold(topBar = {
             TopAppBar(title = { Text("Nakładka Lua") }, navigationIcon = {
@@ -105,6 +126,86 @@ object LuaOverlayPreferencesScreen : Screen {
                 LuaNumberSlider("Odstęp przycisków", gap, 0, 16, " dp") {
                     prefs.threeFingerSpeedPanelGap.set(it)
                 }
+
+                // Visual settings for the active playback-speed preset only.
+                Text("Podświetlenie aktywnej prędkości", fontWeight = FontWeight.Bold)
+                LuaNumberSlider(
+                    "Przezroczystość podświetlenia", highlightTransparency, 0, 100, "%"
+                ) { prefs.luaActiveSpeedHighlightTransparency.set(it) }
+                Text("Kolor podświetlenia")
+                Row(
+                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    val choices = listOf(
+                        "#1976D2", "#E53935", "#43A047", "#FB8C00",
+                        "#8E24AA", "#00ACC1", "#FFFFFF", "#000000",
+                    )
+                    choices.forEach { hex ->
+                        val selected = highlightHex.equals(hex, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(parseCustomButtonColor(hex) ?: Color.Blue)
+                                .border(
+                                    if (selected) 3.dp else 1.dp,
+                                    if (selected) Color(0xFF90CAF9) else Color.Gray,
+                                    CircleShape,
+                                )
+                                .clickable { prefs.luaActiveSpeedHighlightColor.set(hex) },
+                        )
+                    }
+                }
+                OutlinedTextField(
+                    value = highlightDraft,
+                    onValueChange = { candidate ->
+                        if (candidate.length <= 9) {
+                            highlightDraft = candidate
+                            if (parseCustomButtonColor(candidate) != null) {
+                                prefs.luaActiveSpeedHighlightColor.set(candidate.trim())
+                            }
+                        }
+                    },
+                    label = { Text("Własny kolor HEX") },
+                    placeholder = { Text("#1976D2") },
+                    supportingText = {
+                        Text("Wpisz #RRGGBB lub #AARRGGBB. Zmiana zapisuje się automatycznie.")
+                    },
+                    isError = parseCustomButtonColor(highlightDraft) == null,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Podgląd aktywnej prędkości")
+                    TextButton(onClick = {
+                        prefs.luaActiveSpeedHighlightColor.set("#1976D2")
+                        prefs.luaActiveSpeedHighlightTransparency.set(0)
+                    }) { Text("Domyślne") }
+                }
+                val highlightColor = parseCustomButtonColor(highlightHex) ?: Color(0xFF1976D2)
+                val highlightAlpha = highlightColor.alpha *
+                    (1f - highlightTransparency.coerceIn(0, 100) / 100f)
+                Text(
+                    "2×",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF34343B))
+                        .background(highlightColor.copy(alpha = highlightAlpha))
+                        .border(
+                            2.dp,
+                            highlightColor.copy(alpha = highlightAlpha),
+                            RoundedCornerShape(8.dp),
+                        )
+                        .padding(horizontal = 20.dp, vertical = 10.dp),
+                )
                 Button(onClick = {
                     prefs.threeFingerSpeedPositionX.set(0.5f)
                     prefs.threeFingerSpeedPositionY.set(0.16f)
