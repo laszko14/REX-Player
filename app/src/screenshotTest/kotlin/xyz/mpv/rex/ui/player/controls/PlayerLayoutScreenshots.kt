@@ -305,3 +305,21 @@ fun HudLayoutSubtleReadabilityScreenshot() {
         PreviewRealHud(width = 930.dp, weightPercent = 45, outlinePercent = 20)
     }
 }
+
+@PreviewTest
+@Preview(name = "18 Lua extra eight in editing", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaExtraSlotsEditScreenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / 8 dodatkowych pol 4x2 / edycja i stare 35") {
+        PreviewRealLua(edit = true, columns = 5, scale = 100, populatedExtra = true)
+    }
+}
+
+@PreviewTest
+@Preview(name = "19 Lua extra slots normal playback", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaExtraSlotsPlaybackScreenshot() {
+    LayoutBackdrop(bright = false, title = "LUA / odtwarzanie / puste pola bez guzika") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100, populatedExtra = true)
+    }
+}
