@@ -39,6 +39,8 @@ class CustomButtonManager(
         val id: String,
         val label: String,
         val isLeft: Boolean,
+        val textColor: String? = null,
+        val backgroundColor: String? = null,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
@@ -198,7 +200,7 @@ class CustomButtonManager(
         uiList: MutableList<CustomButtonState>,
     ) {
         if (button.title.isBlank()) return
-        uiList.add(CustomButtonState(actionName, button.title, isLeft))
+        uiList.add(CustomButtonState(actionName, button.title, isLeft, button.textColor, button.backgroundColor))
 
         if (button.onStartup.isNotBlank()) {
             append(button.onStartup)
