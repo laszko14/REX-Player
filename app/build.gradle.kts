@@ -13,6 +13,12 @@ android {
   namespace = "xyz.mpv.rex"
   compileSdk = 36
 
+  // Existing lint issues are recorded once in app/lint-baseline.xml.
+  // New lint issues must still fail CI (do not disable abortOnError).
+  lint {
+    baseline = file("lint-baseline.xml")
+  }
+
   defaultConfig {
     applicationId = "xyz.mpv.rex"
     minSdk = 26
