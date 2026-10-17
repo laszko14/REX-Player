@@ -333,6 +333,8 @@
     <string name="pref_audio_pitch_correction_summary">Prevents the audio from becoming high-pitched at faster speeds and low-pitched at slower speeds</string>
     <string name="pref_audio_volume_normalization_title">Volume normalization</string>
     <string name="pref_audio_volume_normalization_summary">Automatically adjust audio volume to maintain consistent loudness levels</string>
+    <string name="pref_audio_drc_title">Dynamic range compression (DRC)</string>
+    <string name="pref_audio_drc_summary">Boost quiet dialogue and tame loud sounds (night mode)</string>
     <string name="pref_audio_channels">Audio channels</string>
     <string name="pref_audio_channels_auto">Auto</string>
     <string name="pref_audio_channels_auto_safe">Auto Safe</string>
