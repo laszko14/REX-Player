@@ -68,6 +68,11 @@ fun LuaButtonGrid(
     val serialized by preferences.customButtons.collectAsState()
     val savedSlots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     val readyById = remember(buttons) { buttons.associateBy { it.id } }
+    // Keep internal holes, but avoid an invisible scrollable area after the
+    // last active button during ordinary playback.
+    val displaySlotCount = if (editMode) LUA_SLOT_COUNT else {
+        savedSlots.indexOfLast { it != null && it.enabled && it.title.isNotBlank() } + 1
+    }
     val columns by preferences.luaPanelColumns.collectAsState()
     val scale by preferences.threeFingerSpeedPanelSize.collectAsState()
     val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
@@ -120,7 +125,7 @@ fun LuaButtonGrid(
                 .horizontalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(rowSpace),
         ) {
-            (0 until LUA_SLOT_COUNT).toList().chunked(colCount).forEachIndexed { rowIndex, row ->
+            (0 until displaySlotCount).toList().chunked(colCount).forEachIndexed { rowIndex, row ->
                 Row(
                     modifier = Modifier.zIndex(
                         if (draggedIndex >= 0 && draggedIndex / colCount == rowIndex) 1f else 0f,
