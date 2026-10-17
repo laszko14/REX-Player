@@ -64,10 +64,12 @@ private fun PreviewRealLua(
     buttonWidth: Int = 52, buttonHeight: Int = 27,
     rowGap: Int = 2, columnGap: Int = 2,
     outlined: Boolean = true, bold: Boolean = true,
+    weightPercent: Int = if (bold) 60 else 0,
+    outlinePercent: Int = if (outlined) 50 else 0,
 ) {
     val slots = remember { demoSlots() }
     val store = remember { ScreenshotPreferenceStore() }
-    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, outlined, bold) {
+    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, outlined, bold, weightPercent, outlinePercent) {
         PlayerPreferences(store).also {
             it.customButtons.set(Json.encodeToString(CustomButtonSlots(slots)))
             it.luaPanelColumns.set(columns)
@@ -80,6 +82,8 @@ private fun PreviewRealLua(
             it.luaButtonAlwaysVisible.set(true)
             it.luaButtonHighContrastText.set(outlined)
             it.luaButtonBoldText.set(bold)
+            it.luaButtonFontWeightPercent.set(weightPercent)
+            it.luaButtonOutlinePercent.set(outlinePercent)
         }
     }
     val buttons = remember(slots) {
@@ -109,7 +113,10 @@ private fun PreviewRealLua(
 
 /** Same production FlowRow HUD component; only clock/battery/movie data are fixed. */
 @Composable
-private fun PreviewRealHud(width: Dp, scale: Int = 100, outlined: Boolean = true) {
+private fun PreviewRealHud(
+    width: Dp, scale: Int = 100, outlined: Boolean = true,
+    weightPercent: Int = 60, outlinePercent: Int = if (outlined) 50 else 0,
+) {
     val factor = scale.coerceIn(35, 300) / 100f
     val model = HudBarModel(
         showBattery = true,
@@ -131,8 +138,9 @@ private fun PreviewRealHud(width: Dp, scale: Int = 100, outlined: Boolean = true
         fontSize = (16f * factor).sp,
         iconSize = (18f * factor).dp,
         innerGap = (3f * factor).dp,
-        textWeight = FontWeight.Bold,
-        highContrastText = outlined,
+        textWeight = fontWeightForReadability(weightPercent),
+        highContrastText = outlinePercent > 0,
+        outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
         gap = 12.dp,
         factor = factor,
     )
@@ -244,5 +252,44 @@ fun HudLuaCombinedLayoutScreenshot() {
         PreviewRealHud(width = 935.dp, scale = 140)
         Spacer(Modifier.height(4.dp))
         PreviewRealLua(edit = true, columns = 5, scale = 100)
+    }
+}
+
+/** Additional production-renderer previews for the newly extended 0–100% controls. */
+@PreviewTest
+@Preview(name = "14 Lua very strong readability", widthDp = 950, heightDp = 510)
+@Composable
+fun LuaLayoutExtremeReadabilityScreenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / suwak grubosci 100% / obrys 100%") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            weightPercent = 100, outlinePercent = 100)
+    }
+}
+
+@PreviewTest
+@Preview(name = "15 Lua subtle readability", widthDp = 950, heightDp = 510)
+@Composable
+fun LuaLayoutSubtleReadabilityScreenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / suwak grubosci 25% / obrys 20%") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            weightPercent = 25, outlinePercent = 20)
+    }
+}
+
+@PreviewTest
+@Preview(name = "16 HUD very strong readability", widthDp = 980, heightDp = 370)
+@Composable
+fun HudLayoutExtremeReadabilityScreenshot() {
+    LayoutBackdrop(bright = true, title = "HUD / suwak grubosci 100% / obrys 100%") {
+        PreviewRealHud(width = 930.dp, weightPercent = 100, outlinePercent = 100)
+    }
+}
+
+@PreviewTest
+@Preview(name = "17 HUD subtle readability", widthDp = 980, heightDp = 370)
+@Composable
+fun HudLayoutSubtleReadabilityScreenshot() {
+    LayoutBackdrop(bright = true, title = "HUD / suwak grubosci 45% / obrys 20%") {
+        PreviewRealHud(width = 930.dp, weightPercent = 45, outlinePercent = 20)
     }
 }
