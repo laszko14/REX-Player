@@ -84,6 +84,8 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 7.dp)) {
         if (showQuick) {
             LuaButtonQuickSettings(prefs, compact = compact)
+        } else {
+            LuaFontReadabilitySettings(prefs, compact)
         }
         LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
         LuaOptionSlider("Szerokość przycisku", width, 30, 140, " dp", compact = compact) { prefs.luaButtonWidth.set(it) }
@@ -103,6 +105,8 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonWidth.set(52)
                 prefs.luaButtonHeight.set(27)
                 prefs.luaButtonFontSize.set(11)
+                prefs.luaButtonHighContrastText.set(false)
+                prefs.luaButtonBoldText.set(false)
                 prefs.threeFingerSpeedPanelSize.set(100)
                 prefs.luaButtonColumnGap.set(2)
                 prefs.luaButtonRowGap.set(2)
@@ -158,6 +162,7 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
             )
         }
 
+        LuaFontReadabilitySettings(prefs, compact)
         LuaPalette(
             "Kolor czcionki",
             fontColor,
@@ -200,6 +205,29 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
  * They move with a button when the list is reordered. A null color inherits
  * the current global value; pressing Reset returns all attributes to defaults.
  */
+/** Shared readability settings in the original and landscape Lua editors. */
+@Composable
+private fun LuaFontReadabilitySettings(prefs: PlayerPreferences, compact: Boolean) {
+    val contrast by prefs.luaButtonHighContrastText.collectAsState()
+    val bold by prefs.luaButtonBoldText.collectAsState()
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            "Kontrastowy obrys czcionki",
+            modifier = Modifier.weight(1f),
+            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
+        )
+        Switch(checked = contrast, onCheckedChange = prefs.luaButtonHighContrastText::set)
+    }
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            "Pogrubiona czcionka",
+            modifier = Modifier.weight(1f),
+            style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
+        )
+        Switch(checked = bold, onCheckedChange = prefs.luaButtonBoldText::set)
+    }
+}
+
 @Composable
 fun LuaButtonIndividualAppearance(
     button: CustomButton,
@@ -446,6 +474,7 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
         LuaOptionSlider("Pozycja Y", posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
         LuaOptionSlider("Przezroczystość tła", alpha, 0, 100, "%", compact = true,
             onChange = prefs.threeFingerSpeedPanelTransparency::set)
+        LuaFontReadabilitySettings(prefs, compact = true)
         LuaQuickColorRow("Czcionka", textColor, prefs.luaButtonTextColor::set,
             LUA_TEXT_PALETTE.take(8))
         LuaQuickColorRow("Aktywny przycisk", activeColor, prefs.luaButtonActiveColor::set,
@@ -533,7 +562,8 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.luaButtonAlwaysVisible.set(false)
             }) { Text("Resetuj pozycję") }
         }
-        LuaAppearanceSection("Kolory czcionki") {
+        LuaAppearanceSection("Kolory i czytelność czcionki") {
+            LuaFontReadabilitySettings(prefs, compact = true)
             LuaPalette("Zwykła czcionka", fontColor, prefs.luaButtonTextColor::set,
                 LUA_TEXT_PALETTE, compact = true)
             LuaPalette("Czcionka aktywnej prędkości", activeFont,
@@ -541,7 +571,9 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
             OutlinedButton(onClick = {
                 prefs.luaButtonTextColor.set(0xFFFFFFFF.toInt())
                 prefs.luaButtonActiveTextColor.set(0xFF071426.toInt())
-            }) { Text("Resetuj kolory czcionki") }
+                prefs.luaButtonHighContrastText.set(false)
+                prefs.luaButtonBoldText.set(false)
+            }) { Text("Resetuj wygląd czcionki") }
         }
         LuaAppearanceSection("Kolory tła") {
             LuaPalette("Tło zwykłego przycisku", baseColor, prefs.luaButtonBaseColor::set,

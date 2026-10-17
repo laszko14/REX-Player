@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -81,6 +82,8 @@ fun LuaButtonGrid(
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
     val buttonHeight by preferences.luaButtonHeight.collectAsState()
     val fontSize by preferences.luaButtonFontSize.collectAsState()
+    val highContrastText by preferences.luaButtonHighContrastText.collectAsState()
+    val boldText by preferences.luaButtonBoldText.collectAsState()
     val positionY by preferences.luaButtonPositionY.collectAsState()
     val cornerRadius by preferences.luaButtonCornerRadius.collectAsState()
     val borderOpacity by preferences.luaButtonBorderOpacity.collectAsState()
@@ -261,7 +264,7 @@ fun LuaButtonGrid(
                                         },
                                     ),
                             ) {
-                                Text(
+                                ContrastVideoLabel(
                                     text = button.label,
                                     color = Color(
                                         if (active) button.activeTextColor ?: activeTextColor
@@ -269,6 +272,8 @@ fun LuaButtonGrid(
                                     ),
                                     textAlign = TextAlign.Center,
                                     fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
+                                    fontWeight = if (boldText) FontWeight.Bold else FontWeight.Normal,
+                                    outlined = highContrastText,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
