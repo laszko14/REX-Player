@@ -34,7 +34,7 @@ import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlin.math.roundToInt
 
-/** Polish preferences for the compact speed, remaining time, clock and battery HUD. */
+/** Polish preferences for the compact battery, clock, remaining time and speed HUD. */
 @Serializable
 object AlphaHudPreferencesScreen : Screen {
   @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +75,7 @@ object AlphaHudPreferencesScreen : Screen {
           .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        Text("Pasek: prędkość • pozostały czas • zegar • bateria. " +
+        Text("Pasek: bateria • godzina • pozostały czas • prędkość. " +
           "Wszystkie zmiany zapisują się automatycznie.")
         HudToggle("Włącz HUD Alpha", enabled) { prefs.showPlaybackInfoOverlay.set(it) }
         HudToggle("Zawsze widoczny (także bez kontrolek)", always) {
@@ -88,10 +88,10 @@ object AlphaHudPreferencesScreen : Screen {
           "Po ustawieniu pozycji wyłącz ten tryb, aby gesty filmu działały normalnie.")
 
         Text("Wyświetlane informacje")
-        HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
-        HudToggle("Czas pozostały", showRemaining) { prefs.hudShowRemaining.set(it) }
-        HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
         HudToggle("Poziom baterii", showBattery) { prefs.hudShowBattery.set(it) }
+        HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
+        HudToggle("Czas pozostały", showRemaining) { prefs.hudShowRemaining.set(it) }
+        HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
         HudToggle("Pozostały czas w rzeczywistości (uwzględnij prędkość)",
           realTimeRemaining) { prefs.hudRealTimeRemaining.set(it) }
 
@@ -128,12 +128,12 @@ object AlphaHudPreferencesScreen : Screen {
           0, 100, "%") { prefs.hudPositionY.set(it / 100f) }
 
         Text("Kolory HEX (#RRGGBB), osobne dla każdego elementu")
-        HudHexInput("Prędkość", speedColor) { prefs.hudSpeedColor.set(it) }
-        HudHexInput("Pozostały czas", remainingColor) { prefs.hudRemainingColor.set(it) }
-        HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
         HudHexInput("Bateria (powyżej 19%)", batteryColor) {
           prefs.hudBatteryColor.set(it)
         }
+        HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
+        HudHexInput("Pozostały czas", remainingColor) { prefs.hudRemainingColor.set(it) }
+        HudHexInput("Prędkość", speedColor) { prefs.hudSpeedColor.set(it) }
         HudHexInput("Tło", backgroundColor) { prefs.hudBackgroundColor.set(it) }
 
         Button(onClick = {
