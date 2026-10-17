@@ -1965,7 +1965,7 @@ class PlayerViewModel(
     _isMirrored.value = newMirrorState
 
     updateVideoFlipFilters()
-    playerUpdate.value = PlayerUpdates.ShowText(if (newMirrorState) context.getString(R.string.audit_horizontal_flip_on) else context.getString(R.string.audit_horizontal_flip_off))
+    playerUpdate.value = PlayerUpdates.ShowText(if (newMirrorState) appContext.getString(R.string.audit_horizontal_flip_on) else appContext.getString(R.string.audit_horizontal_flip_off))
   }
 
   fun toggleVerticalFlip() {
@@ -1973,7 +1973,7 @@ class PlayerViewModel(
     _isVerticalFlipped.value = newState
 
     updateVideoFlipFilters()
-    playerUpdate.value = PlayerUpdates.ShowText(if (newState) context.getString(R.string.audit_vertical_flip_on) else context.getString(R.string.audit_vertical_flip_off))
+    playerUpdate.value = PlayerUpdates.ShowText(if (newState) appContext.getString(R.string.audit_vertical_flip_on) else appContext.getString(R.string.audit_vertical_flip_off))
   }
 
   private fun updateVideoFlipFilters() {

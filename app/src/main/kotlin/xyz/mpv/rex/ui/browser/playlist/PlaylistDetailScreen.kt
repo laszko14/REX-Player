@@ -692,6 +692,7 @@ private fun RemoveFromPlaylistDialog(
   if (!isOpen) return
 
   val itemText = pluralStringResource(R.plurals.audit_video_noun, itemCount)
+  val usePolishConfirmation = LocalContext.current.resources.configuration.locales[0].language == "pl"
 
   androidx.compose.material3.AlertDialog(
     onDismissRequest = onDismiss,
@@ -714,7 +715,16 @@ private fun RemoveFromPlaylistDialog(
           shape = MaterialTheme.shapes.extraLarge,
         ) {
           Text(
-            text = pluralStringResource(R.plurals.audit_remove_playlist_confirmation, itemCount),
+            text = if (usePolishConfirmation) {
+              pluralStringResource(R.plurals.audit_remove_playlist_confirmation, itemCount)
+            } else {
+              // Retain existing translations for languages outside this Polish audit.
+              stringResource(
+                R.string.remove_from_playlist_confirm,
+                pluralStringResource(R.plurals.audit_selected_video_noun, itemCount),
+                pluralStringResource(R.plurals.audit_file_noun, itemCount),
+              )
+            },
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
             color = MaterialTheme.colorScheme.onSecondaryContainer,

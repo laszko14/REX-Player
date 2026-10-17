@@ -49,3 +49,11 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - `check_polish_previews.py`: wymaga PNG wszystkich pięciu rzeczywistych ekranów w obu rozmiarach czcionki i sprawdza pliki PNG oraz wymiary. Nie zastępuje oceny nakładania się elementów.
 - 16 testów narzędzi przeszło, w tym ujemne przypadki brakującego tłumaczenia, błędnego formatu, uszkodzonego XML, zmienionej nazwy technologii, niewłaściwej terminologii i brakującego PNG.
 - Oba walidatory włączono do istniejących workflow; nie dodano nowego YAML. Do podpisywania dodano sprawdzenie publicznego odcisku certyfikatu v24, bez zapisu klucza prywatnego.
+
+## Korekty po przeglądzie i pierwszej kompilacji
+
+- Poprawiono kontekst OSD (`appContext`) i import `R` w udostępnianiu. Odczytano pełną listę błędów kompilatora przed poprawkami.
+- Dosłowne procenty w sześciu opisach oznaczono `formatted="false"`; nie zmieniono znaków ani wartości widocznych dla użytkownika.
+- Polski dialog usunięcia z listy używa pełnych zdań odmienianych liczebnikowo. Inne języki zachowują dotychczasowy zasób.
+- Dodano jeszcze siedem polskich komunikatów błędów Web Share (bez zmiany statusów HTTP, endpointów i kluczy JSON). Łączny wynik audytu: 1230 zmienionych/dodanych wartości tekstowych, z osobnym liczeniem form liczby mnogiej.
+- Końcowy przegląd tych poprawek nie wskazał dalszych konkretnych usterek. Renderowanie i zbiorcza walidacja pozostają w toku.

@@ -1,5 +1,6 @@
 package xyz.mpv.rex.utils.media
 
+import xyz.mpv.rex.R
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent

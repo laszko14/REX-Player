@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="audit_hud_alpha">HUD Alpha</string>
     <string name="audit_back">Back</string>
@@ -15,7 +15,7 @@
     <string name="audit_hud_scale">HUD scale</string>
     <string name="audit_spacing_between_icons_and_information">Spacing between icons and information</string>
     <string name="audit_bar_padding">Bar padding</string>
-    <string name="audit_background_opacity_0_no_background">Background opacity (0% = no background)</string>
+    <string name="audit_background_opacity_0_no_background" formatted="false">Background opacity (0% = no background)</string>
     <string name="audit_corner_radius">Corner radius</string>
     <string name="audit_text_readability">Text readability</string>
     <string name="audit_font_weight">Font weight</string>
@@ -30,7 +30,7 @@
     <string name="audit_horizontal_position">Horizontal position</string>
     <string name="audit_vertical_position">Vertical position</string>
     <string name="audit_hex_colors_rrggbb_separate_for_each_element">HEX colors (#RRGGBB), separate for each element</string>
-    <string name="audit_battery_above_19">Battery (above 19%)</string>
+    <string name="audit_battery_above_19" formatted="false">Battery (above 19%)</string>
     <string name="audit_clock_color">Clock color</string>
     <string name="audit_remaining_time_original">Remaining time (original)</string>
     <string name="audit_speed">Speed</string>
@@ -40,7 +40,7 @@
     <string name="audit_hud_description">Bar: battery • clock • remaining time at current speed • original remaining time • speed. Changes are saved automatically.</string>
     <string name="audit_hud_drag_help">To move the bar, enable drag mode, open a video and drag the bar. Then disable drag mode to restore normal video gestures.</string>
     <string name="audit_hud_times_help">Both times are displayed together: the first accounts for the current playback speed; the second reflects the original video length.</string>
-    <string name="audit_hud_readability_help">An outline of 0% disables the contour; 100% gives a clean contour without a halo. Font weights: 40% SemiBold, 60% Bold, 90% Black. Text colors stay unchanged.</string>
+    <string name="audit_hud_readability_help" formatted="false">An outline of 0% disables the contour; 100% gives a clean contour without a halo. Font weights: 40% SemiBold, 60% Bold, 90% Black. Text colors stay unchanged.</string>
     <string name="audit_columns">Columns</string>
     <string name="audit_button_width">Button width</string>
     <string name="audit_button_height">Button height</string>
@@ -103,7 +103,7 @@
     <string name="audit_active_background">Active background</string>
     <string name="audit_rounding">Rounding</string>
     <string name="audit_reset_transparency_and_border">Reset transparency and border</string>
-    <string name="audit_lua_readability_help">0% = normal text without outline; 60% = Bold, 90% = Black. 100% contrast = a thin, clear contour without a halo. Colors stay unchanged.</string>
+    <string name="audit_lua_readability_help" formatted="false">0% = normal text without outline; 60% = Bold, 90% = Black. 100% contrast = a thin, clear contour without a halo. Colors stay unchanged.</string>
     <string name="audit_lua_individual_settings">Individual settings: %1$s</string>
     <string name="audit_lua_more_colors">More colors (%1$d)</string>
     <string name="audit_show_lua_settings">Show Lua settings</string>
@@ -314,7 +314,7 @@
     <string name="audit_folder">Folder</string>
     <string name="audit_audio_equalizer">Audio equalizer</string>
     <string name="audit_reset_to_zero">Reset to zero</string>
-    <string name="audit_restore_100">Restore 100%</string>
+    <string name="audit_restore_100" formatted="false">Restore 100%</string>
     <string name="audit_default_extractor_choice">Default / extractor choice</string>
     <string name="audit_add">Add</string>
     <string name="audit_cancel_selection">Cancel selection</string>
@@ -370,7 +370,7 @@
     <string name="audit_script_disabled">%1$s disabled. Restart the video to apply.</string>
     <string name="audit_lua_slot_summary">%1$s · Tap %2$s · Hold %3$s · Start %4$s</string>
     <string name="audit_visibility_of_all_player_controls">Visibility of all player controls</string>
-    <string name="audit_overlay_visibility_help">0% hides playback controls, the progress bar, HUD, Lua and other buttons. 100% restores full visibility. Video and subtitles stay unchanged.</string>
+    <string name="audit_overlay_visibility_help" formatted="false">0% hides playback controls, the progress bar, HUD, Lua and other buttons. 100% restores full visibility. Video and subtitles stay unchanged.</string>
     <string name="audit_experimental_suffix">\u0020(Experimental)</string>
     <string name="audit_audio_only">Audio only</string>
     <string name="audit_auto_best">Auto / best</string>
@@ -438,7 +438,7 @@
     <string name="audit_script_load_failed">Failed to load script: %1$s</string>
     <string name="audit_reset_playlist_thumbnail">Reset playlist thumbnail</string>
     <string name="audit_set_as_playlist_thumbnail">Set as playlist thumbnail</string>
-<plurals name="audit_item_count">
+    <plurals name="audit_item_count">
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>

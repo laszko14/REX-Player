@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="audit_hud_alpha">HUD Alpha</string>
     <string name="audit_back">Wróć</string>
@@ -15,7 +15,7 @@
     <string name="audit_hud_scale">Skala całego HUD-u</string>
     <string name="audit_spacing_between_icons_and_information">Odstęp między ikonami i informacjami</string>
     <string name="audit_bar_padding">Wewnętrzny odstęp paska</string>
-    <string name="audit_background_opacity_0_no_background">Krycie tła (0% = brak tła)</string>
+    <string name="audit_background_opacity_0_no_background" formatted="false">Krycie tła (0% = brak tła)</string>
     <string name="audit_corner_radius">Zaokrąglenie rogów</string>
     <string name="audit_text_readability">Czytelność tekstu</string>
     <string name="audit_font_weight">Grubość czcionki</string>
@@ -30,7 +30,7 @@
     <string name="audit_horizontal_position">Położenie poziome</string>
     <string name="audit_vertical_position">Położenie pionowe</string>
     <string name="audit_hex_colors_rrggbb_separate_for_each_element">Kolory HEX (#RRGGBB), osobne dla każdego elementu</string>
-    <string name="audit_battery_above_19">Bateria (powyżej 19%)</string>
+    <string name="audit_battery_above_19" formatted="false">Bateria (powyżej 19%)</string>
     <string name="audit_clock_color">Kolor zegara</string>
     <string name="audit_remaining_time_original">Czas pozostały (oryginalny)</string>
     <string name="audit_speed">Prędkość</string>
@@ -40,7 +40,7 @@
     <string name="audit_hud_description">Pasek: bateria • godzina • czas pozostały przy bieżącej prędkości • oryginalny czas pozostały • prędkość. Zmiany zapisują się automatycznie.</string>
     <string name="audit_hud_drag_help">Aby przesunąć pasek, włącz tryb przeciągania, otwórz film i przeciągnij pasek. Następnie wyłącz ten tryb, aby przywrócić gesty filmu.</string>
     <string name="audit_hud_times_help">Oba czasy są wyświetlane jednocześnie: pierwszy uwzględnia bieżącą prędkość odtwarzania, a drugi odpowiada oryginalnej długości filmu.</string>
-    <string name="audit_hud_readability_help">Obrys 0% wyłącza kontur, a 100% daje wyraźny kontur bez poświaty. Grubość czcionki: 40% SemiBold, 60% Bold, 90% Black. Kolory tekstu pozostają bez zmian.</string>
+    <string name="audit_hud_readability_help" formatted="false">Obrys 0% wyłącza kontur, a 100% daje wyraźny kontur bez poświaty. Grubość czcionki: 40% SemiBold, 60% Bold, 90% Black. Kolory tekstu pozostają bez zmian.</string>
     <string name="audit_columns">Kolumny</string>
     <string name="audit_button_width">Szerokość przycisku</string>
     <string name="audit_button_height">Wysokość przycisku</string>
@@ -103,7 +103,7 @@
     <string name="audit_active_background">Aktywne tło</string>
     <string name="audit_rounding">Zaokrąglenie</string>
     <string name="audit_reset_transparency_and_border">Przywróć przezroczystość i obramowanie</string>
-    <string name="audit_lua_readability_help">0% = zwykła czcionka bez obrysu; 60% = Bold, 90% = Black. Kontrast 100% daje cienki, wyraźny kontur bez poświaty. Kolory pozostają bez zmian.</string>
+    <string name="audit_lua_readability_help" formatted="false">0% = zwykła czcionka bez obrysu; 60% = Bold, 90% = Black. Kontrast 100% daje cienki, wyraźny kontur bez poświaty. Kolory pozostają bez zmian.</string>
     <string name="audit_lua_individual_settings">Indywidualne ustawienia: %1$s</string>
     <string name="audit_lua_more_colors">Więcej kolorów (%1$d)</string>
     <string name="audit_show_lua_settings">Pokaż ustawienia Lua</string>
@@ -314,7 +314,7 @@
     <string name="audit_folder">Folder</string>
     <string name="audit_audio_equalizer">Korektor dźwięku</string>
     <string name="audit_reset_to_zero">Wyzeruj</string>
-    <string name="audit_restore_100">Przywróć 100%</string>
+    <string name="audit_restore_100" formatted="false">Przywróć 100%</string>
     <string name="audit_default_extractor_choice">Domyślnie / wybór ekstraktora</string>
     <string name="audit_add">Dodaj</string>
     <string name="audit_cancel_selection">Anuluj zaznaczenie</string>
@@ -370,7 +370,7 @@
     <string name="audit_script_disabled">Wyłączono %1$s. Uruchom film ponownie, aby zastosować zmianę.</string>
     <string name="audit_lua_slot_summary">%1$s · Dotknięcie %2$s · Przytrzymanie %3$s · Start %4$s</string>
     <string name="audit_visibility_of_all_player_controls">Widoczność wszystkich elementów odtwarzacza</string>
-    <string name="audit_overlay_visibility_help">0% ukrywa przyciski odtwarzania, pasek postępu, HUD, Lua i pozostałe przyciski. 100% przywraca pełną widoczność. Film i napisy pozostają bez zmian.</string>
+    <string name="audit_overlay_visibility_help" formatted="false">0% ukrywa przyciski odtwarzania, pasek postępu, HUD, Lua i pozostałe przyciski. 100% przywraca pełną widoczność. Film i napisy pozostają bez zmian.</string>
     <string name="audit_experimental_suffix">\u0020(Eksperymentalne)</string>
     <string name="audit_audio_only">Tylko dźwięk</string>
     <string name="audit_auto_best">Automatycznie / najlepsza</string>
@@ -438,7 +438,7 @@
     <string name="audit_script_load_failed">Nie udało się wczytać skryptu: %1$s</string>
     <string name="audit_reset_playlist_thumbnail">Przywróć miniaturę listy odtwarzania</string>
     <string name="audit_set_as_playlist_thumbnail">Ustaw jako miniaturę listy odtwarzania</string>
-<plurals name="audit_item_count">
+    <plurals name="audit_item_count">
         <item quantity="one">%1$d element</item>
         <item quantity="few">%1$d elementy</item>
         <item quantity="many">%1$d elementów</item>

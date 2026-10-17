@@ -16,4 +16,11 @@
         <item quantity="one">%1$d file • %2$s total</item>
         <item quantity="other">%1$d files • %2$s total</item>
     </plurals>
+    <string name="web_share_ui_access_denied">Access denied: invalid or missing security token.</string>
+    <string name="web_share_ui_not_found">404 Not Found</string>
+    <string name="web_share_ui_internal_error">500 Internal Server Error: %1$s</string>
+    <string name="web_share_ui_file_not_found">File not found</string>
+    <string name="web_share_ui_file_unreadable">File unreadable on device</string>
+    <string name="web_share_ui_unknown_error">Unknown error</string>
+    <string name="web_share_ui_upload_error_details">Upload failed: %1$s</string>
 </resources>
