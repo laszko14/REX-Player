@@ -1,4 +1,4 @@
-name: MPV Alpha - 30 przyciskow Lua (jeden APK)
+name: mpv α - 30 przyciskow Lua (jeden APK)
 'on':
   workflow_dispatch: {}
   push:
@@ -7,12 +7,14 @@ name: MPV Alpha - 30 przyciskow Lua (jeden APK)
     paths:
       - .github/workflows/mpv-alpha-30-buttons.yml
       - app/src/main/kotlin/xyz/mpv/rex/**
+      - app/src/main/res/**
   pull_request:
     branches:
       - master
     paths:
       - .github/workflows/mpv-alpha-30-buttons.yml
       - app/src/main/kotlin/xyz/mpv/rex/**
+      - app/src/main/res/**
 permissions:
   contents: read
 jobs:
@@ -50,11 +52,11 @@ jobs:
             exit 1
           fi
           mkdir -p dist
-          cp "${apks[0]}" dist/MPV-Alpha-30-Lua-arm64-v8a.apk
+          cp "${apks[0]}" dist/mpv-alpha-arm64-v8a.apk
       - name: Udostepnij jeden APK
         uses: actions/upload-artifact@v4
         with:
-          name: MPV-Alpha-30-Lua-arm64
-          path: dist/MPV-Alpha-30-Lua-arm64-v8a.apk
+          name: mpv-alpha-arm64
+          path: dist/mpv-alpha-arm64-v8a.apk
           retention-days: 14
           compression-level: 0

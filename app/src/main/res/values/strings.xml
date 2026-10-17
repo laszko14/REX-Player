@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">MPV Alpha</string>
+    <string name="app_name" translatable="false">mpv α</string>
     <string name="author_name" translatable="false">Sakhawat</string>
 
     <string name="generic_reset">Reset</string>
@@ -19,7 +19,7 @@
     <string name="pref_appearance_category_bottom_nav">Bottom Navigation Tabs</string>
     <string name="pref_appearance_tab_home_title">Home / Files</string>
     <string name="pref_appearance_tab_home_summary">Show local folders &amp; file explorer</string>
-    <string name="pref_appearance_tab_shorts_title">RexShorts</string>
+    <string name="pref_appearance_tab_shorts_title">Shorts</string>
     <string name="pref_appearance_tab_shorts_summary">Toggle high-tempo vertical video feeds</string>
     <string name="pref_appearance_tab_you_title">\'You\' Tab</string>
     <string name="pref_appearance_tab_you_summary">Combine Recently Played and Playlists into a single tab</string>
@@ -534,7 +534,7 @@
     <string name="volume_slider_absolute_value" translatable="false">%d</string>
     <string name="value_percentage_int" translatable="false">%d%%</string>
 
-    <string name="github_repo_url" translatable="false">https://github.com/mpvRex/REX-Player</string>
+    <string name="github_repo_url" translatable="false">https://github.com/laszko14/REX-Player</string>
     <string name="swap_the_volume_and_brightness_slider">Swap volume and brightness slider</string>
     <string name="pref_player_display_reduce_player_animation">Reduce player animation</string>
     <string name="pref_player_display_hide_player_control_time">Hide player control time</string>
@@ -992,13 +992,13 @@
     <string name="pref_category_playback_controls">Playback &amp; Controls</string>
     <string name="pref_category_file_management">File Management</string>
     <string name="pref_category_media_settings">Media Settings</string>
-    <string name="pref_category_rexshorts">RexShorts</string>
-    <string name="pref_category_rexshorts_settings">RexShorts Settings</string>
+    <string name="pref_category_rexshorts">Shorts</string>
+    <string name="pref_category_rexshorts_settings">Shorts Settings</string>
     <string name="pref_category_rexshorts_settings_desc">Manage enable/disable, shuffle, and blocked content</string>
     <string name="pref_category_advanced_about">Advanced &amp; About</string>
 
     <!-- Shorts preference screen -->
-    <string name="pref_enable_rexshorts">Enable RexShorts</string>
+    <string name="pref_enable_rexshorts">Enable Shorts</string>
     <string name="pref_enable_rexshorts_summary">Show the Shorts tab in the bottom navigation bar</string>
     <string name="pref_auto_swipe_shorts">Auto Swipe to Next Short</string>
     <string name="pref_auto_swipe_shorts_summary">Automatically swipe to the next short when current one ends</string>
@@ -1026,7 +1026,7 @@
 
     <!-- Update features -->
     <string name="pref_category_updates">Updates</string>
-    <string name="pref_category_ytdlp_updates">REX Ytdlp Updates</string>
+    <string name="pref_category_ytdlp_updates">yt-dlp Updates</string>
     <string name="pref_about_auto_check_updates">Auto Check for Updates</string>
     <string name="pref_about_auto_check_updates_summary">Check for new versions on startup</string>
     <string name="pref_about_check_updates">Check for Updates</string>
@@ -1078,7 +1078,7 @@
     <string name="video_quality">Video Quality</string>
     <string name="video_quality_auto">Auto</string>
     <string name="video_quality_not_available">No stream qualities available for this media</string>
-    <string name="video_quality_addon_outdated">Update REX Ytdlp companion app to enable quality switching</string>
+    <string name="video_quality_addon_outdated">Update yt-dlp companion app to enable quality switching</string>
     <string name="video_quality_set_as_default">Make \"%1$s\" Default</string>
     <string name="video_quality_default_saved">Default quality set to %1$s</string>
 
@@ -1098,18 +1098,18 @@
     <string name="allow_access">ALLOW ACCESS</string>
     <string name="why_do_i_see_this">Why do I see this?</string>
     <string name="why_this_permission_is_needed">Why this permission is needed</string>
-    <string name="permission_explanation_playstore_intro">mpvRex needs access to your video files to provide its core functionality as a media player.</string>
+    <string name="permission_explanation_playstore_intro">mpv α needs access to your video files to provide its core functionality as a media player.</string>
     <string name="permission_used_exclusively_for">The permission is used exclusively for:</string>
     <string name="permission_usage_bullet_list">• Discovering and displaying your video files\n• Playing media content\n• Loading subtitle files</string>
-    <string name="permission_explanation_standard_intro">mpvRex has always required storage access permission as it\'s essential for the app to find all media and subtitle files on your device, including the ones that are not supported by the system.</string>
+    <string name="permission_explanation_standard_intro">mpv α has always required storage access permission as it\'s essential for the app to find all media and subtitle files on your device, including the ones that are not supported by the system.</string>
     <string name="permission_security_policy_change">However, due to a change in security policy, apps built for Android 11 and above now require additional permission to continue accessing the same.</string>
     <string name="permission_privacy_assurance_standard">Please know that this permission is only used for the auto-discovery of media/subtitle files on your device and will not allow us to access the private data files stored by other apps in any way.</string>
-    <string name="opensource_github_notice">mpvRex is an open source project. You can review the source code and verify how permissions are used by visiting our GitHub repository at:</string>
+    <string name="opensource_github_notice">mpv α is an open source project. You can review the source code and verify how permissions are used by visiting our GitHub repository at:</string>
     <string name="privacy_assurance_final">Be rest assured, your privacy is our utmost priority, and we neither access your files for other purposes nor transfer or store them to our servers. They remain safe on your device.</string>
     
-    <string name="permission_required_photos_videos">mpvRex requires \"Photos and videos\" permission to access and play your video files stored on your device.</string>
-    <string name="permission_required_storage">mpvRex requires \"Storage\" permission to access and play your media files stored on your device.</string>
-    <string name="permission_required_all_files">mpvRex requires \"All file access\" permission to discover media and subtitles on your device due to a change in security policy in Android 11 and later versions.</string>
+    <string name="permission_required_photos_videos">mpv α requires \"Photos and videos\" permission to access and play your video files stored on your device.</string>
+    <string name="permission_required_storage">mpv α requires \"Storage\" permission to access and play your media files stored on your device.</string>
+    <string name="permission_required_all_files">mpv α requires \"All file access\" permission to discover media and subtitles on your device due to a change in security policy in Android 11 and later versions.</string>
     <string name="permission_explanation_tiramisu_plus">On Android 13 and above, this permission allows the app to read video files from your device\'s storage, including Downloads, Movies, and DCIM folders.</string>
     <string name="permission_explanation_pre_tiramisu">This permission allows the app to read media files from your device\'s storage to play videos and audio.</string>
 
@@ -1415,12 +1415,12 @@
     <string name="pref_appearance_language_title">App Language</string>
     <string name="pref_appearance_language_summary">Change the display language of the app</string>
 
-    <string name="welcome_title">Welcome to mpvRex</string>
+    <string name="welcome_title">Welcome to mpv α</string>
     <string name="welcome_subtitle">Your modern, powerful, and customizable media player.</string>
     <string name="welcome_language_section_title">Preferred Language</string>
     <string name="welcome_language_section_desc">Select your display language</string>
     <string name="storage_access_granted">Storage Access Granted</string>
-    <string name="storage_access_granted_desc">Permission is granted. mpvRex is ready to discover and play your media.</string>
+    <string name="storage_access_granted_desc">Permission is granted. mpv α is ready to discover and play your media.</string>
     <string name="welcome_grant_permission">Grant Permission</string>
     <string name="welcome_get_started">Get Started</string>
     <string name="welcome_skip_permission">Continue without storage access</string>
@@ -1514,7 +1514,7 @@
     <string name="web_share_require_token_enabled_desc">Requires ?t= token to view files</string>
     <string name="web_share_require_token_disabled_desc">Open access (fast &amp; easy)</string>
     <string name="web_share_received_title">Received (%1$d)</string>
-    <string name="web_share_received_path">Download/REX Player</string>
+    <string name="web_share_received_path">Download/mpv α</string>
     <string name="web_share_copy_link">Copy Link</string>
     <string name="web_share_link_copied">Link copied to clipboard</string>
     <string name="web_share_no_network">Turn on Hotspot or connect to Wi-Fi to share</string>

@@ -525,7 +525,7 @@ object WelcomeScreen : Screen {
     // Explanation Dialog
     if (showExplanationDialog) {
       val uriHandler = LocalUriHandler.current
-      val githubUrl = "https://github.com/mpvRex/REX-Player"
+      val githubUrl = "https://github.com/laszko14/REX-Player"
       val isPlayStoreBuild = BuildConfig.SCOPED_STORAGE_ONLY
 
       AlertDialog(
