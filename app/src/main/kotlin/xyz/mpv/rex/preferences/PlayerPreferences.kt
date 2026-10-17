@@ -80,6 +80,9 @@ class PlayerPreferences(
   val hudShowSpeed = preferenceStore.getBoolean("alpha_hud_show_speed", true)
   val hudShowRemaining = preferenceStore.getBoolean("alpha_hud_show_remaining", true)
   val hudShowClock = preferenceStore.getBoolean("alpha_hud_show_clock", true)
+  // New time counter uses a separate key, so old network visibility settings do not hide it.
+  val hudShowAdjustedRemaining = preferenceStore.getBoolean("alpha_hud_show_adjusted_remaining", true)
+  // Retain legacy preferences for users upgrading from v21; they no longer control HUD content.
   val hudShowNetworkSpeed = preferenceStore.getBoolean("alpha_hud_show_network_speed", true)
   val hudShowBattery = preferenceStore.getBoolean("alpha_hud_show_battery", true)
   val hudRealTimeRemaining = preferenceStore.getBoolean("alpha_hud_real_time_remaining", false)

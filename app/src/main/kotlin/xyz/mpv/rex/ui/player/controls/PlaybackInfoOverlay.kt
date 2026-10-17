@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +46,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.math.roundToInt
-import `is`.xyz.mpv.MPVLib
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 
@@ -82,18 +80,16 @@ internal fun PlaybackInfoOverlay(
   val showSpeed by preferences.hudShowSpeed.collectAsState()
   val showRemaining by preferences.hudShowRemaining.collectAsState()
   val showClock by preferences.hudShowClock.collectAsState()
-  val showNetworkSpeed by preferences.hudShowNetworkSpeed.collectAsState()
+  val showAdjustedRemaining by preferences.hudShowAdjustedRemaining.collectAsState()
   val showBattery by preferences.hudShowBattery.collectAsState()
-  val realTimeRemaining by preferences.hudRealTimeRemaining.collectAsState()
   val speedHex by preferences.hudSpeedColor.collectAsState()
   val remainingHex by preferences.hudRemainingColor.collectAsState()
   val clockHex by preferences.hudClockColor.collectAsState()
-  val networkSpeedHex by preferences.hudNetworkSpeedColor.collectAsState()
+  // Reuse the former network slot color to preserve the user's chosen palette.
+  val adjustedRemainingHex by preferences.hudNetworkSpeedColor.collectAsState()
   val batteryHex by preferences.hudBatteryColor.collectAsState()
   val backgroundHex by preferences.hudBackgroundColor.collectAsState()
 
-  // Download rate comes from MPV's active media stream, never Android-wide traffic.
-  var networkDownloadSpeed by remember { mutableFloatStateOf(-1f) }
   var batteryPercent by remember { mutableIntStateOf(-1) }
   var isCharging by remember { mutableStateOf(false) }
   var clockText by remember {
@@ -103,21 +99,6 @@ internal fun PlaybackInfoOverlay(
     while (true) {
       clockText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
       delay(1000L)
-    }
-  }
-  LaunchedEffect(showNetworkSpeed) {
-    networkDownloadSpeed = -1f
-    if (!showNetworkSpeed) return@LaunchedEffect
-    while (true) {
-      delay(1_000L)
-      // MPV reports cache-speed in bytes/s over roughly a one-second window.
-      // It can be unavailable for some sources or when the stream has no cache.
-      networkDownloadSpeed = runCatching {
-        mpvStreamDownloadMbps(
-          MPVLib.getPropertyInt("cache-speed"),
-          MPVLib.getPropertyString("path"),
-        )
-      }.getOrNull() ?: -1f
     }
   }
   LaunchedEffect(context, showBattery) {
@@ -134,17 +115,13 @@ internal fun PlaybackInfoOverlay(
     }
   }
 
-  val remainingSeconds = (durationSeconds - positionSeconds).coerceAtLeast(0f)
-  val effectiveSeconds = if (realTimeRemaining && playbackSpeed > 0f) {
-    remainingSeconds / playbackSpeed
-  } else {
-    remainingSeconds
-  }
-  val timeLabel = if (durationSeconds > 0f) {
-    "↓ " + DateUtils.formatElapsedTime(effectiveSeconds.toLong())
-  } else {
-    "↓ --:--"
-  }
+  val remainingTimes = hudRemainingTimes(durationSeconds, positionSeconds, playbackSpeed)
+  val adjustedTimeLabel = remainingTimes.adjustedSeconds?.let {
+    "⏱ " + DateUtils.formatElapsedTime(it)
+  } ?: "⏱ --:--"
+  val originalTimeLabel = remainingTimes.originalSeconds?.let {
+    "↓ " + DateUtils.formatElapsedTime(it)
+  } ?: "↓ --:--"
   val factor = scalePercent.coerceIn(35, 300) / 100f
   val fontSize = (16f * factor).sp
   val iconSize = (18f * factor).dp
@@ -157,7 +134,7 @@ internal fun PlaybackInfoOverlay(
   val speedColor = hudColor(speedHex, Color(0xFF60E2F2))
   val remainingColor = hudColor(remainingHex, Color.White)
   val clockColor = hudColor(clockHex, Color.White)
-  val networkSpeedColor = hudColor(networkSpeedHex, Color(0xFFA7F3D0))
+  val adjustedRemainingColor = hudColor(adjustedRemainingHex, Color(0xFFA7F3D0))
   val lowBatteryColor = when {
     batteryPercent in 0..9 -> Color(0xFFEF4444)
     batteryPercent in 10..19 -> Color(0xFFF59E0B)
@@ -222,14 +199,10 @@ internal fun PlaybackInfoOverlay(
             fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
-      if (showNetworkSpeed) {
+      if (showAdjustedRemaining) {
         ContrastVideoLabel(
-          text = if (networkDownloadSpeed >= 0f) {
-            String.format(Locale.US, "↓ %.2f Mb/s", networkDownloadSpeed)
-          } else {
-            "↓ -- Mb/s"
-          },
-          color = networkSpeedColor, fontSize = fontSize,
+          text = adjustedTimeLabel,
+          color = adjustedRemainingColor, fontSize = fontSize,
           fontWeight = textWeight, outlined = highContrastText, maxLines = 1,
         )
       }
@@ -238,7 +211,7 @@ internal fun PlaybackInfoOverlay(
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.HourglassBottom, contentDescription = null,
             modifier = Modifier.size(iconSize), tint = remainingColor)
-          ContrastVideoLabel(timeLabel, color = remainingColor,
+          ContrastVideoLabel(originalTimeLabel, color = remainingColor,
             fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
