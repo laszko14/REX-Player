@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -74,6 +73,8 @@ internal fun PlaybackInfoOverlay(
   val itemGapDp by preferences.hudItemGapDp.collectAsState()
   val paddingDp by preferences.hudPaddingDp.collectAsState()
   val backgroundOpacity by preferences.hudBackgroundOpacity.collectAsState()
+  val highContrastText by preferences.hudHighContrastText.collectAsState()
+  val boldText by preferences.hudBoldText.collectAsState()
   val radiusDp by preferences.hudCornerRadiusDp.collectAsState()
   val storedX by preferences.hudPositionX.collectAsState()
   val storedY by preferences.hudPositionY.collectAsState()
@@ -148,7 +149,7 @@ internal fun PlaybackInfoOverlay(
   val fontSize = (16f * factor).sp
   val iconSize = (18f * factor).dp
   val innerGap = (3f * factor).dp
-  val textWeight = FontWeight.SemiBold
+  val textWeight = if (boldText) FontWeight.Bold else FontWeight.SemiBold
   val gap = itemGapDp.coerceIn(0, 64).dp
   val contentPadding = paddingDp.coerceIn(0, 40).dp
   val background = hudColor(backgroundHex, Color(0xFF10151C))
@@ -206,10 +207,10 @@ internal fun PlaybackInfoOverlay(
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.BatteryFull, contentDescription = null,
             modifier = Modifier.size(iconSize), tint = lowBatteryColor)
-          Text((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
+          ContrastVideoLabel((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
             (if (isCharging) " ⚡" else ""),
             color = lowBatteryColor, fontSize = fontSize,
-            fontWeight = textWeight, maxLines = 1)
+            fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
       if (showClock) {
@@ -217,19 +218,19 @@ internal fun PlaybackInfoOverlay(
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.AccessTime, contentDescription = null,
             modifier = Modifier.size(iconSize), tint = clockColor)
-          Text(clockText, color = clockColor, fontSize = fontSize,
-            fontWeight = textWeight, maxLines = 1)
+          ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
+            fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
       if (showNetworkSpeed) {
-        Text(
+        ContrastVideoLabel(
           text = if (networkDownloadSpeed >= 0f) {
             String.format(Locale.US, "↓ %.2f Mb/s", networkDownloadSpeed)
           } else {
             "↓ -- Mb/s"
           },
           color = networkSpeedColor, fontSize = fontSize,
-          fontWeight = textWeight, maxLines = 1,
+          fontWeight = textWeight, outlined = highContrastText, maxLines = 1,
         )
       }
       if (showRemaining) {
@@ -237,8 +238,8 @@ internal fun PlaybackInfoOverlay(
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.HourglassBottom, contentDescription = null,
             modifier = Modifier.size(iconSize), tint = remainingColor)
-          Text(timeLabel, color = remainingColor,
-            fontSize = fontSize, fontWeight = textWeight, maxLines = 1)
+          ContrastVideoLabel(timeLabel, color = remainingColor,
+            fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
       if (showSpeed) {
@@ -246,8 +247,8 @@ internal fun PlaybackInfoOverlay(
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.PlayArrow, contentDescription = null,
             modifier = Modifier.size(iconSize), tint = speedColor)
-          Text(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
-            color = speedColor, fontSize = fontSize, fontWeight = textWeight, maxLines = 1)
+          ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
+            color = speedColor, fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, maxLines = 1)
         }
       }
 
