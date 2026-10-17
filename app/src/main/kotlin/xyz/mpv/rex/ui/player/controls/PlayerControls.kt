@@ -93,6 +93,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -204,6 +205,8 @@ fun PlayerControls(
   val hudAlwaysVisible by playerPreferences.hudAlwaysVisible.collectAsState()
   val showSystemNavigationBar by playerPreferences.showSystemNavigationBar.collectAsState()
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
+  val playerOverlayOpacityPercent by playerPreferences.playerOverlayOpacityPercent.collectAsState()
+  val playerOverlayAlpha = (playerOverlayOpacityPercent.coerceIn(0, 100) / 100f)
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -402,7 +405,10 @@ fun PlayerControls(
     },
   )
 
-  DoubleTapToSeekOvals(doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime, interactionSource)
+  DoubleTapToSeekOvals(
+    doubleTapSeekAmount, seekText, showDoubleTapOvals, showSeekTime, showSeekTime,
+    interactionSource, modifier = Modifier.graphicsLayer { alpha = playerOverlayAlpha },
+  )
 
   CompositionLocalProvider(
     LocalRippleConfiguration provides playerRippleConfiguration,
@@ -432,6 +438,9 @@ fun PlayerControls(
         modifier =
           modifier
             .fillMaxSize()
+            // One opacity layer for Play, timeline, controls, Lua buttons and HUD.
+            // MPV video/subtitles and settings sheets remain outside this layer.
+            .graphicsLayer { alpha = playerOverlayAlpha }
             .background(
               Brush.verticalGradient(
                 Pair(0f, Color.Black),
