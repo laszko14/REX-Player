@@ -69,11 +69,18 @@ private const val SLOT_COUNT = 24
 @Composable
 internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: () -> Unit) {
     val advanced = koinInject<AdvancedPreferences>()
-    val slots = remember(preferences) {
+    val originalSlots = remember(preferences) {
         mutableStateListOf<CustomButton?>().apply {
-            addAll(readOverlaySlots(preferences.luaOverlayButtons.get()))
+            addAll(readOverlaySlots(preferences.customButtons.get(), 8))
         }
     }
+    val additionalSlots = remember(preferences) {
+        mutableStateListOf<CustomButton?>().apply {
+            addAll(readOverlaySlots(preferences.luaOverlayButtons.get(), SLOT_COUNT))
+        }
+    }
+    var originalGroup by remember { mutableStateOf(false) }
+    val slots = if (originalGroup) originalSlots else additionalSlots
     var selected by remember { mutableStateOf<Int?>(null) }
     var settingsTab by remember { mutableStateOf(false) }
     var deleteIndex by remember { mutableStateOf<Int?>(null) }
@@ -84,9 +91,11 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
     var isEnabled by remember { mutableStateOf(true) }
     var foreground by remember { mutableStateOf("") }
     var background by remember { mutableStateOf("") }
+    var alwaysVisible by remember { mutableStateOf(false) }
 
     fun saveSlots() {
-        preferences.luaOverlayButtons.set(Json.encodeToString(CustomButtonSlots(slots.toList())))
+        val target = if (originalGroup) preferences.customButtons else preferences.luaOverlayButtons
+        target.set(Json.encodeToString(CustomButtonSlots(slots.toList())))
     }
     fun edit(index: Int) {
         val previous = slots[index]
@@ -98,6 +107,7 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
         isEnabled = previous?.enabled ?: true
         foreground = previous?.textColor ?: ""
         background = previous?.backgroundColor ?: ""
+        alwaysVisible = previous?.alwaysVisible ?: false
     }
     fun move(from: Int, to: Int) {
         if (from !in slots.indices || to !in slots.indices || from == to) return
@@ -125,7 +135,7 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
             Column(Modifier.fillMaxSize().padding(12.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (selected == null) "Edytuj nakładkę Lua" else "Edytuj P" + (selected!! + 1),
+                        text = if (selected == null) "MPV Alpha v12 · przyciski" else "Edytuj " + (if (originalGroup) "O" else "N") + (selected!! + 1),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.weight(1f),
@@ -176,6 +186,26 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                         Text("Gotowe — wróć do filmu")
                     }
                 } else if (selected == null) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (originalGroup) {
+                            Button(onClick = { originalGroup = true }, modifier = Modifier.weight(1f)) {
+                                Text("Oryginalne 8")
+                            }
+                            OutlinedButton(onClick = { originalGroup = false }, modifier = Modifier.weight(1f)) {
+                                Text("Nowe 20+")
+                            }
+                        } else {
+                            OutlinedButton(onClick = { originalGroup = true }, modifier = Modifier.weight(1f)) {
+                                Text("Oryginalne 8")
+                            }
+                            Button(onClick = { originalGroup = false }, modifier = Modifier.weight(1f)) {
+                                Text("Nowe 20+")
+                            }
+                        }
+                    }
                     Text(
                         "Film nadal jest odtwarzany. + dodaje przycisk, ołówek go edytuje, " +
                             "strzałki przesuwają o jeden slot, kosz usuwa. " +
@@ -192,7 +222,7 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text("P" + (index + 1), modifier = Modifier.width(32.dp))
+                                Text((if (originalGroup) "O" else "N") + (index + 1), modifier = Modifier.width(32.dp))
                                 Text(
                                     button?.title ?: "Puste — odstęp",
                                     color = if (button == null) MaterialTheme.colorScheme.onSurfaceVariant
@@ -215,7 +245,7 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                                         onClick = { move(index, index - 1) },
                                     ) { Icon(Icons.Default.KeyboardArrowUp, "Przesuń o slot wcześniej") }
                                     IconButton(
-                                        enabled = index < SLOT_COUNT - 1,
+                                        enabled = index < slots.lastIndex,
                                         onClick = { move(index, index + 1) },
                                     ) { Icon(Icons.Default.KeyboardArrowDown, "Przesuń o slot dalej") }
                                     IconButton(onClick = { deleteIndex = index }) {
@@ -254,6 +284,14 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                             Text("Przycisk aktywny")
                             Switch(checked = isEnabled, onCheckedChange = { isEnabled = it })
                         }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Nie wygaszaj tego przycisku", modifier = Modifier.weight(1f))
+                            Switch(checked = alwaysVisible, onCheckedChange = { alwaysVisible = it })
+                        }
                         LuaEditorHexInput("Kolor napisu (HEX)", foreground) { foreground = it }
                         LuaEditorHexInput("Kolor tła (HEX)", background) { background = it }
                         Text(
@@ -286,6 +324,7 @@ internal fun LuaInPlayerButtonEditor(preferences: PlayerPreferences, onDismiss: 
                                     enabled = isEnabled,
                                     textColor = foreground.trim().takeIf { it.isNotBlank() },
                                     backgroundColor = background.trim().takeIf { it.isNotBlank() },
+                                    alwaysVisible = alwaysVisible,
                                 )
                                 saveSlots()
                                 selected = null
@@ -344,13 +383,13 @@ private fun LuaEditorHexInput(title: String, value: String, onChange: (String) -
     )
 }
 
-private fun readOverlaySlots(json: String): List<CustomButton?> {
+private fun readOverlaySlots(json: String, count: Int): List<CustomButton?> {
     val current: List<CustomButton?> = runCatching {
         Json.decodeFromString<CustomButtonSlots>(json).slots
     }.getOrElse {
         runCatching { Json.decodeFromString<List<CustomButton>>(json) }
             .getOrDefault(emptyList())
     }
-    return current.take(SLOT_COUNT) +
-        List((SLOT_COUNT - current.size).coerceAtLeast(0)) { null }
+    return current.take(count) +
+        List((count - current.size).coerceAtLeast(0)) { null }
 }
