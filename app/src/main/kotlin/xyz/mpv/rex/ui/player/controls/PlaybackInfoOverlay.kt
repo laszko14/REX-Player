@@ -190,7 +190,8 @@ internal fun PlaybackInfoOverlay(
             color = lowBatteryColor, fontSize = fontSize,
             fontWeight = textWeight, maxLines = 1)
         }
-      }      if (showClock) {
+      }
+      if (showClock) {
         Row(verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(innerGap)) {
           Icon(Icons.Default.AccessTime, contentDescription = null,
