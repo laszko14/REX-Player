@@ -113,11 +113,11 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Przyciski zawsze widoczne",
+                    "Domyślnie zawsze widoczne",
                     style = MaterialTheme.typography.titleSmall,
                 )
                 Text(
-                    "Nie znikają razem z paskiem odtwarzacza (poza blokadą ekranu).",
+                    "Wyłącz, aby po schowaniu kontrolek pozostawały tylko wskazane guziki.",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -323,7 +323,7 @@ private fun LuaPalette(
 ) {
     val shownHex = "#" + java.lang.Long.toHexString(selected.toLong() and 0xFFFFFFFFL)
         .padStart(8, '0').uppercase()
-    var hexDraft by remember(title) { mutableStateOf(shownHex) }
+    var hexDraft by remember(title, selected) { mutableStateOf(shownHex) }
     val candidate = readLuaArgbColor(hexDraft)
 
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {
