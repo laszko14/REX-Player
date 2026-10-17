@@ -107,6 +107,7 @@ import xyz.mpv.rex.preferences.AppearancePreferences
 import xyz.mpv.rex.preferences.AudioPreferences
 import xyz.mpv.rex.preferences.GesturePreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.ui.preferences.parseCustomButtonColor
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.preferences.preference.deleteAndGet
 import xyz.mpv.rex.preferences.preference.plusAssign
@@ -874,8 +875,8 @@ fun PlayerControls(
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
@@ -941,8 +942,8 @@ fun PlayerControls(
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
@@ -1009,8 +1010,8 @@ fun PlayerControls(
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
