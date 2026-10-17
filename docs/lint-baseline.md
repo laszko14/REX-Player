@@ -10,7 +10,7 @@ The tracked `app/lint-baseline.xml` is a *snapshot*, not a blanket exemption:
 - New warnings are still surfaced by lint; they are not automatically converted into build failures.
 - Fixes for old findings remain welcome: a baseline does not mean that the problems are solved.
 
-The baseline is generated from the source snapshot on branch `chore/mpv-alpha-agent-ci-20261017`, which has no modifications to Android application sources except enabling the baseline in Gradle. The snapshot must be committed once and not regenerated in regular CI runs.
+The baseline was generated once from the source snapshot on branch `chore/mpv-alpha-agent-ci-20261017`, which contains no Android application source modifications except enabling the baseline in Gradle. It was committed in PR #4 as `app/lint-baseline.xml`. The temporary bootstrap workflow was removed. Do not regenerate this snapshot during regular CI runs.
 
 ## Normal checks
 
