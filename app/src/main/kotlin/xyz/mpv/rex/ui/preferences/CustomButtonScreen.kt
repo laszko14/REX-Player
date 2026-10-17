@@ -94,6 +94,7 @@ import java.io.File
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.player.controls.LuaButtonAppearanceSettings
 import xyz.mpv.rex.ui.player.controls.LuaButtonQuickSettings
+import xyz.mpv.rex.ui.player.controls.LuaButtonIndividualAppearance
 import xyz.mpv.rex.presentation.Screen
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.rememberScrollState
@@ -122,6 +123,12 @@ data class CustomButton(
     val longPressContent: String = "",
     val onStartup: String = "",
     val enabled: Boolean = true,
+    // Nullable overrides keep older saved buttons compatible with global defaults.
+    val alwaysVisible: Boolean? = null,
+    val backgroundColor: Int? = null,
+    val textColor: Int? = null,
+    val activeBackgroundColor: Int? = null,
+    val activeTextColor: Int? = null,
 )
 
 @Serializable
@@ -351,6 +358,7 @@ object CustomButtonScreen : Screen {
                         ButtonSlotCard(
                             slotLabel = side,
                             button = button,
+                            appearancePrefs = preferences,
                             isDragging = isDragging,
                             elevation = elevation,
                             dragHandle = { interceptModifier ->
@@ -492,6 +500,7 @@ object CustomButtonScreen : Screen {
 fun ButtonSlotCard(
     slotLabel: String,
     button: CustomButton?,
+    appearancePrefs: PlayerPreferences,
     isDragging: Boolean,
     elevation: Float,
     dragHandle: @Composable (Modifier) -> Unit,
@@ -621,6 +630,7 @@ fun ButtonSlotCard(
                 enter   = expandVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeIn(),
                 exit    = shrinkVertically(spring(stiffness = Spring.StiffnessMedium)) + fadeOut(),
             ) {
+                Column {
                 ButtonExpandedContent(
                     slotLabel      = slotLabel,
                     buttonId       = buttonId,
@@ -642,6 +652,11 @@ fun ButtonSlotCard(
                                 longPressContent = draftLongPress,
                                 onStartup        = draftStartup,
                                 enabled          = draftEnabled,
+                                alwaysVisible     = button?.alwaysVisible,
+                                backgroundColor   = button?.backgroundColor,
+                                textColor         = button?.textColor,
+                                activeBackgroundColor = button?.activeBackgroundColor,
+                                activeTextColor   = button?.activeTextColor,
                             )
                         )
                         expanded = false
@@ -649,6 +664,31 @@ fun ButtonSlotCard(
                     onCollapse      = { expanded = false },
                     onOpenLuaEditor = { field -> activeLuaField = field },
                 )
+                if (button != null) {
+                    var customAppearanceOpen by remember(button.id) { mutableStateOf(false) }
+                    TextButton(
+                        onClick = { customAppearanceOpen = !customAppearanceOpen },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(if (customAppearanceOpen) "Ukryj indywidualny wygląd ▲" else "Widoczność i kolory tego przycisku ▼")
+                    }
+                    if (customAppearanceOpen) {
+                        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                            LuaButtonIndividualAppearance(
+                                button = button,
+                                prefs = appearancePrefs,
+                                onChange = onSave,
+                            )
+                        }
+                    }
+                } else {
+                    Text(
+                        "Zapisz przycisk, aby ustawić jego stałą widoczność i własne kolory.",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                }
             }
         }
     }
@@ -679,6 +719,11 @@ fun ButtonSlotCard(
                         longPressContent = draftLongPress,
                         onStartup        = draftStartup,
                         enabled          = draftEnabled,
+                        alwaysVisible     = button?.alwaysVisible,
+                        backgroundColor   = button?.backgroundColor,
+                        textColor         = button?.textColor,
+                        activeBackgroundColor = button?.activeBackgroundColor,
+                        activeTextColor   = button?.activeTextColor,
                     )
                 )
             }
@@ -1175,6 +1220,11 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             sb.appendLine("    <id>${escapeXml(button.id)}</id>")
             sb.appendLine("    <title>${escapeXml(button.title)}</title>")
             sb.appendLine("    <enabled>${button.enabled}</enabled>")
+            button.alwaysVisible?.let { sb.appendLine("    <alwaysVisible>$it</alwaysVisible>") }
+            button.backgroundColor?.let { sb.appendLine("    <backgroundColor>$it</backgroundColor>") }
+            button.textColor?.let { sb.appendLine("    <textColor>$it</textColor>") }
+            button.activeBackgroundColor?.let { sb.appendLine("    <activeBackgroundColor>$it</activeBackgroundColor>") }
+            button.activeTextColor?.let { sb.appendLine("    <activeTextColor>$it</activeTextColor>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
             sb.appendLine("    <longPressContent><![CDATA[${button.longPressContent}]]></longPressContent>")
             sb.appendLine("    <onStartup><![CDATA[${button.onStartup}]]></onStartup>")
@@ -1210,14 +1260,22 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
         val content = contentPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val longPress = longPressPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val startup = startupPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
-        
+        fun optionalField(name: String): String? =
+            Regex("<$name>(.*?)</$name>", RegexOption.DOT_MATCHES_ALL)
+                .find(buttonXml)?.groupValues?.get(1)
+
         slots[slotIndex] = CustomButton(
             id = id,
             title = title,
             content = content,
             longPressContent = longPress,
             onStartup = startup,
-            enabled = enabled
+            enabled = enabled,
+            alwaysVisible = optionalField("alwaysVisible")?.toBooleanStrictOrNull(),
+            backgroundColor = optionalField("backgroundColor")?.toIntOrNull(),
+            textColor = optionalField("textColor")?.toIntOrNull(),
+            activeBackgroundColor = optionalField("activeBackgroundColor")?.toIntOrNull(),
+            activeTextColor = optionalField("activeTextColor")?.toIntOrNull(),
         )
     }
     
