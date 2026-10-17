@@ -7,6 +7,7 @@ import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 import xyz.mpv.rex.ui.preferences.LuaButtonMigration
+import xyz.mpv.rex.ui.preferences.LuaV12XmlPresets
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +63,7 @@ class CustomButtonManager(
 
     fun setup() {
         LuaButtonMigration.ensure(playerPreferences, json)
+        LuaV12XmlPresets.ensure(playerPreferences, json)
         setupJob?.cancel()
         setupJob = scope.launch(Dispatchers.IO) {
             try {
