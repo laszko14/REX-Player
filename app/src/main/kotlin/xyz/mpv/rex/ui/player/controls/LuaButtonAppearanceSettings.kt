@@ -16,16 +16,22 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
@@ -33,7 +39,7 @@ import kotlin.math.roundToInt
 
 /** Shared settings UI: accessible both in Preferences and on top of a playing film. */
 @Composable
-fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = false) {
+fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = false, showQuick: Boolean = true) {
     val cols by prefs.luaPanelColumns.collectAsState()
     val width by prefs.luaButtonWidth.collectAsState()
     val height by prefs.luaButtonHeight.collectAsState()
@@ -46,11 +52,10 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
     val posY by prefs.luaButtonPositionY.collectAsState()
     val radius by prefs.luaButtonCornerRadius.collectAsState()
     val border by prefs.luaButtonBorderOpacity.collectAsState()
-    val baseColor by prefs.luaButtonBaseColor.collectAsState()
-    val activeColor by prefs.luaButtonActiveColor.collectAsState()
-    val fontColor by prefs.luaButtonTextColor.collectAsState()
-
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 7.dp)) {
+        if (showQuick) {
+            LuaButtonQuickSettings(prefs, compact = compact)
+        }
         LuaOptionSlider("Kolumny", cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
         LuaOptionSlider("Szerokość przycisku", width, 30, 140, " dp", compact = compact) { prefs.luaButtonWidth.set(it) }
         LuaOptionSlider("Wysokość przycisku", height, 22, 80, " dp", compact = compact) { prefs.luaButtonHeight.set(it) }
@@ -63,12 +68,6 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
         LuaOptionSlider("Przezroczystość tła", transparent, 0, 100, "%", compact = compact) { prefs.threeFingerSpeedPanelTransparency.set(it) }
         LuaOptionSlider("Zaokrąglenie rogów", radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
         LuaOptionSlider("Obramowanie", border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
-        LuaPalette("Kolor przycisków", baseColor, prefs.luaButtonBaseColor::set,
-            listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(), 0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()))
-        LuaPalette("Aktywny przycisk (prędkość)", activeColor, prefs.luaButtonActiveColor::set,
-            listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(), 0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()))
-        LuaPalette("Kolor tekstu", fontColor, prefs.luaButtonTextColor::set,
-            listOf(0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(), 0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt()))
         OutlinedButton(
             onClick = {
                 prefs.luaPanelColumns.set(5)
@@ -86,9 +85,80 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonBaseColor.set(0xFF252631.toInt())
                 prefs.luaButtonActiveColor.set(0xFF92BBFF.toInt())
                 prefs.luaButtonTextColor.set(0xFFFFFFFF.toInt())
+                prefs.luaButtonActiveTextColor.set(0xFF071426.toInt())
+                prefs.luaButtonAlwaysVisible.set(false)
             },
             modifier = Modifier.fillMaxWidth(),
         ) { Text("Przywróć ustawienia domyślne") }
+    }
+}
+
+/**
+ * Important appearance options visible immediately in the ORIGINAL Lua editor
+ * as well as in the compact right-hand panel during movie playback.
+ */
+@Composable
+fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
+    val persistent by prefs.luaButtonAlwaysVisible.collectAsState()
+    val baseColor by prefs.luaButtonBaseColor.collectAsState()
+    val activeColor by prefs.luaButtonActiveColor.collectAsState()
+    val fontColor by prefs.luaButtonTextColor.collectAsState()
+    val activeTextColor by prefs.luaButtonActiveTextColor.collectAsState()
+
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    "Przyciski zawsze widoczne",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+                Text(
+                    "Nie znikają razem z paskiem odtwarzacza (poza blokadą ekranu).",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(
+                checked = persistent,
+                onCheckedChange = prefs.luaButtonAlwaysVisible::set,
+            )
+        }
+
+        LuaPalette(
+            "Kolor czcionki",
+            fontColor,
+            prefs.luaButtonTextColor::set,
+            listOf(0xFFFFFFFF.toInt(), 0xFF92BBFF.toInt(), 0xFFFFFFAE.toInt(),
+                0xFFB0F0BA.toInt(), 0xFFFFACAC.toInt(), 0xFF000000.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Kolor czcionki aktywnej prędkości",
+            activeTextColor,
+            prefs.luaButtonActiveTextColor::set,
+            listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(), 0xFF000000.toInt(),
+                0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Kolor tła przycisków",
+            baseColor,
+            prefs.luaButtonBaseColor::set,
+            listOf(0xFF252631.toInt(), 0xFF121212.toInt(), 0xFF344E67.toInt(),
+                0xFF2F5137.toInt(), 0xFF6A3547.toInt(), 0xFF555555.toInt()),
+            compact,
+        )
+        LuaPalette(
+            "Kolor aktywnego przycisku",
+            activeColor,
+            prefs.luaButtonActiveColor::set,
+            listOf(0xFF92BBFF.toInt(), 0xFF80E6B0.toInt(), 0xFFFCCB6B.toInt(),
+                0xFFFF8888.toInt(), 0xFFCFA5FF.toInt(), 0xFFFFFFFF.toInt()),
+            compact,
+        )
     }
 }
 
@@ -139,26 +209,75 @@ private fun LuaOptionSlider(
     }
 }
 
+private fun readLuaArgbColor(text: String): Int? {
+    val hex = text.trim().removePrefix("#")
+    if (hex.length != 6 && hex.length != 8) return null
+    val number = hex.toLongOrNull(16) ?: return null
+    return if (hex.length == 6) (0xFF000000L or number).toInt() else number.toInt()
+}
+
+/** Preset swatches PLUS a custom #RRGGBB / #AARRGGBB value. */
 @Composable
-private fun LuaPalette(title: String, selected: Int, onSelect: (Int) -> Unit, palette: List<Int>) {
-    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        Text(title, style = MaterialTheme.typography.bodyMedium)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            palette.forEach { candidate ->
+private fun LuaPalette(
+    title: String,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    palette: List<Int>,
+    compact: Boolean = false,
+) {
+    val shownHex = "#" + java.lang.Long.toHexString(selected.toLong() and 0xFFFFFFFFL)
+        .padStart(8, '0').uppercase()
+    var hexDraft by remember(title) { mutableStateOf(shownHex) }
+    val candidate = readLuaArgbColor(hexDraft)
+
+    Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 5.dp)) {
+        Text(title, style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(if (compact) 6.dp else 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            palette.forEach { color ->
                 androidx.compose.foundation.layout.Box(
-                    Modifier.size(32.dp)
+                    Modifier.size(if (compact) 26.dp else 32.dp)
                         .clip(CircleShape)
-                        .background(Color(candidate))
-                        .clickable { onSelect(candidate) }
-                        .padding(4.dp),
+                        .background(Color(color))
+                        .clickable {
+                            onSelect(color)
+                            hexDraft = "#" + java.lang.Long.toHexString(color.toLong() and 0xFFFFFFFFL)
+                                .padStart(8, '0').uppercase()
+                        }
+                        .padding(3.dp),
                 ) {
-                    if (candidate == selected) {
-                        Text("✓", color = if (candidate == 0xFFFFFFFF.toInt()) Color.Black else Color.White,
-                            modifier = Modifier.align(Alignment.Center))
+                    if (color == selected) {
+                        Text(
+                            "✓",
+                            color = if (color == 0xFFFFFFFF.toInt() || color == 0xFFFFFFAE.toInt())
+                                Color.Black else Color.White,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
                     }
                 }
             }
         }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OutlinedTextField(
+                value = hexDraft,
+                onValueChange = { if (it.length <= 9) hexDraft = it },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.labelMedium,
+                label = { Text("Kolor HEX", style = MaterialTheme.typography.labelSmall) },
+                placeholder = { Text(shownHex) },
+                isError = hexDraft.isNotBlank() && candidate == null,
+            )
+            OutlinedButton(
+                onClick = { candidate?.let(onSelect) },
+                enabled = candidate != null && candidate != selected,
+            ) { Text("Ustaw") }
+        }
     }
 }
-
