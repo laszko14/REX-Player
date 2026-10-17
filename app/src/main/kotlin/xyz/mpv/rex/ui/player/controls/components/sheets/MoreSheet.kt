@@ -701,7 +701,7 @@ fun AestheticsTab() {
         style = MaterialTheme.typography.titleMedium,
         modifier = Modifier.weight(1f),
       )
-      Text("$"+"{overlayOpacityPercent.coerceIn(0, 100)}%", fontWeight = FontWeight.Bold)
+      Text("${overlayOpacityPercent.coerceIn(0, 100)}%", fontWeight = FontWeight.Bold)
     }
     Slider(
       value = overlayOpacityPercent.coerceIn(0, 100).toFloat(),
