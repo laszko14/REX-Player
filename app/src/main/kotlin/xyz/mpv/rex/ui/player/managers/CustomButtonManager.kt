@@ -38,6 +38,11 @@ class CustomButtonManager(
         val id: String,
         val label: String,
         val isLeft: Boolean,
+        val alwaysVisible: Boolean? = null,
+        val backgroundColor: Int? = null,
+        val textColor: Int? = null,
+        val activeBackgroundColor: Int? = null,
+        val activeTextColor: Int? = null,
     )
 
     private val _customButtons = MutableStateFlow<List<CustomButtonState>>(emptyList())
@@ -130,7 +135,18 @@ class CustomButtonManager(
                         .getOrDefault(emptyList())
                 }
                 uiButtons.addAll(allButtons.filter { it.enabled && it.title.isNotBlank() }
-                    .take(30).map { CustomButtonState(it.id, it.title, true) })
+                    .take(30).map {
+                        CustomButtonState(
+                            id = it.id,
+                            label = it.title,
+                            isLeft = true,
+                            alwaysVisible = it.alwaysVisible,
+                            backgroundColor = it.backgroundColor,
+                            textColor = it.textColor,
+                            activeBackgroundColor = it.activeBackgroundColor,
+                            activeTextColor = it.activeTextColor,
+                        )
+                    })
                 _customButtons.value = uiButtons
                 _luaStatus.value = when {
                     !advancedPreferences.enableLuaScripts.get() -> "Skrypty Lua wyłączone"
