@@ -133,15 +133,26 @@ data class CustomButtonSlots(
 
 @Serializable
 object CustomButtonScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun Content() {
+    override fun Content() = EditableLuaButtons(overlay = false)
+}
+
+@Serializable
+object LuaPanelButtonsScreen : Screen {
+    @Composable
+    override fun Content() = EditableLuaButtons(overlay = true)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditableLuaButtons(overlay: Boolean) {
         val context = LocalContext.current
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // 8 slots — order = left 0-3, right 4-7
-        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(24) { null }) }
+        val slotCount = if (overlay) 24 else 8
+        val savedButtons = if (overlay) preferences.luaOverlayButtons else preferences.customButtons
+        val buttonSlots = remember(overlay) { mutableStateListOf<CustomButton?>(*Array(slotCount) { null }) }
 
         // Import dialog state
         var showImportDialog by remember { mutableStateOf(false) }
@@ -179,7 +190,7 @@ object CustomButtonScreen : Screen {
                     importedSlots = parsed
                     
                     // Pre-select all non-null slots
-                    selectedImportSlots = parsed.indices.filter { index -> parsed[index] != null }.toSet()
+                    selectedImportSlots = parsed.indices.filter { index -> index < slotCount && parsed[index] != null }.toSet()
                     
                     showImportDialog = true
                 }.onFailure { e ->
@@ -190,20 +201,21 @@ object CustomButtonScreen : Screen {
 
         var buttonDataLoaded by remember { mutableStateOf(false) }
         // Load saved data
-        LaunchedEffect(Unit) {
-            val jsonString = preferences.customButtons.get()
+        LaunchedEffect(overlay) {
+            LuaButtonMigration.ensure(preferences)
+            val jsonString = savedButtons.get()
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(24).toMutableList()
-                    while (slots.size < 24) slots.add(null)
+                    val slots = loaded.slots.take(slotCount).toMutableList()
+                    while (slots.size < slotCount) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
                 }.onFailure {
                     runCatching {
                         val old: List<CustomButton> = Json.decodeFromString(jsonString)
-                        val slots = MutableList<CustomButton?>(24) { null }
-                        old.forEachIndexed { i, b -> if (i < 24) slots[i] = b }
+                        val slots = MutableList<CustomButton?>(slotCount) { null }
+                        old.forEachIndexed { i, b -> if (i < slotCount) slots[i] = b }
                         buttonSlots.clear()
                         buttonSlots.addAll(slots)
                     }
@@ -213,10 +225,10 @@ object CustomButtonScreen : Screen {
         }
 
         // Persist only after reading existing buttons; don't wipe old config.
-        LaunchedEffect(buttonDataLoaded, buttonSlots.toList()) {
+        LaunchedEffect(overlay, buttonDataLoaded, buttonSlots.toList()) {
             if (buttonDataLoaded) {
                 val value = Json.encodeToString(CustomButtonSlots(buttonSlots.toList()))
-                if (preferences.customButtons.get() != value) preferences.customButtons.set(value)
+                if (savedButtons.get() != value) savedButtons.set(value)
             }
         }
 
@@ -236,13 +248,13 @@ object CustomButtonScreen : Screen {
                     title = {
                         Column {
                             Text(
-                                text = stringResource(id = R.string.custom_buttons_title),
+                                text = if (overlay) "Przyciski nowej nakładki (24)" else "Oryginalne przyciski Lua (8)",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
-                                text = stringResource(id = R.string.custom_buttons_subtitle),
+                                text = if (overlay) "Osobne akcje w wysuwanym panelu" else "Po lewej stronie, dwa rzędy po cztery",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -283,7 +295,7 @@ object CustomButtonScreen : Screen {
                     items = buttonSlots.toList(),
                     key = { index, item -> item?.id ?: "slot_$index" },
                 ) { index, button ->
-                    val side = "P${index + 1}"
+                    val side = if (overlay) "P${index + 1}" else "L${index + 1}"
 
                     ReorderableItem(reorderState, key = button?.id ?: "slot_$index") { isDragging ->
                         val elevation by animateFloatAsState(
@@ -368,7 +380,7 @@ object CustomButtonScreen : Screen {
                                 }
                                 
                                 Button(
-                                    onClick = { exportLauncher.launch("custom_buttons_${System.currentTimeMillis()}.xml") },
+                                    onClick = { exportLauncher.launch("${if (overlay) "lua_panel" else "original_lua"}_${System.currentTimeMillis()}.xml") },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                 ) {
@@ -404,7 +416,7 @@ object CustomButtonScreen : Screen {
                 },
                 onConfirm = {
                     selectedImportSlots.forEach { slotIndex ->
-                        if (slotIndex in importedSlots.indices) {
+                        if (slotIndex in importedSlots.indices && slotIndex in buttonSlots.indices) {
                             buttonSlots[slotIndex] = importedSlots[slotIndex]
                         }
                     }
@@ -423,7 +435,6 @@ object CustomButtonScreen : Screen {
                 }
             )
         }
-    }
 }
 
 
