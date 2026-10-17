@@ -127,27 +127,3 @@ private fun LuaPalette(title: String, selected: Int, onSelect: (Int) -> Unit, pa
     }
 }
 
-@Composable
-fun LuaButtonSettingsDialog(prefs: PlayerPreferences, onDismiss: () -> Unit) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.88f).dp),
-            shape = MaterialTheme.shapes.large,
-            color = MaterialTheme.colorScheme.surface,
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text("Ustawienia guzików Lua", style = MaterialTheme.typography.titleLarge)
-                Text("Zmiany widać od razu podczas filmu i zapisują się automatycznie.",
-                    style = MaterialTheme.typography.bodySmall)
-                Column(
-                    modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-                ) {
-                    LuaButtonAppearanceSettings(prefs)
-                }
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
-                    Text("Gotowe – wróć do filmu")
-                }
-            }
-        }
-    }
-}
