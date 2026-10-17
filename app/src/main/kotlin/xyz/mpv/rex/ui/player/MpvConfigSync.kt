@@ -57,6 +57,10 @@ object MpvConfigSync : KoinComponent {
         if (file.delete()) Log.d(TAG, "Removed stale generated Lua: " + file.name)
       }
 
+      // Keep ONE stable, auto-loaded Lua bridge shared by all 30 original buttons.
+      // It must exist before BaseMPVView.initialize() runs.
+      installOriginalButtonLuaBridge(context)
+
       // Configure hdr-toys conditional profile in mpv.conf if enabled
       val isEnabled = decoderPreferences.enableHdrToys.get()
       val toneStr = decoderPreferences.hdrToysToneMapping.get()
@@ -102,6 +106,50 @@ object MpvConfigSync : KoinComponent {
       Log.d(TAG, "No MPV directory configured, using preferences fallback")
       copyMPVConfigFromPreferences(context)
     }
+  }
+
+  /**
+   * A single script client is created on each MPV initialization, instead of
+   * repeatedly loading dynamically generated clients while video is playing.
+   * The bridge receives the current button's Lua source as a message, so editing
+   * a button needs no script reload and old scripts cannot intercept clicks.
+   */
+  private fun installOriginalButtonLuaBridge(context: Context) {
+    val scriptsDir = File(context.filesDir, "scripts")
+    scriptsDir.mkdirs()
+    val file = File(scriptsDir, "mpv_alpha_buttons_bridge.lua")
+    if (!advancedPreferences.enableLuaScripts.get()) {
+      if (file.exists()) file.delete()
+      return
+    }
+    file.writeText(
+      """
+      -- MPV Alpha: stable bridge for the ORIGINAL custom buttons editor.
+      -- Input is a user-authored button script passed by Kotlin, not an external link.
+      mp.register_script_message("mpv_alpha_eval", function(source)
+          if type(source) ~= "string" or source == "" then
+              mp.msg.warn("Alpha: empty Lua button source")
+              return
+          end
+          local compile = loadstring or load
+          local fn, err = compile(source, "MPVAlphaButton")
+          if not fn then
+              mp.msg.error("Alpha button syntax: " .. tostring(err))
+              mp.osd_message("Blad kodu Lua: " .. tostring(err), 4)
+              return
+          end
+          local ok, failure = pcall(fn)
+          if not ok then
+              mp.msg.error("Alpha button error: " .. tostring(failure))
+              mp.osd_message("Blad Lua: " .. tostring(failure), 4)
+          end
+      end)
+      mp.set_property("user-data/mpvex/alpha_bridge_ready", "1")
+      mp.msg.info("MPV Alpha Lua bridge initialized")
+      """.trimIndent() + "\n",
+      Charsets.UTF_8
+    )
+    Log.i(TAG, "Original-button Lua bridge prepared before MPV initialization")
   }
 
   // ==================== Config Files Sync ====================
