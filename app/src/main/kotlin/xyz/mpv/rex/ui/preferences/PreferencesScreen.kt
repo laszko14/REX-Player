@@ -171,21 +171,6 @@ object PreferencesScreen : Screen {
             }
           }
 
-          // A dedicated top-level category for fully editable floating Lua buttons.
-          item {
-            PreferenceSection(title = "Przyciski Lua") {
-              GroupedListColumn {
-                PreferenceItem(
-                  position = GroupPosition.ONLY,
-                  title = "30 przycisków Lua",
-                  summary = "Jeden zestaw, kolejność i wygląd 30 przycisków — bez kompilacji APK",
-                  icon = Icons.Outlined.Code,
-                  onClick = { backstack.add(LuaOverlayPreferencesScreen) },
-                )
-              }
-            }
-          }
-
           // Media & Library Section
           item {
             PreferenceSection(title = stringResource(R.string.pref_media_library_title)) {
