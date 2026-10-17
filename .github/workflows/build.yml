@@ -118,7 +118,7 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-signed_apk:
+  signed_apk:
     name: MPV Alpha - podpisany APK do aktualizacji
     # Signing secrets and a write-capable GitHub token are NEVER exposed to PRs.
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master'
