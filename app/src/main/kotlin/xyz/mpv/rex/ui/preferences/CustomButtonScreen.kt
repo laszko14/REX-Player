@@ -790,6 +790,26 @@ fun ButtonExpandedContent(
 
         HorizontalDividerWithLabel(stringResource(id = R.string.custom_button_settings_label))
 
+        CustomButtonColorPicker(
+            label = "Kolor napisu",
+            value = draftTextColor,
+            onValueChange = onTextColorChange,
+        )
+        CustomButtonColorPicker(
+            label = "Kolor tła przycisku",
+            value = draftBackgroundColor,
+            onValueChange = onBackgroundColorChange,
+        )
+        Text(
+            text = draftTitle.ifBlank { "Podgląd przycisku" },
+            color = parseCustomButtonColor(draftTextColor) ?: Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(parseCustomButtonColor(draftBackgroundColor) ?: Color.White.copy(alpha = 0.09f))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        )
+
         // Enable / Disable row
         Row(
             modifier              = Modifier.fillMaxWidth(),
@@ -1131,6 +1151,60 @@ fun ImportSelectionScreen(
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+private val customButtonColorPresets = listOf(
+    "#FFFFFF", "#000000", "#FF4444", "#FF9800", "#FFEB3B",
+    "#4CAF50", "#03A9F4", "#3F51B5", "#9C27B0", "#E91E63",
+)
+
+@Composable
+private fun CustomButtonColorPicker(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            TextButton(onClick = { onValueChange("") }) { Text("Domyślny") }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            customButtonColorPresets.forEach { hex ->
+                val swatch = parseCustomButtonColor(hex) ?: Color.Transparent
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(swatch)
+                        .border(
+                            width = if (value.equals(hex, ignoreCase = true)) 3.dp else 1.dp,
+                            color = if (value.equals(hex, ignoreCase = true)) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape,
+                        )
+                        .clickable { onValueChange(hex) },
+                )
+            }
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = { if (it.length <= 9) onValueChange(it) },
+            label = { Text("Kod koloru HEX") },
+            placeholder = { Text("#FF0000") },
+            supportingText = { Text("Format #RRGGBB lub #AARRGGBB; puste = domyślny") },
+            isError = !isValidCustomButtonColor(value),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
 // XML Import/Export helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
