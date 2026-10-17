@@ -44,6 +44,9 @@ jobs:
       - name: Testy walidatora workflow
         run: python3 -m unittest discover -s .github/scripts -p "test_*.py" -v
 
+      - name: Sprawdz kompletne polskie zasoby, formaty i terminologie
+        run: python3 .github/scripts/check_polish.py
+
       - name: Sprawdz samodzielne pliki Lua (jezeli sa)
         shell: bash
         run: |
@@ -250,6 +253,11 @@ jobs:
           apk="${apks[0]}"
           [[ "$apk" == *arm64-v8a*.apk ]] || { echo "::error::To nie APK ARM64"; exit 1; }
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
+          # Public certificate fingerprint from the successfully signed v24 APK.
+          # This verifies update compatibility without exposing the private key.
+          certificate=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          expected_certificate=$(tr -d '[:space:]' < .github/mpv-alpha-signing-certificate.sha256)
+          [[ "$certificate" == "$expected_certificate" ]] || { echo "::error::Podpis rozni sie od aktualizacji v24"; exit 1; }
           package=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep '^package:')
           expected_code=$((MPV_ALPHA_VERSION_CODE * 10 + 2))
           [[ "$package" == *"name='xyz.mpv.rex.debug'"* ]] || { echo "::error::Zmiana ID pakietu"; exit 1; }

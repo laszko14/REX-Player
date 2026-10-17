@@ -41,3 +41,11 @@ Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupeł
 - Dodano 12 tekstów i zasób liczby mnogiej (16 polskich wartości) dla strony generowanej HTML/JavaScript: tytuł, pobieranie/odtwarzanie, wysyłanie plików, ZIP, stan połączenia i komunikaty przeglądarki.
 - Wybrany język aplikacji jest przekazywany do strony. Polskie nazwy plików i teksty są kodowane jako bezpieczne dane JSON; endpointy i logika JavaScript pozostają bez zmian.
 - Sprawdzono składnię JavaScript i zgodność parametrów zasobów. Odpowiedzi diagnostyczne serwera i komunikaty bibliotek/systemu są odrębną warstwą wymagającą rozróżnienia od etykiet interfejsu.
+
+## Etap 3 — automatyczna kontrola
+
+- `check_polish.py`: kompletność tłumaczeń, składnia XML i Unicode, parametry formatowania (indeks/typ/liczność), polskie formy `one/few/many/other`, znaczniki tekstu, terminologia oraz jawna lista sprawdzonych nazw/formatów, które nie wymagają tłumaczenia.
+- Dodatkowy skaner wykrywa angielskie teksty w wybranych bezpośrednich wywołaniach Compose, etykietach, opisach dostępności i komunikatach. Jest zabezpieczeniem heurystycznym, nie dowodem automatycznej poprawności wszystkich zdań.
+- `check_polish_previews.py`: wymaga PNG wszystkich pięciu rzeczywistych ekranów w obu rozmiarach czcionki i sprawdza pliki PNG oraz wymiary. Nie zastępuje oceny nakładania się elementów.
+- 16 testów narzędzi przeszło, w tym ujemne przypadki brakującego tłumaczenia, błędnego formatu, uszkodzonego XML, zmienionej nazwy technologii, niewłaściwej terminologii i brakującego PNG.
+- Oba walidatory włączono do istniejących workflow; nie dodano nowego YAML. Do podpisywania dodano sprawdzenie publicznego odcisku certyfikatu v24, bez zapisu klucza prywatnego.
