@@ -23,8 +23,10 @@ android {
     applicationId = "xyz.mpv.rex"
     minSdk = 26
     targetSdk = 36
-    versionCode = 214
-    versionName = "5.3.0"
+    // Signed MPV Alpha builds override these properties with increasing version numbers.
+    // Local/ordinary CI builds retain the upstream values.
+    versionCode = providers.gradleProperty("mpvAlphaVersionCode").orNull?.toInt() ?: 214
+    versionName = providers.gradleProperty("mpvAlphaVersionName").orNull ?: "5.3.0"
 
     vectorDrawables {
       useSupportLibrary = true
@@ -52,20 +54,27 @@ android {
     }
   }
 
+  // Preserve local -PreleaseKey* signing; also support a private keystore in CI.
+  // Never store the keystore or passwords in source control.
+  val alphaKeyStore = providers.gradleProperty("releaseKeyStore").orNull
+    ?: providers.environmentVariable("MPV_ALPHA_KEYSTORE_PATH").orNull
   signingConfigs {
     create("release") {
-      if (project.hasProperty("releaseKeyStore")) {
-        storeFile = file(project.property("releaseKeyStore") as String)
-        storePassword = project.property("releaseKeyStorePassword") as String
-        keyAlias = project.property("releaseKeyAlias") as String
-        keyPassword = project.property("releaseKeyPassword") as String
+      if (alphaKeyStore != null) {
+        storeFile = file(alphaKeyStore)
+        storePassword = providers.gradleProperty("releaseKeyStorePassword").orNull
+          ?: providers.environmentVariable("MPV_ALPHA_KEYSTORE_PASSWORD").orNull
+        keyAlias = providers.gradleProperty("releaseKeyAlias").orNull
+          ?: providers.environmentVariable("MPV_ALPHA_KEY_ALIAS").orNull
+        keyPassword = providers.gradleProperty("releaseKeyPassword").orNull
+          ?: providers.environmentVariable("MPV_ALPHA_KEY_PASSWORD").orNull
       }
     }
   }
 
   buildTypes {
     named("release") {
-      if (project.hasProperty("releaseKeyStore")) {
+      if (alphaKeyStore != null) {
         signingConfig = signingConfigs.getByName("release")
       }
       isMinifyEnabled = true
@@ -88,8 +97,15 @@ android {
     }
 
     named("debug") {
+      // Keep xyz.mpv.rex.debug stable so subsequent signed builds update in place.
       applicationIdSuffix = ".debug"
-      versionNameSuffix = "-${getCommitCount()}"
+      if (!providers.gradleProperty("mpvAlphaVersionName").isPresent) {
+        versionNameSuffix = "-${getCommitCount()}"
+      }
+      // Only signed distribution builds opt into the durable keystore.
+      if (alphaKeyStore != null) {
+        signingConfig = signingConfigs.getByName("release")
+      }
     }
   }
 
