@@ -580,7 +580,8 @@ class PlayerViewModel(
     viewModelScope.launch {
       merge(
         advancedPreferences.enableLuaScripts.changes().drop(1).map { Unit },
-        playerPreferences.customButtons.changes().drop(1).map { Unit }
+        playerPreferences.customButtons.changes().drop(1).map { Unit },
+        playerPreferences.luaOverlayButtons.changes().drop(1).map { Unit }
       ).collect {
         _customButtonManager.setup()
       }
@@ -668,6 +669,7 @@ class PlayerViewModel(
   // ==================== Custom Buttons ====================
 
     val customButtons = _customButtonManager.customButtons
+  val overlayButtons = _customButtonManager.overlayButtons
 
     fun callCustomButton(id: String) = _customButtonManager.callButton(id)
 

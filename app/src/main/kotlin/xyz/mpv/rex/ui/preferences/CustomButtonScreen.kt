@@ -10,6 +10,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,6 +101,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
@@ -120,6 +124,8 @@ data class CustomButton(
     val longPressContent: String = "",
     val onStartup: String = "",
     val enabled: Boolean = true,
+    val textColor: String? = null,
+    val backgroundColor: String? = null,
 )
 
 @Serializable
@@ -133,15 +139,26 @@ data class CustomButtonSlots(
 
 @Serializable
 object CustomButtonScreen : Screen {
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
-    override fun Content() {
+    override fun Content() = EditableLuaButtons(overlay = false)
+}
+
+@Serializable
+object LuaPanelButtonsScreen : Screen {
+    @Composable
+    override fun Content() = EditableLuaButtons(overlay = true)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditableLuaButtons(overlay: Boolean) {
         val context = LocalContext.current
         val backstack = LocalBackStack.current
         val preferences = koinInject<PlayerPreferences>()
 
-        // 8 slots — order = left 0-3, right 4-7
-        val buttonSlots = remember { mutableStateListOf<CustomButton?>(*Array(24) { null }) }
+        val slotCount = if (overlay) 24 else 8
+        val savedButtons = if (overlay) preferences.luaOverlayButtons else preferences.customButtons
+        val buttonSlots = remember(overlay) { mutableStateListOf<CustomButton?>(*Array(slotCount) { null }) }
 
         // Import dialog state
         var showImportDialog by remember { mutableStateOf(false) }
@@ -179,7 +196,7 @@ object CustomButtonScreen : Screen {
                     importedSlots = parsed
                     
                     // Pre-select all non-null slots
-                    selectedImportSlots = parsed.indices.filter { index -> parsed[index] != null }.toSet()
+                    selectedImportSlots = parsed.indices.filter { index -> index < slotCount && parsed[index] != null }.toSet()
                     
                     showImportDialog = true
                 }.onFailure { e ->
@@ -190,20 +207,21 @@ object CustomButtonScreen : Screen {
 
         var buttonDataLoaded by remember { mutableStateOf(false) }
         // Load saved data
-        LaunchedEffect(Unit) {
-            val jsonString = preferences.customButtons.get()
+        LaunchedEffect(overlay) {
+            LuaButtonMigration.ensure(preferences)
+            val jsonString = savedButtons.get()
             if (jsonString.isNotBlank()) {
                 runCatching {
                     val loaded = Json.decodeFromString<CustomButtonSlots>(jsonString)
-                    val slots = loaded.slots.take(24).toMutableList()
-                    while (slots.size < 24) slots.add(null)
+                    val slots = loaded.slots.take(slotCount).toMutableList()
+                    while (slots.size < slotCount) slots.add(null)
                     buttonSlots.clear()
                     buttonSlots.addAll(slots)
                 }.onFailure {
                     runCatching {
                         val old: List<CustomButton> = Json.decodeFromString(jsonString)
-                        val slots = MutableList<CustomButton?>(24) { null }
-                        old.forEachIndexed { i, b -> if (i < 24) slots[i] = b }
+                        val slots = MutableList<CustomButton?>(slotCount) { null }
+                        old.forEachIndexed { i, b -> if (i < slotCount) slots[i] = b }
                         buttonSlots.clear()
                         buttonSlots.addAll(slots)
                     }
@@ -213,10 +231,10 @@ object CustomButtonScreen : Screen {
         }
 
         // Persist only after reading existing buttons; don't wipe old config.
-        LaunchedEffect(buttonDataLoaded, buttonSlots.toList()) {
+        LaunchedEffect(overlay, buttonDataLoaded, buttonSlots.toList()) {
             if (buttonDataLoaded) {
                 val value = Json.encodeToString(CustomButtonSlots(buttonSlots.toList()))
-                if (preferences.customButtons.get() != value) preferences.customButtons.set(value)
+                if (savedButtons.get() != value) savedButtons.set(value)
             }
         }
 
@@ -236,13 +254,13 @@ object CustomButtonScreen : Screen {
                     title = {
                         Column {
                             Text(
-                                text = stringResource(id = R.string.custom_buttons_title),
+                                text = if (overlay) "Przyciski nowej nakładki (24)" else "Oryginalne przyciski Lua (8)",
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.ExtraBold,
                                 color = MaterialTheme.colorScheme.primary,
                             )
                             Text(
-                                text = stringResource(id = R.string.custom_buttons_subtitle),
+                                text = if (overlay) "Osobne akcje w wysuwanym panelu" else "Po lewej stronie, dwa rzędy po cztery",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -283,7 +301,7 @@ object CustomButtonScreen : Screen {
                     items = buttonSlots.toList(),
                     key = { index, item -> item?.id ?: "slot_$index" },
                 ) { index, button ->
-                    val side = "P${index + 1}"
+                    val side = if (overlay) "P${index + 1}" else "L${index + 1}"
 
                     ReorderableItem(reorderState, key = button?.id ?: "slot_$index") { isDragging ->
                         val elevation by animateFloatAsState(
@@ -368,7 +386,7 @@ object CustomButtonScreen : Screen {
                                 }
                                 
                                 Button(
-                                    onClick = { exportLauncher.launch("custom_buttons_${System.currentTimeMillis()}.xml") },
+                                    onClick = { exportLauncher.launch("${if (overlay) "lua_panel" else "original_lua"}_${System.currentTimeMillis()}.xml") },
                                     modifier = Modifier.weight(1f),
                                     shape = RoundedCornerShape(12.dp),
                                 ) {
@@ -404,7 +422,7 @@ object CustomButtonScreen : Screen {
                 },
                 onConfirm = {
                     selectedImportSlots.forEach { slotIndex ->
-                        if (slotIndex in importedSlots.indices) {
+                        if (slotIndex in importedSlots.indices && slotIndex in buttonSlots.indices) {
                             buttonSlots[slotIndex] = importedSlots[slotIndex]
                         }
                     }
@@ -423,7 +441,6 @@ object CustomButtonScreen : Screen {
                 }
             )
         }
-    }
 }
 
 
@@ -449,6 +466,8 @@ fun ButtonSlotCard(
     var draftLongPress by remember(button?.id) { mutableStateOf(button?.longPressContent ?: "") }
     var draftStartup   by remember(button?.id) { mutableStateOf(button?.onStartup ?: "") }
     var draftEnabled   by remember(button?.id) { mutableStateOf(button?.enabled ?: true) }
+    var draftTextColor by remember(button?.id) { mutableStateOf(button?.textColor ?: "") }
+    var draftBackgroundColor by remember(button?.id) { mutableStateOf(button?.backgroundColor ?: "") }
 
     var activeLuaField by remember { mutableStateOf<String?>(null) }
 
@@ -580,6 +599,10 @@ fun ButtonSlotCard(
                     draftLongPress = draftLongPress,
                     draftStartup   = draftStartup,
                     draftEnabled   = draftEnabled,
+                    draftTextColor = draftTextColor,
+                    draftBackgroundColor = draftBackgroundColor,
+                    onTextColorChange = { draftTextColor = it },
+                    onBackgroundColorChange = { draftBackgroundColor = it },
                     onTitleChange   = { draftTitle   = it },
                     onEnabledChange = { draftEnabled = it },
                     onSave = {
@@ -592,6 +615,8 @@ fun ButtonSlotCard(
                                 longPressContent = draftLongPress,
                                 onStartup        = draftStartup,
                                 enabled          = draftEnabled,
+                                textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
+                                backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
                             )
                         )
                         expanded = false
@@ -620,7 +645,7 @@ fun ButtonSlotCard(
 
         fun dismissAndSave() {
             // Save all drafts (including the field that was just edited) back to preferences
-            if (draftTitle.isNotBlank()) {
+            if (draftTitle.isNotBlank() && isValidCustomButtonColor(draftTextColor) && isValidCustomButtonColor(draftBackgroundColor)) {
                 onSave(
                     CustomButton(
                         id               = buttonId,
@@ -629,6 +654,8 @@ fun ButtonSlotCard(
                         longPressContent = draftLongPress,
                         onStartup        = draftStartup,
                         enabled          = draftEnabled,
+                        textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
+                        backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
                     )
                 )
             }
@@ -720,6 +747,10 @@ fun ButtonExpandedContent(
     draftLongPress: String,
     draftStartup: String,
     draftEnabled: Boolean,
+    draftTextColor: String,
+    draftBackgroundColor: String,
+    onTextColorChange: (String) -> Unit,
+    onBackgroundColorChange: (String) -> Unit,
     onTitleChange: (String) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     onSave: () -> Unit,
@@ -770,6 +801,26 @@ fun ButtonExpandedContent(
 
         HorizontalDividerWithLabel(stringResource(id = R.string.custom_button_settings_label))
 
+        CustomButtonColorPicker(
+            label = "Kolor napisu",
+            value = draftTextColor,
+            onValueChange = onTextColorChange,
+        )
+        CustomButtonColorPicker(
+            label = "Kolor tła przycisku",
+            value = draftBackgroundColor,
+            onValueChange = onBackgroundColorChange,
+        )
+        Text(
+            text = draftTitle.ifBlank { "Podgląd przycisku" },
+            color = parseCustomButtonColor(draftTextColor) ?: Color.White,
+            style = MaterialTheme.typography.labelLarge,
+            modifier = Modifier
+                .clip(RoundedCornerShape(8.dp))
+                .background(parseCustomButtonColor(draftBackgroundColor) ?: Color.White.copy(alpha = 0.09f))
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+        )
+
         // Enable / Disable row
         Row(
             modifier              = Modifier.fillMaxWidth(),
@@ -804,7 +855,7 @@ fun ButtonExpandedContent(
             Spacer(Modifier.width(8.dp))
             TextButton(
                 onClick = onSave,
-                enabled = draftTitle.isNotBlank(),
+                enabled = draftTitle.isNotBlank() && isValidCustomButtonColor(draftTextColor) && isValidCustomButtonColor(draftBackgroundColor),
             ) {
                 Text(stringResource(id = if (isPopulated) R.string.save else R.string.custom_button_add))
             }
@@ -1111,6 +1162,60 @@ fun ImportSelectionScreen(
 
 
 // ─────────────────────────────────────────────────────────────────────────────
+private val customButtonColorPresets = listOf(
+    "#FFFFFF", "#000000", "#FF4444", "#FF9800", "#FFEB3B",
+    "#4CAF50", "#03A9F4", "#3F51B5", "#9C27B0", "#E91E63",
+)
+
+@Composable
+private fun CustomButtonColorPicker(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium)
+            TextButton(onClick = { onValueChange("") }) { Text("Domyślny") }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            customButtonColorPresets.forEach { hex ->
+                val swatch = parseCustomButtonColor(hex) ?: Color.Transparent
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(swatch)
+                        .border(
+                            width = if (value.equals(hex, ignoreCase = true)) 3.dp else 1.dp,
+                            color = if (value.equals(hex, ignoreCase = true)) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outline,
+                            shape = CircleShape,
+                        )
+                        .clickable { onValueChange(hex) },
+                )
+            }
+        }
+        OutlinedTextField(
+            value = value,
+            onValueChange = { if (it.length <= 9) onValueChange(it) },
+            label = { Text("Kod koloru HEX") },
+            placeholder = { Text("#FF0000") },
+            supportingText = { Text("Format #RRGGBB lub #AARRGGBB; puste = domyślny") },
+            isError = !isValidCustomButtonColor(value),
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
 // XML Import/Export helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1125,6 +1230,8 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             sb.appendLine("    <id>${escapeXml(button.id)}</id>")
             sb.appendLine("    <title>${escapeXml(button.title)}</title>")
             sb.appendLine("    <enabled>${button.enabled}</enabled>")
+            button.textColor?.let { sb.appendLine("    <textColor>${escapeXml(it)}</textColor>") }
+            button.backgroundColor?.let { sb.appendLine("    <backgroundColor>${escapeXml(it)}</backgroundColor>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
             sb.appendLine("    <longPressContent><![CDATA[${button.longPressContent}]]></longPressContent>")
             sb.appendLine("    <onStartup><![CDATA[${button.onStartup}]]></onStartup>")
@@ -1144,6 +1251,8 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
     val idPattern = """<id>(.*?)</id>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val titlePattern = """<title>(.*?)</title>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val enabledPattern = """<enabled>(.*?)</enabled>""".toRegex(RegexOption.DOT_MATCHES_ALL)
+    val textColorPattern = """<textColor>(.*?)</textColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
+    val backgroundColorPattern = """<backgroundColor>(.*?)</backgroundColor>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val contentPattern = """<content><!\[CDATA\[(.*?)\]\]></content>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val longPressPattern = """<longPressContent><!\[CDATA\[(.*?)\]\]></longPressContent>""".toRegex(RegexOption.DOT_MATCHES_ALL)
     val startupPattern = """<onStartup><!\[CDATA\[(.*?)\]\]></onStartup>""".toRegex(RegexOption.DOT_MATCHES_ALL)
@@ -1157,6 +1266,8 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
         val id = idPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: UUID.randomUUID().toString()
         val title = titlePattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) } ?: ""
         val enabled = enabledPattern.find(buttonXml)?.groupValues?.get(1)?.toBoolean() ?: true
+        val textColor = textColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
+        val backgroundColor = backgroundColorPattern.find(buttonXml)?.groupValues?.get(1)?.let { unescapeXml(it) }?.takeIf { isValidCustomButtonColor(it) && it.isNotBlank() }
         val content = contentPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val longPress = longPressPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
         val startup = startupPattern.find(buttonXml)?.groupValues?.get(1) ?: ""
@@ -1167,7 +1278,9 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
             content = content,
             longPressContent = longPress,
             onStartup = startup,
-            enabled = enabled
+            enabled = enabled,
+            textColor = textColor,
+            backgroundColor = backgroundColor,
         )
     }
     

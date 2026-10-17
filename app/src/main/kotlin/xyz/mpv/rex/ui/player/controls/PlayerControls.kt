@@ -107,6 +107,7 @@ import xyz.mpv.rex.preferences.AppearancePreferences
 import xyz.mpv.rex.preferences.AudioPreferences
 import xyz.mpv.rex.preferences.GesturePreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
+import xyz.mpv.rex.ui.preferences.parseCustomButtonColor
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.preferences.preference.deleteAndGet
 import xyz.mpv.rex.preferences.preference.plusAssign
@@ -206,9 +207,10 @@ fun PlayerControls(
   val threeFingerSpeedAutoHide by playerPreferences.threeFingerSpeedAutoHide.collectAsState()
   val threeFingerSpeedSeekBack by playerPreferences.threeFingerSpeedSeekBack.collectAsState()
   var threeFingerSpeedVisible by remember { mutableStateOf(false) }
+  var luaInPlayerEditorOpen by remember { mutableStateOf(false) }
   var threeFingerSpeedInteractionCount by remember { androidx.compose.runtime.mutableIntStateOf(0) }
-  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount) {
-    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent) {
+  LaunchedEffect(threeFingerSpeedVisible, threeFingerSpeedPersistent, threeFingerSpeedAutoHide, threeFingerSpeedInteractionCount, luaInPlayerEditorOpen) {
+    if (threeFingerSpeedVisible && !threeFingerSpeedPersistent && !luaInPlayerEditorOpen) {
       delay(threeFingerSpeedAutoHide.coerceIn(3, 30) * 1000L)
       threeFingerSpeedVisible = false
     }
@@ -291,6 +293,7 @@ fun PlayerControls(
   val haptic = LocalHapticFeedback.current
 
   val customButtons by viewModel.customButtons.collectAsState()
+  val overlayButtons by viewModel.overlayButtons.collectAsState()
     
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
@@ -842,7 +845,7 @@ fun PlayerControls(
       }
 
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
+            visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customLeftButtonsRef) {
@@ -868,13 +871,13 @@ fun PlayerControls(
                     .padding(vertical = 6.dp)
                     .horizontalScroll(leftScrollState)
             ) {
-                customButtons.filter { it.isLeft }.forEach { button ->
+                customButtons.filter { !it.isLeft }.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
@@ -907,7 +910,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-            visible = areButtonsVisible && !isPortrait && !threeFingerSpeedEnabled,
+            visible = areButtonsVisible && !isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customRightButtonsRef) {
@@ -935,13 +938,13 @@ fun PlayerControls(
                     .padding(vertical = 6.dp)
                     .horizontalScroll(rightScrollState)
             ) {
-                customButtons.filter { !it.isLeft }.forEach { button ->
+                customButtons.filter { it.isLeft }.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
@@ -974,7 +977,7 @@ fun PlayerControls(
         }
         
         AnimatedVisibility(
-            visible = areButtonsVisible && isPortrait && !threeFingerSpeedEnabled,
+            visible = areButtonsVisible && isPortrait,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.constrainAs(customButtonsPortraitRef) {
@@ -994,20 +997,22 @@ fun PlayerControls(
                     }
                 }
             }
-            Row(
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+              customButtons.chunked(4).forEach { rowButtons ->
+                Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .padding(vertical = 6.dp)
                     .horizontalScroll(portraitScrollState)
             ) {
-                customButtons.forEach { button ->
+                rowButtons.forEach { button ->
                     val buttonInteractionSource = remember { MutableInteractionSource() }
                     val customButtonShape = RoundedCornerShape(14.dp)
                     Surface(
                         shape = customButtonShape,
-                        color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        color = parseCustomButtonColor(button.backgroundColor) ?: MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.85f),
+                        contentColor = parseCustomButtonColor(button.textColor) ?: MaterialTheme.colorScheme.onSecondaryContainer,
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
                         modifier = Modifier
                             .clip(customButtonShape)
@@ -1036,6 +1041,8 @@ fun PlayerControls(
                         )
                     }
                 }
+                }
+              }
             }
         }
 
@@ -2120,7 +2127,9 @@ fun PlayerControls(
         if (threeFingerSpeedVisible && !areControlsLocked && threeFingerSpeedEnabled) {
           LuaButtonPanel(
             preferences = playerPreferences,
-            buttons = customButtons,
+            buttons = overlayButtons,
+            currentPlaybackSpeed = playbackSpeed ?: 1f,
+            onEditorVisibilityChanged = { luaInPlayerEditorOpen = it },
             onClose = { threeFingerSpeedVisible = false },
             onButtonClick = { id ->
               viewModel.callCustomButton(id)

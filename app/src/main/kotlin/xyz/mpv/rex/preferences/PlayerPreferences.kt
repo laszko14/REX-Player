@@ -19,11 +19,16 @@ class PlayerPreferences(
   // MPV_ALPHA_LUA_PANEL_V10 - one panel, commands edited without rebuilding APK.
   val luaPanelColumns = preferenceStore.getInt("lua_panel_columns", 4)
   val luaPanelInitialized = preferenceStore.getBoolean("lua_panel_initialized_v10", false)
+  val luaSeparateInitialized = preferenceStore.getBoolean("lua_separate_initialized_v11", false)
+  val luaOverlayButtons = preferenceStore.getString("lua_overlay_buttons_json_v11", "")
+  val luaButtonBackup = preferenceStore.getString("lua_legacy_buttons_backup_v11", "")
   val threeFingerSpeedEnabled = preferenceStore.getBoolean("three_finger_speed_panel_enabled", true)
   val threeFingerSpeedAutoShow = preferenceStore.getBoolean("three_finger_speed_auto_show", true)
   // MPVREX_SPEED_PANEL_APPEARANCE_V7
   val threeFingerSpeedPanelSize = preferenceStore.getInt("three_finger_speed_panel_size_pct", 100)
   val threeFingerSpeedPanelTransparency = preferenceStore.getInt("three_finger_speed_panel_transparency_pct", 20)
+  val luaActiveSpeedHighlightColor = preferenceStore.getString("lua_active_speed_highlight_color", "#1976D2")
+  val luaActiveSpeedHighlightTransparency = preferenceStore.getInt("lua_active_speed_highlight_transparency", 0)
   val threeFingerSpeedPanelGap = preferenceStore.getInt("three_finger_speed_panel_gap_dp", 2)
   val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4,4.5,5,5.5")
   val threeFingerSpeedSeekBack = preferenceStore.getInt("three_finger_speed_seek_back", 10)
