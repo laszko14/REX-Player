@@ -63,7 +63,7 @@ class CustomButtonManager(
                 delay(180L)
             }
             if (advancedPreferences.enableLuaScripts.get()) {
-                _luaStatus.value = "BŁĄD: mostek Lua nie wystartował z MPV"
+                _luaStatus.value = "Lua: oczekiwanie na potwierdzenie (przyciski mogą działać)"
             }
         }
     }
@@ -75,7 +75,6 @@ class CustomButtonManager(
                 val uiButtons = mutableListOf<CustomButtonState>()
                 if (!advancedPreferences.enableLuaScripts.get()) {
                     _customButtons.value = uiButtons
-                    _luaStatus.value = "Skrypty Lua wyłączone"
                     _luaStatus.value = "Skrypty Lua wyłączone"
                     return@launch
                 }
@@ -137,7 +136,7 @@ class CustomButtonManager(
                     !advancedPreferences.enableLuaScripts.get() -> "Skrypty Lua wyłączone"
                     !isMpvReady -> "Czekam na MPV"
                     isScriptLoaded() -> "Lua gotowe — oryginalne przyciski"
-                    else -> "Mostek Lua niepotwierdzony"
+                    else -> "Lua: oczekiwanie na potwierdzenie"
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error setting up custom buttons", e)
@@ -243,15 +242,17 @@ class CustomButtonManager(
             return
         }
         runCatching {
-            // Original scripts are handled by a single preloaded bridge.
+            // The script-message API returns once the request has been sent,
+            // not necessarily once the Lua callback has run. Therefore a missing
+            // immediate user-data acknowledgement is NOT an execution failure.
             MPVLib.command("script-message", "mpv_alpha_eval", code)
-            if (isScriptLoaded()) {
-                _luaStatus.value = "Lua gotowe — oryginalne przyciski"
-                showFeedback("Lua: wywołano " + id.take(12))
+            _luaStatus.value = if (isScriptLoaded()) {
+                "Lua gotowe — oryginalne przyciski"
             } else {
-                _luaStatus.value = "Brak potwierdzenia mostka Lua"
-                showFeedback("Lua: brak potwierdzenia silnika")
+                "Lua: polecenie wysłane (bez potwierdzenia wykonania)"
             }
+            // Real Lua parse/runtime errors are surfaced by the bridge itself.
+            // Do not show an alarming OSD for a missing readiness flag.
         }.onFailure { e ->
             _luaStatus.value = "BŁĄD Lua: " + e.message
             Log.e(TAG, "Lua bridge dispatch error", e)
