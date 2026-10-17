@@ -136,6 +136,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Upewnij sie, ze to aktualny MPV Alpha (HUD + Lua + ikona)
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s app/src/main/res/drawable-nodpi/mpv_alpha_icon.webp
+          test -s app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/LuaButtonGrid.kt
+          test -s app/src/main/kotlin/xyz/mpv/rex/ui/preferences/AlphaHudPreferencesScreen.kt
+          grep -q '@drawable/mpv_alpha_icon' app/src/main/AndroidManifest.xml
+          grep -q 'LuaButtonGrid(' app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+          grep -q 'PlaybackInfoOverlay(' app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt
+          grep -q 'hudScalePercent' app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlaybackInfoOverlay.kt
+          echo "OK: nowy HUD Alpha, 30 guzikow Lua i wlasna ikona sa w kodzie."
+
       - name: Przygotuj kolejny nieuzywany numer od v15
         id: version
         shell: bash
