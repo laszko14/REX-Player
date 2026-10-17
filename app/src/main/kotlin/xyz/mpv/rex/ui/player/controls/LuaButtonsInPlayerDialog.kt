@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
@@ -56,7 +57,7 @@ import java.util.UUID
  * Both panels scroll independently; the video and playback activity stay alive.
  */
 @Composable
-fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, onDismiss: () -> Unit) {
+fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onDismiss: () -> Unit) {
     val advanced = koinInject<AdvancedPreferences>()
     val luaEnabled by advanced.enableLuaScripts.collectAsState()
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
@@ -88,6 +89,12 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, onDismiss: () -> Unit) {
                     Text("Lua", style = MaterialTheme.typography.labelMedium)
                     Switch(checked = luaEnabled, onCheckedChange = advanced.enableLuaScripts::set)
                 }
+                Text(
+                    text = "Silnik: " + engineStatus,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (engineStatus.startsWith("Lua gotowe")) Color(0xFF84DFA2)
+                            else MaterialTheme.colorScheme.error,
+                )
                 HorizontalDivider()
                 if (landscape) {
                     Row(
