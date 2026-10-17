@@ -21,3 +21,10 @@ Baza: `6d9f0fb3c17fba1b5564f54ff50ac17bef79c714` (v24).
 6. Jeden podpisany APK v25 ARM64 oraz raport z ograniczeniami weryfikacji.
 
 Każdy etap jest zapisywany osobnym commitem. Wyniki i odnośniki będą uzupełniane dopiero po wykonaniu odpowiednich kontroli.
+
+## Etap 2a — zasoby XML
+
+- Przejrzano wszystkie 1298 wpisów źródłowych. Poprawiono lub dodano 737 polskich wpisów: 697 zmian istniejących tekstów oraz 40 uzupełnień (braki i polskie formy liczby mnogiej).
+- Zachowano identyfikatory zasobów, komplet parametrów formatowania i znaczniki tekstu.
+- Zweryfikowano osobno niezmieniane nazwy własne, technologie, symbole, formaty i wspólne polsko-angielskie słowa (np. „port”, „folder”).
+- Walidacja zasobów przeszła. Wydzielanie napisów z Kotlina oraz sprawdzenie wyglądu są w toku; nie jest to jeszcze walidacja APK.
