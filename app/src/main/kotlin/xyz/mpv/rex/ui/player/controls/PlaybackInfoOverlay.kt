@@ -3,6 +3,8 @@ package xyz.mpv.rex.ui.player.controls
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import android.net.TrafficStats
+import android.os.SystemClock
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -80,14 +82,18 @@ internal fun PlaybackInfoOverlay(
   val showSpeed by preferences.hudShowSpeed.collectAsState()
   val showRemaining by preferences.hudShowRemaining.collectAsState()
   val showClock by preferences.hudShowClock.collectAsState()
+  val showNetworkSpeed by preferences.hudShowNetworkSpeed.collectAsState()
   val showBattery by preferences.hudShowBattery.collectAsState()
   val realTimeRemaining by preferences.hudRealTimeRemaining.collectAsState()
   val speedHex by preferences.hudSpeedColor.collectAsState()
   val remainingHex by preferences.hudRemainingColor.collectAsState()
   val clockHex by preferences.hudClockColor.collectAsState()
+  val networkSpeedHex by preferences.hudNetworkSpeedColor.collectAsState()
   val batteryHex by preferences.hudBatteryColor.collectAsState()
   val backgroundHex by preferences.hudBackgroundColor.collectAsState()
 
+  // The value is downloaded traffic across the phone, not a speed test.
+  var networkDownloadSpeed by remember { mutableFloatStateOf(-1f) }
   var batteryPercent by remember { mutableIntStateOf(-1) }
   var isCharging by remember { mutableStateOf(false) }
   var clockText by remember {
@@ -97,6 +103,22 @@ internal fun PlaybackInfoOverlay(
     while (true) {
       clockText = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
       delay(1000L)
+    }
+  }
+  LaunchedEffect(showNetworkSpeed) {
+    if (!showNetworkSpeed) return@LaunchedEffect
+    // Elapsed realtime avoids wall-clock corrections affecting speed calculations.
+    var previousBytes = TrafficStats.getTotalRxBytes()
+    var previousTime = SystemClock.elapsedRealtime()
+    while (true) {
+      delay(1_000L)
+      val currentBytes = TrafficStats.getTotalRxBytes()
+      val currentTime = SystemClock.elapsedRealtime()
+      networkDownloadSpeed = networkDownloadMbps(
+        previousBytes, currentBytes, currentTime - previousTime,
+      ) ?: -1f
+      previousBytes = currentBytes
+      previousTime = currentTime
     }
   }
   LaunchedEffect(context, showBattery) {
@@ -136,6 +158,7 @@ internal fun PlaybackInfoOverlay(
   val speedColor = hudColor(speedHex, Color(0xFF60E2F2))
   val remainingColor = hudColor(remainingHex, Color.White)
   val clockColor = hudColor(clockHex, Color.White)
+  val networkSpeedColor = hudColor(networkSpeedHex, Color(0xFFA7F3D0))
   val lowBatteryColor = when {
     batteryPercent in 0..9 -> Color(0xFFEF4444)
     batteryPercent in 10..19 -> Color(0xFFF59E0B)
@@ -199,6 +222,17 @@ internal fun PlaybackInfoOverlay(
           Text(clockText, color = clockColor, fontSize = fontSize,
             fontWeight = textWeight, maxLines = 1)
         }
+      }
+      if (showNetworkSpeed) {
+        Text(
+          text = if (networkDownloadSpeed >= 0f) {
+            String.format(Locale.US, "↓ %.2f Mb/s", networkDownloadSpeed)
+          } else {
+            "↓ -- Mb/s"
+          },
+          color = networkSpeedColor, fontSize = fontSize,
+          fontWeight = textWeight, maxLines = 1,
+        )
       }
       if (showRemaining) {
         Row(verticalAlignment = Alignment.CenterVertically,
