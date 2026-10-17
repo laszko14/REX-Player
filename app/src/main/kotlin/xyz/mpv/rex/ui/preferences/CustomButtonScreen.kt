@@ -10,6 +10,9 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,6 +101,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlinx.serialization.Serializable
@@ -120,6 +124,8 @@ data class CustomButton(
     val longPressContent: String = "",
     val onStartup: String = "",
     val enabled: Boolean = true,
+    val textColor: String? = null,
+    val backgroundColor: String? = null,
 )
 
 @Serializable
@@ -460,6 +466,8 @@ fun ButtonSlotCard(
     var draftLongPress by remember(button?.id) { mutableStateOf(button?.longPressContent ?: "") }
     var draftStartup   by remember(button?.id) { mutableStateOf(button?.onStartup ?: "") }
     var draftEnabled   by remember(button?.id) { mutableStateOf(button?.enabled ?: true) }
+    var draftTextColor by remember(button?.id) { mutableStateOf(button?.textColor ?: "") }
+    var draftBackgroundColor by remember(button?.id) { mutableStateOf(button?.backgroundColor ?: "") }
 
     var activeLuaField by remember { mutableStateOf<String?>(null) }
 
@@ -591,6 +599,10 @@ fun ButtonSlotCard(
                     draftLongPress = draftLongPress,
                     draftStartup   = draftStartup,
                     draftEnabled   = draftEnabled,
+                    draftTextColor = draftTextColor,
+                    draftBackgroundColor = draftBackgroundColor,
+                    onTextColorChange = { draftTextColor = it },
+                    onBackgroundColorChange = { draftBackgroundColor = it },
                     onTitleChange   = { draftTitle   = it },
                     onEnabledChange = { draftEnabled = it },
                     onSave = {
@@ -603,6 +615,8 @@ fun ButtonSlotCard(
                                 longPressContent = draftLongPress,
                                 onStartup        = draftStartup,
                                 enabled          = draftEnabled,
+                                textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
+                                backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
                             )
                         )
                         expanded = false
@@ -631,7 +645,7 @@ fun ButtonSlotCard(
 
         fun dismissAndSave() {
             // Save all drafts (including the field that was just edited) back to preferences
-            if (draftTitle.isNotBlank()) {
+            if (draftTitle.isNotBlank() && isValidCustomButtonColor(draftTextColor) && isValidCustomButtonColor(draftBackgroundColor)) {
                 onSave(
                     CustomButton(
                         id               = buttonId,
@@ -640,6 +654,8 @@ fun ButtonSlotCard(
                         longPressContent = draftLongPress,
                         onStartup        = draftStartup,
                         enabled          = draftEnabled,
+                        textColor        = draftTextColor.trim().takeIf { it.isNotBlank() },
+                        backgroundColor  = draftBackgroundColor.trim().takeIf { it.isNotBlank() },
                     )
                 )
             }
@@ -731,6 +747,10 @@ fun ButtonExpandedContent(
     draftLongPress: String,
     draftStartup: String,
     draftEnabled: Boolean,
+    draftTextColor: String,
+    draftBackgroundColor: String,
+    onTextColorChange: (String) -> Unit,
+    onBackgroundColorChange: (String) -> Unit,
     onTitleChange: (String) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     onSave: () -> Unit,
@@ -815,7 +835,7 @@ fun ButtonExpandedContent(
             Spacer(Modifier.width(8.dp))
             TextButton(
                 onClick = onSave,
-                enabled = draftTitle.isNotBlank(),
+                enabled = draftTitle.isNotBlank() && isValidCustomButtonColor(draftTextColor) && isValidCustomButtonColor(draftBackgroundColor),
             ) {
                 Text(stringResource(id = if (isPopulated) R.string.save else R.string.custom_button_add))
             }
