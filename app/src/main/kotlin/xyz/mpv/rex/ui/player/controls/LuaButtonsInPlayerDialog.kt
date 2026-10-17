@@ -42,7 +42,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
@@ -54,8 +53,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import org.koin.compose.koinInject
-import xyz.mpv.rex.preferences.AdvancedPreferences
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.ui.preferences.CustomButton
@@ -70,8 +67,6 @@ import java.util.UUID
  */
 @Composable
 fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onDismiss: () -> Unit) {
-    val advanced = koinInject<AdvancedPreferences>()
-    val luaEnabled by advanced.enableLuaScripts.collectAsState()
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
     val savedTab by prefs.luaEditorLastTab.collectAsState()
     val tab = savedTab.coerceIn(0, 2)
@@ -100,35 +95,36 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                     modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Przyciski Lua", style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-                        Text("Lua", style = MaterialTheme.typography.labelSmall)
-                        Switch(checked = luaEnabled, onCheckedChange = advanced.enableLuaScripts::set)
+                    // Compact two-row header. Lua itself stays enabled through the app settings;
+                    // no master switch or long engine-status text is needed in this editor.
+                    Row(
+                        modifier = Modifier.fillMaxWidth().height(32.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Przyciski Lua",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.weight(1f),
+                        )
                         TextButton(onClick = onDismiss) { Text("✕") }
                     }
-                    val statusOk = engineStatus.startsWith("Lua gotowe")
-                    val statusPending = engineStatus.startsWith("Lua:") ||
-                        engineStatus.contains("oczekiwanie", ignoreCase = true) ||
-                        engineStatus.contains("niepotwierdzony", ignoreCase = true)
-                    Text(
-                        text = engineStatus,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = when {
-                            statusOk -> Color(0xFF84DFA2)
-                            statusPending -> MaterialTheme.colorScheme.onSurfaceVariant
-                            else -> MaterialTheme.colorScheme.error
-                        },
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        FilterChip(selected = tab == 0, onClick = { prefs.luaEditorLastTab.set(0) },
-                            label = { Text("Szybkie") })
-                        FilterChip(selected = tab == 1, onClick = { prefs.luaEditorLastTab.set(1) },
-                            label = { Text("Wygląd") })
-                        FilterChip(selected = tab == 2, onClick = { prefs.luaEditorLastTab.set(2) },
-                            label = { Text("Kody (30)") })
+                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        FilterChip(
+                            selected = tab == 0,
+                            onClick = { prefs.luaEditorLastTab.set(0) },
+                            label = { Text("Szybkie") },
+                        )
+                        FilterChip(
+                            selected = tab == 1,
+                            onClick = { prefs.luaEditorLastTab.set(1) },
+                            label = { Text("Wygląd") },
+                        )
+                        FilterChip(
+                            selected = tab == 2,
+                            onClick = { prefs.luaEditorLastTab.set(2) },
+                            label = { Text("Kody (30)") },
+                        )
                     }
                     HorizontalDivider()
                     when (tab) {
@@ -143,16 +139,6 @@ fun LuaButtonsInPlayerDialog(prefs: PlayerPreferences, engineStatus: String, onD
                             LuaButtonOrganizedAppearanceSettings(prefs)
                         }
                         else -> LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
-                    }
-                    HorizontalDivider()
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Button(onClick = onDismiss, modifier = Modifier.width(132.dp).height(36.dp)) {
-                            Text("Gotowe")
-                        }
                     }
                 }
             }
@@ -172,53 +158,18 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val slots = remember(serialized) { decodeLuaSlots(serialized) }
     var selectedIndex by remember { mutableIntStateOf(-1) }
 
-    var search by remember { mutableStateOf("") }
-    var filter by remember { mutableIntStateOf(0) }
+    // All 30 fixed slots are always shown. No search/filter rows take up screen space.
     val listState = rememberLazyListState()
 
     if (selectedIndex !in 0..29) {
-        Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                label = { Text("Szukaj guzika") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                listOf("Wszystkie", "Aktywne", "Puste", "On start")
-                    .forEachIndexed { which, title ->
-                        FilterChip(
-                            selected = filter == which,
-                            onClick = { filter = which },
-                            label = { Text(title, style = MaterialTheme.typography.labelSmall) },
-                        )
-                    }
-            }
-            val visibleIndexes = (0 until 30).filter { index ->
-                val button = slots[index]
-                val matchesQuery = search.isBlank() ||
-                    (button?.title?.contains(search.trim(), ignoreCase = true) == true) ||
-                    ((index + 1).toString() == search.trim())
-                val matchesFilter = when (filter) {
-                    1 -> button?.enabled == true
-                    2 -> button == null
-                    3 -> button?.onStartup?.isNotBlank() == true
-                    else -> true
-                }
-                matchesQuery && matchesFilter
-            }
-            if (visibleIndexes.isEmpty()) {
-                Text("Nie znaleziono przycisków.", color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall)
-            }
+        Column(modifier = modifier) {
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
                 verticalArrangement = Arrangement.spacedBy(3.dp),
                 contentPadding = PaddingValues(bottom = 6.dp),
             ) {
-                items(visibleIndexes, key = { it }) { index ->
+                items((0 until 30).toList(), key = { it }) { index ->
                     val button = slots[index]
                     Row(
                         modifier = Modifier.fillMaxWidth()
