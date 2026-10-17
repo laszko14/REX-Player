@@ -46,6 +46,7 @@ import androidx.compose.ui.unit.sp
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
 import xyz.mpv.rex.ui.player.managers.CustomButtonManager
+import xyz.mpv.rex.ui.preferences.parseCustomButtonColor
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -133,7 +134,7 @@ fun LuaButtonPanel(
                             line.forEach { button ->
                                 Text(
                                     text = button.label,
-                                    color = Color.White,
+                                    color = parseCustomButtonColor(button.textColor) ?: Color.White,
                                     fontSize = (11f * factor).sp,
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
@@ -142,7 +143,7 @@ fun LuaButtonPanel(
                                         .weight(1f)
                                         .heightIn(min = (26f * factor).dp)
                                         .clip(RoundedCornerShape((6f * factor).dp))
-                                        .background(Color.White.copy(alpha = 0.09f))
+                                        .background(parseCustomButtonColor(button.backgroundColor) ?: Color.White.copy(alpha = 0.09f))
                                         .combinedClickable(
                                             onClick = { onButtonClick(button.id) },
                                             onLongClick = { onButtonLongClick(button.id) },
