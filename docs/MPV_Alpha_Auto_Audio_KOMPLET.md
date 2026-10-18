@@ -379,3 +379,28 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 - Faktycznie opublikowano [GitHub Release native-v47-arm64-r1](https://github.com/laszko14/mpvRex-libmpv/releases/tag/native-v47-arm64-r1). Asset: `mpvRex-libmpv-native-v47-arm64-r1.aar`, rozmiar **25 165 798 B**; GitHub API zgłasza SHA-256 **`4e8b8e2a7cafebf6bd6656f22bb396421d8e6a82670dbe6224c18a7ea3103c8f`**. Towarzyszący `.aar.sha256` został również opublikowany. Są to dane faktycznie istniejącego wydania, a nie przewidywany artefakt.
 - W przygotowanej gałęzi aplikacji `feature/v47-arm64-native-vad-integration` wskazano ten niezmiennie nazwany AAR przez Gradle Ivy. Następnym krokiem jest sprawdzenie rozwiązywania nowej zależności, kompilacji `assembleDebug`, `testDebugUnitTest`, `lintDebug`, testów workflow oraz udostępnienia diagnostycznego APK z `.debug`. **Nie scalać zmian aplikacji, zanim CI będzie zielone.**
 - AAR i zakończenie natywnego CI **nie potwierdzają rozpoznania mowy podczas odtwarzania HTTP/HLS/DASH**. Wymagane są testy na Nothing Phone (1), szczególnie 1,5×–3×, próby 15 s i 3×10 s, ciągłość PTS, status droppedChunks, jakość rozróżniania dialogów/szumu/muzyki oraz brak ingerencji w filtry i odtwarzanie. Produkcyjny podpisany APK v47 nadal **nie jest wydany**.
+
+
+## 22. Auto Audio v47 — pierwszy test urządzenia 3×10 s i korekta komunikatów (18.10.2026)
+
+**Źródło:** cztery zrzuty ekranu użytkownika z testowej aplikacji ARM64 v47 `xyz.mpv.rex.debug` podczas odtwarzania strumienia; tryb **szczegółowy 3 × 10 s** (30 s materiału). Materiał źródłowy (wywiad/muzyka/szum/cisza) **nie został jeszcze jednoznacznie opisany** — nie wolno interpretować 100% jako potwierdzonej skuteczności VAD.
+
+### Faktycznie zaobserwowane pomiary
+
+- Natychmiast po udanej analizie: **WebRTC VAD • oryginalny PCM mpv: 100% pozytywnych ramek** (model binarny, **nie** prawdopodobieństwo ani wiarygodność rozpoznania). Ta wartość z ekranu potwierdza, że aplikacja otrzymuje i przetwarza native PCM z działającego streamingu, przy spełnionych warunkach kompletności VAD; sam procent **nie** potwierdza rozróżniania mowy od muzyki / szumu.
+- RMS **−19,0 dBFS**, orientacyjne tło **−24,5 dBFS**, dynamika **9,0 dB**, kanały **nieznane** (ogólne metadane astats), jasność (centroid) **1695 Hz**, płaskość **0,04**, rolloff **2578 Hz**.
+- Trzy fragmenty: centroid **1696 / 1710 / 1682 Hz**; płaskość **0,04 / 0,04 / 0,04**; rolloff **2648 / 2578 / 2555 Hz**; tło **−24,0 / −24,0 / −25,4 dBFS**; dynamika **8,9 / 8,8 / 8,4 dB**. Są do siebie **bardzo zbliżone**, nie zaobserwowano dużej rozbieżności.
+- Zgodność progów jasnego/ciemnego/szumopodobnego widma **0/3, 0/3, 0/3** oznacza tylko brak przekroczenia **zdefiniowanych progów**, a nie brak zgodności między fragmentami. Płaskość 0,04 **nie** uzasadnia samodzielnie włączenia RNNoise.
+- Na zrzutach widoczne są aktywne filtry użytkownika (m.in. EQ, Dialogue Enhance, DRC, Szum Lua 7/7; w źródłowym ciągu `af` widoczne jest `mix=0.95`). Analityczny PCM jest sprzed filtrów; wyniku źródłowego nie wolno przypisywać tym efektom.
+- Jedyna zaproponowana zmiana: **DRC 3/3 → 2/3**, jako odwracalny test A/B przy dynamice źródła ~9 dB i już działającym mocnym DRC. **Brak** automatycznej aktywacji filtrów zależnych od mowy, EQ wysokich, Dialogue Enhance czy odszumiania.
+
+### Dwie udokumentowane usterki opisu, naprawiane w tym samym PR #55
+
+1. Dialog równocześnie pokazuje `Prawdziwy VAD … 100%` i nieprawdziwy historyczny komunikat `obecna analiza nie ma osobnego modelu VAD`. Zmieniono napis zależnie od dostępności `vadSpeechFraction`: model może być obecny, ale **jego trafność na kontrolach nie została jeszcze potwierdzona**.
+2. Planer dotychczas wyświetlał `Fragmenty różnią się lub brak zgodności 2/3` także przy trzech bardzo podobnych fragmentach i 0/3 we wszystkich progach. Teraz jasno informuje, że żaden fragment nie przekracza progów, **bez deklarowania różnic między nimi**.
+3. Dodano regresyjny test jednostkowy reprodukujący odczyt v47 (trzy neutralne widmowo fragmenty, VAD 100%, DRC 3/3) i wymagający jedynie odwracalnej propozycji **DRC 3 → 2**. Nie modyfikowano klasyfikatora, progów bezpieczeństwa, ścieżki native PCM, pozostałych funkcji mpv ani numeru APK. CI jeszcze do sprawdzenia.
+
+### Następny punkt decyzyjny — konieczna próbka kontrolna
+
+Ustalić od użytkownika, czy przez analizowane 30 s rzeczywiście była niemal bez przerwy mowa. Następnie uruchomić w tej samej testowej aplikacji **3 × 10 s na materiale bez mowy** (np. fragment instrumentalny lub cisza/szum tła) i porównać wynik WebRTC VAD. Jeśli mimo braku mowy ponownie jest ~100%, podejść do VAD metodyką Systematic Debugging (kontrola PCM, trybu modelu, mono downmix, rate/PTS, rzeczywistych przerw i negatywnych testów) **bez automatycznej korekty filtrów**. Scalenie PR #55 i produkcyjny podpisany APK v47 wymagają zielonego CI po obecnych zmianach oraz dalszego testu na urządzeniu.
+
