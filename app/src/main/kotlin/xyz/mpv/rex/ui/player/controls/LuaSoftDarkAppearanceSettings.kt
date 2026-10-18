@@ -256,6 +256,8 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     0xFFFFDD6C.toInt(), 0xFF70DE85.toInt(), 0xFFFF7070.toInt()))
             LuaSoftSlider(stringResource(R.string.lua_v2_border), border, 0, 100, "%",
                 prefs.luaButtonBorderOpacity::set)
+            Text(stringResource(R.string.lua_v3_custom_override_hint),
+                color = LuaDarkMuted, fontSize = 11.sp, lineHeight = 15.sp)
         }
         LuaSoftCard(stringResource(R.string.lua_v2_typography)) {
             LuaSoftSlider(stringResource(R.string.lua_v2_font_size), font, 8, 22, " sp",
