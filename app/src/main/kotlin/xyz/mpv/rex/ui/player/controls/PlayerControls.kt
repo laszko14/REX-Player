@@ -283,11 +283,26 @@ fun PlayerControls(
   val customButtons by viewModel.customButtons.collectAsState()
   val luaEngineStatus by viewModel.customButtonManager.luaStatus.collectAsState()
   var luaSettingsVisible by remember { mutableStateOf(false) }
+  var miniProgressSettingsVisible by remember { mutableStateOf(false) }
   var luaDragActive by remember { mutableStateOf(false) }
   var luaManualMinimized by remember { mutableStateOf(false) }
   val luaPositionX by playerPreferences.luaButtonPositionX.collectAsState()
   val luaPositionY by playerPreferences.luaButtonPositionY.collectAsState()
   val luaAlwaysVisible by playerPreferences.luaButtonAlwaysVisible.collectAsState()
+  val miniEnabled by playerPreferences.miniProgressEnabled.collectAsState()
+  val miniMarginDp by playerPreferences.miniProgressBottomMarginDp.collectAsState()
+  val miniOnPause by playerPreferences.miniProgressVisibleOnPause.collectAsState()
+  val navBottom = if (showSystemNavigationBar) {
+    with(LocalDensity.current) { WindowInsets.navigationBars.getBottom(this).toDp() }
+  } else {
+    0.dp
+  }
+  val miniDuration = if (preciseDuration > 0f) preciseDuration else (duration ?: 0).toFloat()
+  val miniPosition = if (precisePosition.isFinite()) precisePosition else (position ?: 0).toFloat()
+  val miniEligible = !isLoadingFile && miniProgressFraction(miniPosition, miniDuration) != null
+  val miniBarVisible = miniEnabled && !areControlsLocked && miniEligible &&
+    (miniProgressSettingsVisible || (!controlsShown && !seekBarShown && (miniOnPause || paused != true)))
+  val miniHoldEnabled = miniBarVisible && !miniProgressSettingsVisible
     
   val abLoopA by viewModel.abLoopA.collectAsState()
   val abLoopB by viewModel.abLoopB.collectAsState()
@@ -403,6 +418,18 @@ fun PlayerControls(
   GestureHandler(
     viewModel = viewModel,
     interactionSource = interactionSource,
+    modifier = Modifier.detectMiniProgressHold(
+      enabled = miniHoldEnabled,
+      bottomInset = navBottom,
+      marginDp = miniMarginDp,
+      onHold = {
+        miniProgressSettingsVisible = true
+        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+      },
+    ),
+    miniProgressHoldEnabled = miniHoldEnabled,
+    miniProgressBottomInset = navBottom,
+    miniProgressMarginDp = miniMarginDp,
     onThreeFingerTap = {
       if (!areControlsLocked &&
           viewModel.sheetShown.value == Sheets.None &&
@@ -2002,6 +2029,21 @@ fun PlayerControls(
       }
       }
      }
+    }
+
+    MiniProgressBar(
+      positionSeconds = miniPosition,
+      durationSeconds = miniDuration,
+      visible = miniBarVisible,
+      preferences = playerPreferences,
+      navigationBarBottom = navBottom,
+    )
+
+    if (miniProgressSettingsVisible) {
+      MiniProgressSettingsDialog(
+        preferences = playerPreferences,
+        onDismiss = { miniProgressSettingsVisible = false },
+      )
     }
 
     if (luaSettingsVisible) {
