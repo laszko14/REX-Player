@@ -53,6 +53,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FastForward
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SkipNext
@@ -1517,8 +1518,8 @@ fun PlayerControls(
               .zIndex(20f)
               .constrainAs(topLeftControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
-                // The back arrow and title always start at the left edge.
-                start.linkTo(parent.start, spacing.large)
+                // Reserve the left edge for the independent 48.dp back button.
+                start.linkTo(parent.start, spacing.large + 48.dp + spacing.extraSmall)
                 end.linkTo(topRightControls.start, spacing.extraSmall)
                 width = Dimension.preferredWrapContent
                 horizontalBias = 0f
@@ -1543,6 +1544,7 @@ fun PlayerControls(
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               viewModel = viewModel,
+              showBackButton = false,
             )
           } else {
             TopLeftPlayerControlsLandscape(
@@ -1551,6 +1553,7 @@ fun PlayerControls(
               onBackPress = onBackPress,
               onOpenSheet = onOpenSheet,
               viewModel = viewModel,
+              showBackButton = false,
             )
           }
         }
@@ -2047,6 +2050,40 @@ fun PlayerControls(
       navigationBarBottom = navBottom,
     )
 
+    // Persistent, high-priority Back action. Unlike topLeftControls, this layer
+    // is OUTSIDE AnimatedVisibility(controlsShown) and the playerOverlayAlpha
+    // graphics layer, so hiding playback controls, locking them, or setting
+    // overlay opacity to 0% cannot hide the exit arrow.
+    // Only the 48.dp button has a pointer handler: the rest remains gesture-safe.
+    Box(
+      modifier = Modifier
+        .fillMaxSize()
+        .zIndex(30f)
+        .then(
+          if (showSystemStatusBar) Modifier.windowInsetsPadding(WindowInsets.statusBars)
+          else Modifier
+        )
+        .then(
+          if (showSystemNavigationBar) {
+            val navBarPadding = WindowInsets.navigationBars.asPaddingValues()
+            Modifier.padding(
+              start = navBarPadding.calculateLeftPadding(LayoutDirection.Ltr),
+              end = navBarPadding.calculateRightPadding(LayoutDirection.Ltr),
+            )
+          } else Modifier
+        ),
+    ) {
+      PersistentPlayerBackButton(
+        onBackPress = onBackPress,
+        modifier = Modifier
+          .align(Alignment.TopStart)
+          .padding(
+            start = spacing.large,
+            top = if (isPortrait) spacing.extraLarge else spacing.small,
+          ),
+      )
+    }
+
     if (miniProgressSettingsVisible) {
       MiniProgressSettingsDialog(
         preferences = playerPreferences,
@@ -2184,3 +2221,29 @@ fun PlayerControls(
   }
 }
 
+
+/**
+ * Stays touchable while the player's normal controls are auto-hidden,
+ * regardless of the HUD/Lua opacity preference. Kept outside their opacity layer.
+ */
+@Composable
+internal fun PersistentPlayerBackButton(
+  onBackPress: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Box(
+    modifier = modifier
+      .size(48.dp)
+      .clip(RoundedCornerShape(14.dp))
+      .background(Color.Black.copy(alpha = 0.64f))
+      .clickable(onClick = onBackPress),
+    contentAlignment = Alignment.Center,
+  ) {
+    Icon(
+      imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+      contentDescription = stringResource(R.string.back),
+      tint = Color.White,
+      modifier = Modifier.size(27.dp),
+    )
+  }
+}
