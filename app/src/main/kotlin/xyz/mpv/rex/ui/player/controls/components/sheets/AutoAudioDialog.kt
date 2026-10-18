@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import xyz.mpv.rex.preferences.AudioPreferences
@@ -64,6 +65,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
   val scope = rememberCoroutineScope()
   var mode by remember { mutableStateOf(AutoAudioAnalyzer.Mode.QUICK) }
   var busy by remember { mutableStateOf(false) }
+  var analysisJob by remember { mutableStateOf<Job?>(null) }
   var issue by remember { mutableStateOf<String?>(null) }
   var report by remember { mutableStateOf<AutoAudioMetrics?>(null) }
   var proposal by remember { mutableStateOf<AutoAudioPlan?>(null) }
@@ -88,13 +90,14 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
     }
   }
   fun dismiss() {
+    analysisJob?.cancel()
     resetPreview()
     onDismissRequest()
   }
   fun validSource(): Boolean = originalPath == MPVLib.getPropertyString("path")
 
   Dialog(
-    onDismissRequest = { if (!busy) dismiss() },
+    onDismissRequest = ::dismiss,
     properties = DialogProperties(usePlatformDefaultWidth = false, dismissOnClickOutside = false),
   ) {
     Surface(
@@ -110,7 +113,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
             Icon(Icons.Default.AutoAwesome, null, tint = premiumBlue)
             Text("  Auto Audio", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold,
               modifier = Modifier.weight(1f))
-            IconButton(onClick = ::dismiss, enabled = !busy) { Icon(Icons.Default.Close, "Zamknij") }
+            IconButton(onClick = ::dismiss) { Icon(Icons.Default.Close, "Zamknij") }
           }
           Text("Analizuj i dopasuj ustawienia dźwięku", color = mutedAudioText)
           HorizontalDivider(color = Color(0xFF3B526D))
@@ -228,7 +231,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   val duration = MPVLib.getPropertyString("duration")?.toDoubleOrNull() ?: 0.0
                   val initial = AutoAudioState.capture(preferences)
                   busy = true
-                  scope.launch {
+                  analysisJob = scope.launch {
                     try {
                       val result = AutoAudioAnalyzer.analyze(context, mediaPath, position, duration, mode)
                       if (validSource()) {
