@@ -43,7 +43,7 @@ object RexSzumAudio {
       } else {
         append("mp.set_property_number(key, 0)\n")
       }
-    }.replace("\\\n", "\n")
+    }
   }
 
   fun setLevel(level: Int) {
