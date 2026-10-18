@@ -227,8 +227,15 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 }
               }
               Text(
-                "Mowa: niepotwierdzona — obecna analiza nie ma osobnego modelu VAD. " +
-                  "Zmiany wymagające rozpoznania dialogów nie są proponowane.",
+                if (metrics.vadSpeechFraction != null) {
+                  "Mowa: WebRTC VAD wykrył aktywność w oryginalnym PCM, ale " +
+                    "trafności rozpoznawania dialogów nie zweryfikowano jeszcze " +
+                    "na próbkach kontrolnych (mowa / muzyka / cisza). " +
+                    "Zmiany filtrów zależne od mowy pozostają wyłączone."
+                } else {
+                  "Mowa: niepotwierdzona — brak kompletnego, wiarygodnego wyniku VAD. " +
+                    "Zmiany wymagające rozpoznania dialogów nie są proponowane."
+                },
                 color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
               )
               Text(
