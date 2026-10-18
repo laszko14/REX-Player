@@ -85,6 +85,7 @@ import xyz.mpv.rex.ui.player.PlayerViewModel
 import xyz.mpv.rex.ui.player.PlayerTutorialManager
 import xyz.mpv.rex.ui.player.SingleActionGesture
 import xyz.mpv.rex.ui.theme.playerRippleConfiguration
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -166,6 +167,21 @@ fun GestureHandler(
   val volumeBoostingCap = audioPreferences.volumeBoostCap.get()
   val haptics = LocalHapticFeedback.current
   val coroutineScope = rememberCoroutineScope()
+  val gestureOwnership = remember { HoldGestureArbiter() }
+  var speedRampJob by remember { mutableStateOf<Job?>(null) }
+
+  // Cancel a previous boost/restore ramp before launching the next speed change.
+  fun animateHoldSpeed(from: Float, target: Float) {
+    speedRampJob?.cancel()
+    speedRampJob = coroutineScope.launch {
+      val steps = 5
+      val stepDelay = 16L
+      for (i in 1..steps) {
+        MPVLib.setPropertyFloat("speed", from + (target - from) * i / steps)
+        if (i < steps) delay(stepDelay)
+      }
+    }
+  }
 
   // Subtitle touches (drag to reposition / pinch to resize / "grabbed" marker) are owned by ONE
   // recognizer, see SubtitleTouch.kt. A touch that starts on a subtitle belongs to it until the last
@@ -318,6 +334,7 @@ fun GestureHandler(
         if (isVerticalGestureActive) return@pointerInput
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           // A tap that lands on a subtitle must still toggle the UI, so only step aside once the
           // touch has actually become a subtitle drag/pinch (checked again inside the loop below).
           if (subtitleGate.isActive) return@awaitEachGesture // this touch belongs to a subtitle
@@ -361,7 +378,8 @@ fun GestureHandler(
 
             if (!pointer.pressed) {
               // Pointer lifted - this is a tap if it wasn't a drag
-              if (!isDrag && !wasConsumedByTapGesture && !hadMultiplePointers) {
+              if (!isDrag && !wasConsumedByTapGesture && !hadMultiplePointers &&
+                    gestureOwnership.owner == null && !longPressTriggeredDuringTouch) {
                 val timeSinceLastTap = downTime - lastTapTime
                 val positionChange = sqrt(
                   (downPosition.x - lastTapPosition.x) * (downPosition.x - lastTapPosition.x) +
@@ -496,6 +514,7 @@ fun GestureHandler(
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
           val startPosition = down.position
           // This narrow zone belongs to the mini-bar's long-hold action. Ordinary
@@ -509,6 +528,8 @@ fun GestureHandler(
               (miniProgressBottomInset + miniProgressMarginDp.coerceIn(0, 30).dp).toPx(),
               24.dp.toPx(),
             )
+
+          gestureOwnership.prepareSpeedHold(paused == false && multipleSpeedGesture > 0f && !inMiniProgressHoldZone)
 
           // Reset long press tracking at the start of each gesture
           longPressTriggeredDuringTouch = false
@@ -530,47 +551,33 @@ fun GestureHandler(
           // Original speed for long press
           var originalSpeed = playbackSpeed ?: 1f
 
-          // Track long press separately
+          // Infinity-inspired 300ms activation, without copying its AGPL implementation.
           var longPressTriggered = false
-          val longPressDelay = 500L
-          var longPressJob = coroutineScope.launch {
-            delay(longPressDelay)
-            if (!longPressTriggered && paused == false) {
-              val distance = sqrt(
-                (down.position.x - startPosition.x) * (down.position.x - startPosition.x) +
-                (down.position.y - startPosition.y) * (down.position.y - startPosition.y)
-              )
-              // Only trigger if still within tap threshold
-              if (distance < 10f && multipleSpeedGesture > 0f && !inMiniProgressHoldZone) {
-                longPressTriggered = true
-                isLongPressing = true
-                longPressStartTime = System.currentTimeMillis()
-                longPressTriggeredDuringTouch = true
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                originalSpeed = playbackSpeed ?: 1f
-                // Ramp speed up incrementally to avoid audio filter stutter
-                val startSpeed = originalSpeed
-                val targetSpeed = multipleSpeedGesture
-                val steps = 5
-                val stepDelay = 16L // ~one frame per step
-                for (i in 1..steps) {
-                  val t = i.toFloat() / steps
-                  val intermediateSpeed = startSpeed + (targetSpeed - startSpeed) * t
-                  MPVLib.setPropertyFloat("speed", intermediateSpeed)
-                  if (i < steps) delay(stepDelay)
-                }
+          var latestTouchPosition = startPosition
+          val longPressJob = coroutineScope.launch {
+            delay(300L)
+            if (!longPressTriggered && paused == false &&
+                (latestTouchPosition - startPosition).getDistance() < 10f &&
+                multipleSpeedGesture > 0f && !inMiniProgressHoldZone &&
+                gestureOwnership.claim(HoldGestureOwner.SPEED)) {
+              longPressTriggered = true
+              isLongPressing = true
+              longPressStartTime = System.currentTimeMillis()
+              longPressTriggeredDuringTouch = true
+              haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+              originalSpeed = MPVLib.getPropertyFloat("speed") ?: playbackSpeed ?: 1f
+              animateHoldSpeed(originalSpeed, multipleSpeedGesture)
 
-                if (showDynamicSpeedOverlay) {
-                  isDynamicSpeedControlActive = true
-                  hasSwipedEnough = false
-                  hasIncrementedSpeedLockHint = false
-                  dynamicSpeedStartX = startPosition.x
-                  dynamicSpeedStartValue = multipleSpeedGesture
-                  lastAppliedSpeed = multipleSpeedGesture
-                  viewModel.playerUpdate.update { PlayerUpdates.DynamicSpeedControl(multipleSpeedGesture, false) }
-                } else {
-                  viewModel.playerUpdate.update { PlayerUpdates.MultipleSpeed }
-                }
+              if (showDynamicSpeedOverlay) {
+                isDynamicSpeedControlActive = true
+                hasSwipedEnough = false
+                hasIncrementedSpeedLockHint = false
+                dynamicSpeedStartX = startPosition.x
+                dynamicSpeedStartValue = multipleSpeedGesture
+                lastAppliedSpeed = multipleSpeedGesture
+                viewModel.playerUpdate.update { PlayerUpdates.DynamicSpeedControl(multipleSpeedGesture, false) }
+              } else {
+                viewModel.playerUpdate.update { PlayerUpdates.MultipleSpeed }
               }
             }
           }
@@ -585,21 +592,28 @@ fun GestureHandler(
               event.changes.forEach { change ->
                 if (change.pressed) {
                   val currentPosition = change.position
+                  latestTouchPosition = currentPosition
                   val deltaX = currentPosition.x - startPosition.x
                   val deltaY = currentPosition.y - startPosition.y
 
                   // Determine gesture type based on initial drag direction
                   if (gestureType == null && (abs(deltaX) > 20f || abs(deltaY) > 20f)) {
-                    // Cancel long press if drag started
+                    gestureOwnership.dragStarted(
+                      horizontal = abs(deltaX) > abs(deltaY) * 1.5f,
+                      elapsedMillis = change.uptimeMillis - down.uptimeMillis,
+                    )
                     longPressJob.cancel()
 
                     // Check if we're in long press mode with dynamic speed control
-                    if (isLongPressing && isDynamicSpeedControlActive && showDynamicSpeedOverlay && abs(deltaX) > 10f) {
+                    if (isLongPressing && isDynamicSpeedControlActive && showDynamicSpeedOverlay &&
+                        gestureOwnership.owner == HoldGestureOwner.SPEED &&
+                        (abs(deltaX) > 10f || abs(deltaY) > 10f)) {
                       gestureType = "speed_control"
                     } else {
                       gestureType = if (abs(deltaX) > abs(deltaY) * 1.5f) {
                         "horizontal"
-                      } else if (abs(deltaY) > abs(deltaX) * 1.5f) {
+                      } else if (abs(deltaY) > abs(deltaX) * 1.5f &&
+                                 gestureOwnership.claim(HoldGestureOwner.VERTICAL)) {
                         "vertical"
                       } else {
                         null
@@ -610,7 +624,8 @@ fun GestureHandler(
                     when (gestureType) {
                       "speed_control" -> {
                         dynamicSpeedStartX = currentPosition.x
-                        dynamicSpeedStartValue = MPVLib.getPropertyFloat("speed") ?: multipleSpeedGesture
+                        // Use the configured preset, not a temporary intermediate ramp value.
+                        dynamicSpeedStartValue = lastAppliedSpeed
                       }
                       "vertical" -> {
                         if ((brightnessGesture || volumeGesture) && !isLongPressing) {
@@ -680,7 +695,9 @@ fun GestureHandler(
 
                           val startIndex = speedPresets.indexOfFirst {
                             abs(it - dynamicSpeedStartValue) < 0.01f
-                          }.takeIf { it >= 0 } ?: 3 // Default to 1.0x (index 3)
+                          }.takeIf { it >= 0 } ?: speedPresets.indexOfFirst {
+                              it >= dynamicSpeedStartValue
+                            }.takeIf { it >= 0 } ?: speedPresets.lastIndex
 
                           val newIndex = (startIndex + indexDelta.toInt()).coerceIn(0, speedPresets.size - 1)
                           val newSpeed = speedPresets[newIndex]
@@ -688,6 +705,7 @@ fun GestureHandler(
                           if (abs(lastAppliedSpeed - newSpeed) > 0.01f) {
                             haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                             lastAppliedSpeed = newSpeed
+                            speedRampJob?.cancel()
                             MPVLib.setPropertyFloat("speed", newSpeed)
                           }
                         }
@@ -801,7 +819,10 @@ fun GestureHandler(
                 }
               }
             } else if (pointerCount > 1) {
-              // Multi-finger gesture detected
+              // Release speed ownership before handling a possible pinch.
+              gestureOwnership.cancelSpeedIntent()
+              gestureOwnership.release(HoldGestureOwner.SPEED)
+              gestureOwnership.release(HoldGestureOwner.VERTICAL)
               longPressJob.cancel()
               if (gestureType != null) {
                 when (gestureType) {
@@ -822,9 +843,9 @@ fun GestureHandler(
             }
           } while (event.changes.any { it.pressed })
 
-          // Handle gesture end
+          // Do not let a just-finished hold turn into horizontal seeking.
           longPressJob.cancel()
-
+          gestureOwnership.cancelSpeedIntent()
           if (isLongPressing) {
             if (hasSwipedEnough && rememberLongPressSpeed && lastAppliedSpeed > 0f) {
               playerPreferences.holdForMultipleSpeed.set(lastAppliedSpeed)
@@ -832,28 +853,14 @@ fun GestureHandler(
             isLongPressing = false
             isDynamicSpeedControlActive = false
             hasSwipedEnough = false
-            
-            // Only ramp back down if NOT locked
             if (!viewModel.isSpeedLocked.value) {
-                // Ramp speed back down incrementally to avoid audio filter stutter
-                val currentSpeed = MPVLib.getPropertyFloat("speed") ?: multipleSpeedGesture
-                val targetSpeed = originalSpeed
-                val steps = 5
-                val stepDelay = 16L
-                coroutineScope.launch {
-                  for (i in 1..steps) {
-                    val t = i.toFloat() / steps
-                    val intermediateSpeed = currentSpeed + (targetSpeed - currentSpeed) * t
-                    MPVLib.setPropertyFloat("speed", intermediateSpeed)
-                    if (i < steps) delay(stepDelay)
-                  }
-                }
-                viewModel.playerUpdate.update { PlayerUpdates.None }
-            } else {
-                // If locked, just clear the hint overlay
-                viewModel.playerUpdate.update { PlayerUpdates.None }
+              val currentSpeed = MPVLib.getPropertyFloat("speed") ?: multipleSpeedGesture
+              animateHoldSpeed(currentSpeed, originalSpeed)
             }
+            viewModel.playerUpdate.update { PlayerUpdates.None }
           }
+          gestureOwnership.release(HoldGestureOwner.SPEED)
+          gestureOwnership.release(HoldGestureOwner.VERTICAL)
 
           when (gestureType) {
             "vertical" -> {
@@ -885,7 +892,8 @@ fun GestureHandler(
           var bw = 0f
           var bh = 0f
 
-          awaitFirstDown(requireUnconsumed = false)
+          val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
 
           do {
@@ -893,6 +901,7 @@ fun GestureHandler(
             val pressed = event.changes.filter { it.pressed }
 
             if (pressed.size == 2) {
+              if (prevDist == 0f && !gestureOwnership.claim(HoldGestureOwner.PINCH)) continue
               val p1 = pressed[0].position
               val p2 = pressed[1].position
               val dx = p2.x - p1.x
@@ -950,6 +959,7 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+          gestureOwnership.release(HoldGestureOwner.PINCH)
         }
       }
       // Single-finger pan (only when Pan & Zoom enabled and zoomed in)
@@ -958,6 +968,7 @@ fun GestureHandler(
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
           var panning = false
           var prevX = down.position.x
@@ -1009,7 +1020,7 @@ fun GestureHandler(
                 if (!stateReady) {
                   // One-time JNI reads for the whole gesture.
                   zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
-                  if (zoom <= 0f) { continue }
+                  if (zoom <= 0f || !gestureOwnership.claim(HoldGestureOwner.PAN)) { continue }
                   localPanX = MPVLib.getPropertyDouble("video-pan-x")?.toFloat() ?: 0f
                   localPanY = MPVLib.getPropertyDouble("video-pan-y")?.toFloat() ?: 0f
                   val sw = size.width.toFloat()
@@ -1037,6 +1048,7 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+          gestureOwnership.release(HoldGestureOwner.PAN)
         }
       }
       .pointerInput(horizontalSwipeToSeek, swipeToSubtitleSeek, areControlsLocked, gesturePreferences, isVerticalGestureActive) {
@@ -1044,6 +1056,7 @@ fun GestureHandler(
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           // A horizontal swipe that starts on a subtitle (this is exactly the subtitle-seek zone,
           // the top/bottom 25%) must keep working, so only step aside once the touch has actually
           // become a vertical subtitle drag/pinch (checked again inside the loop below).
@@ -1081,7 +1094,7 @@ fun GestureHandler(
 
                   // Only activate if this is clearly a horizontal gesture
                   // and not conflicting with other gestures
-                  if (gestureType == null && 
+                  if (gestureType == null && gestureOwnership.canStartSeek() &&
                       abs(deltaX) > 30f && 
                       // Flat enough to be a swipe: within 69° of horizontal (tan(70°) ≈ 2.75). The
                       // steeper 70°..110° cone around vertical is left to the subtitle drag engine.
@@ -1092,9 +1105,10 @@ fun GestureHandler(
                       panelShown == Panels.None) { // Only when no panels are shown
                     
                     val hasActiveSubtitle = (MPVLib.getPropertyInt("sid") ?: 0) != 0
-                    if (swipeToSubtitleSeek && inExclusionZone && hasActiveSubtitle) {
+                    if (swipeToSubtitleSeek && inExclusionZone && hasActiveSubtitle &&
+                        gestureOwnership.claim(HoldGestureOwner.SUBTITLE_SEEK)) {
                       gestureType = "subtitle_seek"
-                    } else if (horizontalSwipeToSeek) {
+                    } else if (horizontalSwipeToSeek && gestureOwnership.claim(HoldGestureOwner.HORIZONTAL_SEEK)) {
                       gestureType = "horizontal_seek"
                       hasStartedSeeking = true
                       viewModel.setGestureSeeking(true)
@@ -1179,6 +1193,9 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+
+          gestureOwnership.release(HoldGestureOwner.HORIZONTAL_SEEK)
+          gestureOwnership.release(HoldGestureOwner.SUBTITLE_SEEK)
 
           // Apply the final seek when gesture ends
           if (hasStartedSeeking) {
