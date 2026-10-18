@@ -192,15 +192,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 )
                 metrics.vadWindows.forEachIndexed { index, window ->
                   Text(
-                    "F${index + 1}: ${window.inputRate} Hz → 16 kHz, ${window.frames} ramek; " +
-                      "VAD %.0f%% • RMS %.1f dBFS • szczyt %.1f dBFS • " +
-                      "prawie cisza %.1f%% • blisko przesterowania %.1f%%".format(
-                        window.positiveFraction * 100.0,
-                        window.rmsDbfs,
-                        window.peakDbfs,
-                        window.nearSilenceFraction * 100.0,
-                        window.nearFullScaleFraction * 100.0,
-                      ),
+                    formatVadWindow(index, window),
                     color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
                   )
                 }
