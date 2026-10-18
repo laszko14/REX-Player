@@ -58,5 +58,6 @@
   "audit_https_www_youtube_com_watch_v": "Przykładowy URL, a nie tekst interfejsu do przetłumaczenia.",
   "audit_nightly": "Nazwa kanału wydań Nightly.",
   "audit_separator": "Polskie słowo „separator” ma tę samą pisownię.",
-  "audit_folder": "Polskie słowo „folder” ma tę samą pisownię."
+  "audit_folder": "Polskie słowo „folder” ma tę samą pisownię.",
+  "pref_appearance_darkmode_system": "„System” jest poprawnym polskim słowem i krótką etykietą dopasowania motywu do systemu; w wersji polskiej i angielskiej zapis jest identyczny."
 }
