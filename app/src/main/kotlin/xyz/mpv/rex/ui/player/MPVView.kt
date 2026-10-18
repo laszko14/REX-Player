@@ -225,7 +225,7 @@ class MPVView(
   override fun postInitOptions() {
     MPVLifecycleLock.onNativeInitialized()
     // Covers headless playback too; the player controls handle live preference changes.
-    RexDrcAudio.apply(audioPreferences.drcEnabled.get())
+    RexDrcAudio.apply(audioPreferences.drcEnabled.get(), audioPreferences.drcStrength.get())
     when (decoderPreferences.debanding.get()) {
       Debanding.None -> {}
       Debanding.CPU -> MPVLib.command("vf", "add", "@deband:gradfun=radius=12")
