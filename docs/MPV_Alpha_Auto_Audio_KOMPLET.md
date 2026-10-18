@@ -327,3 +327,46 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 - Do następnej weryfikacji: pozostałe ABI na poziomie symboli (nie wykonano), sprawdzanie kompletu `libmpv.so/libplayer.so` i publikacja nowej wersji `com.github.laszko14` bez zastępowania oryginalnej paczki.
 - Po scaleniu i prawidłowej dystrybucji natywnej dopiero podmienić zależność aplikacji i uruchomić `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `check_workflows`; następnie sprawdzić VAD na streamingu HTTP/HLS/DASH, 1,5×–3×, PTS oraz brak regresji.
 - **Podpisany MPV Alpha v47 APK i działający VAD streamingu nadal nie zostały zweryfikowane ani wydane**. Nie należy utożsamiać sukcesu natywnego CI z tym wynikiem.
+
+
+## 19. Auto Audio v47 — ARM64-only integracja zamiast czterech ABI (18.10.2026)
+
+**Decyzja użytkownika:** do dalszego etapu Auto Audio stosujemy **wyłącznie ARM64 (arm64-v8a)**, zgodnie z używanym Nothing Phone (1). ARMv7/x86/x86_64 na razie nie rozwijamy, bez usuwania historycznego kodu. Aplikacja już wcześniej ograniczała docelowy APK przez `splits.abi.include("arm64-v8a")`.
+
+### Zrealizowane działania w forku natywnym
+
+- Zielony poprzedni build wszystkich ABI: https://github.com/laszko14/mpvRex-libmpv/actions/runs/39159621224. Statycznie sprawdzono AAR ARM64: w `libmpv.so` istnieje eksport `mpv_rex_set_pcm_sink`, a w parowanym `libplayer.so` znajdują się symbole JNI `vadTapStart/Stop/Poll`. SHA256 zweryfikowanej paczki ARM64 z poprzedniego przebiegu: `d8b0f8747b8bd754bc492dcdd0b907ff591bb6c0f02b08a093914fd38a95850b`. Jest to kontrola symboli, nie runtime.
+- Na istniejącej gałęzi natywnego PR #1 zmieniono matrycę `.github/workflows/build.yml` i prefiks `buildscripts/include/ci.sh`, aby następny CI budował tylko ARM64. Reszta źródeł ABI pozostaje nienaruszona.
+- Dodano `.github/workflows/publish-arm64.yml`, który **dopiero po zielonym buildzie na `master`** i weryfikacji biblioteki opublikuje osobne, niezmienne wydanie `native-v47-arm64-r1` z `mpvRex-libmpv-native-v47-arm64-r1.aar` i SHA256. Nie ma automatycznego publikowania z niezweryfikowanego PR.
+- Uruchomiono nowy ARM64-only build: https://github.com/laszko14/mpvRex-libmpv/actions/runs/39163226756. Status przy tym wpisie `in_progress`; sukcesu jeszcze nie potwierdzono.
+
+### Przygotowana integracja aplikacji (gałąź bez scalania przed release)
+
+- Gałąź `feature/v47-arm64-native-vad-integration`: w `settings.gradle.kts` zadeklarowano izolowane repozytorium Ivy dla niezmiennego zasobu AAR GitHub Releases `com.github.laszko14`.
+- `app/build.gradle.kts` zamienia stare `implementation(libs.mpv.lib)` na `com.github.laszko14:mpvRex-libmpv:native-v47-arm64-r1@aar`. W katalogu wersji usunięto wywołanie starego `com.github.sfsakhawat999:mpvRex-libmpv:0.0.9`. Nie dodano nowego HTTP w torze odtwarzania; pobranie AAR dotyczy tylko procesu kompilacji.
+- **To jest integracja w przygotowaniu**: release binarny nie został jeszcze opublikowany, a Gradle nie potwierdził rozwiązania zależności ani kompilacji MPV Alpha. Nie scalać gałęzi przed rzeczywistym zielonym CI.
+- Stary opcjonalny `AutoAudioNativePcmBridge`, `AutoAudioStreamingVad`, testy WebRTC i wszystkie wcześniejsze filtry pozostają bez zmian. Brak prób automatycznego włączania filtrów.
+
+### Niezmienny warunek przed instalacyjnym APK
+
+Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `testDebugUnitTest`, `lintDebug` i kontrole workflow, a następnie na fizycznym urządzeniu ocenić VAD na strumieniu HTTP/HLS/DASH z dialogiem, ciszą, muzyką i zakłóceniami, 15 s oraz 3×10 s, 1,5×–3×, seek i PTS. **Nie uruchamiać podpisanej aktualizacji v47 ani nie deklarować powodzenia natywnego VAD przed testem rzeczywistym.** Przed kompilacją signed APK sprawdzić ostatni numer wersji i zachować dotychczasowy certyfikat oraz package ID.
+
+
+
+## 20. Auto Audio v47 — natywny PR #1 scalony, biblioteka ARM64 w publikacji (18.10.2026)
+
+- Po zakończeniu natywnego CI ARM64-only potwierdzono **success** obu aktualnych przebiegów: [push 39163222657](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39163222657) i [PR 39163226756](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39163226756), commit `7680f898f2d0268ed9495be47eb2d3f943eb5720`.
+- Pobrano i sprawdzono faktyczny `app-release.aar` z drugiego CI (artifact ID `12149886845`): SHA256 **`b81d9a7cf80a44b34db4a6eb8c667e78be0549cbbd0c61dd5046d96ceacd31eb`**. Wewnątrz są para `jni/arm64-v8a/libmpv.so` i `libplayer.so` oraz dodatkowe biblioteki FFmpeg; `readelf -W --dyn-syms` potwierdziło globalny eksport `mpv_rex_set_pcm_sink` i JNI `Java_is_xyz_mpv_MPVLib_vadTapStart/Stop/Poll`.
+- [Natywny PR #1](https://github.com/laszko14/mpvRex-libmpv/pull/1) został **scalony** do `master` (squash commit `076cd06f86dd7647dde38bd006c5bfdd3354ea39`). Nie ma już powodu powtarzać tego etapu.
+- Automatycznie rozpoczęła się kompilacja `master`: [39164435452](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39164435452). **Stan w chwili wpisu:** `in_progress`, etap `Download deps`, bez opublikowanego release. Nie utożsamiać zakończenia poprzednich PR buildów z publikacją.
+- Workflow `publish-arm64.yml` po zielonym buildzie `master` ma sprawdzić eksporty i parę JNI oraz opublikować `native-v47-arm64-r1` jako zasób GitHub Release. Nie wolno pobierać wydania pod nieweryfikowanym adresem.
+- Gałąź aplikacyjna `feature/v47-arm64-native-vad-integration` nadal czeka na **rzeczywiste wydanie**. Kolejny etap to: potwierdzić wydanie i SHA256 AAR, uruchomić CI Gradle na PR aplikacji, sprawdzić komplet JNI oraz testy VAD w streamingu na urządzeniu. Nie uruchamiać jeszcze podpisanego APK v47 ani automatycznej zmiany filtrów.
+
+
+
+### Diagnostyczny build v47 bez zastępowania zainstalowanego MPV Alpha
+
+- W workflow aplikacji `.github/workflows/build.yml` (tylko PR gałęzi `feature/v47-arm64-native-vad-integration`) dodano archiwizowanie debugowego pliku APK `mpv-alpha-auto-audio-v47-arm64-debug`, **wyłącznie jeśli cały etap `assembleDebug/testDebugUnitTest/lintDebug` zakończy się sukcesem**.
+- Testowa aplikacja ma osobny `applicationIdSuffix=".debug"`; nie zastępuje podpisanego produkcyjnego `xyz.mpv.rex`, nie podmienia istniejących danych/ustawień i nie rezerwuje numeru wydania `v47`.
+- To artefakt diagnostyczny do przyszłego testu urządzenia i streamingu, **nie instalacyjna aktualizacja właściwego MPV Alpha**. Nie twierdzić, że WebRTC VAD przeszedł test na telefonie, dopóki użytkownik nie prześle wyników.
+
