@@ -25,13 +25,13 @@ internal data class AutoAudioState(
 
   fun apply(prefs: AudioPreferences) {
     // Existing native owners synchronize their named filters from these preferences.
-    prefs.dialogueEnhanceLevel.set(dialogue)
-    prefs.drcStrength.set(drcLevel)
-    prefs.drcEnabled.set(drcOn)
-    prefs.rexEqBoost.set(eqBoost)
-    prefs.rexEqEnabled.set(eqOn)
+    if (prefs.dialogueEnhanceLevel.get() != dialogue) prefs.dialogueEnhanceLevel.set(dialogue)
+    if (prefs.drcStrength.get() != drcLevel) prefs.drcStrength.set(drcLevel)
+    if (prefs.drcEnabled.get() != drcOn) prefs.drcEnabled.set(drcOn)
+    if (prefs.rexEqBoost.get() != eqBoost) prefs.rexEqBoost.set(eqBoost)
+    if (prefs.rexEqEnabled.get() != eqOn) prefs.rexEqEnabled.set(eqOn)
     // One RNNoise filter: same Lua bridge and user-data key as the user's own button.
-    RexSzumAudio.setLevel(noise)
+    if (RexSzumAudio.readLevel() != noise) RexSzumAudio.setLevel(noise)
   }
 }
 
