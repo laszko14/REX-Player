@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.miniplayer
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -233,7 +235,7 @@ fun MiniPlayer(
         }
 
         // ──────────────────────────────────────────────────────────────
-        // Expanded Header (Collapse Arrow, "NOW PLAYING", Close Button)
+        // Expanded Header (Collapse Arrow, stringResource(R.string.audit_now_playing), Close Button)
         // ──────────────────────────────────────────────────────────────
         if (expandedHeaderAlpha > 0f) {
           Row(
@@ -259,13 +261,13 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = Icons.Filled.KeyboardArrowDown,
-                contentDescription = "Collapse Mini Player",
+                contentDescription = stringResource(R.string.audit_collapse_mini_player),
                 tint = MaterialTheme.colorScheme.onSurface,
               )
             }
 
             Text(
-              text = "NOW PLAYING",
+              text = stringResource(R.string.audit_now_playing),
               style = MaterialTheme.typography.labelMedium.copy(
                 letterSpacing = 1.2.sp,
                 fontWeight = FontWeight.Bold,
@@ -280,7 +282,7 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = Icons.Filled.Close,
-                contentDescription = "Close Mini Player",
+                contentDescription = stringResource(R.string.audit_close_mini_player),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             }
@@ -387,14 +389,14 @@ fun MiniPlayer(
                   Spacer(modifier = Modifier.width(12.dp))
                   Column(modifier = Modifier.weight(1f)) {
                     Text(
-                      text = state.nextTitle?.ifBlank { "Next Track" } ?: "Next Track",
+                      text = state.nextTitle?.ifBlank { stringResource(R.string.audit_next_track) } ?: stringResource(R.string.audit_next_track),
                       style = MaterialTheme.typography.titleMedium,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
                       color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                      text = "Swipe to play next",
+                      text = stringResource(R.string.audit_swipe_to_play_next),
                       style = MaterialTheme.typography.bodySmall,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
@@ -442,14 +444,14 @@ fun MiniPlayer(
                   Spacer(modifier = Modifier.width(12.dp))
                   Column(modifier = Modifier.weight(1f)) {
                     Text(
-                      text = state.prevTitle?.ifBlank { "Previous Track" } ?: "Previous Track",
+                      text = state.prevTitle?.ifBlank { stringResource(R.string.audit_previous_track) } ?: stringResource(R.string.audit_previous_track),
                       style = MaterialTheme.typography.titleMedium,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
                       color = MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                      text = "Swipe to play previous",
+                      text = stringResource(R.string.audit_swipe_to_play_previous),
                       style = MaterialTheme.typography.bodySmall,
                       maxLines = 1,
                       overflow = TextOverflow.Ellipsis,
@@ -470,7 +472,7 @@ fun MiniPlayer(
               ) {
                 Column(modifier = Modifier.weight(1f)) {
                   Text(
-                    text = state.title.ifBlank { "Playing Media" },
+                    text = state.title.ifBlank { stringResource(R.string.audit_playing_media) },
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -508,7 +510,7 @@ fun MiniPlayer(
                   ) { isPaused ->
                     Icon(
                       imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                      contentDescription = if (isPaused) "Play" else "Pause",
+                      contentDescription = if (isPaused) stringResource(R.string.audit_play) else stringResource(R.string.audit_pause),
                       modifier = Modifier.size(22.dp),
                     )
                   }
@@ -523,7 +525,7 @@ fun MiniPlayer(
                 ) {
                   Icon(
                     imageVector = Icons.Filled.Close,
-                    contentDescription = "Close Mini Player",
+                    contentDescription = stringResource(R.string.audit_close_mini_player),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                   )
                 }
@@ -620,7 +622,7 @@ fun MiniPlayer(
             horizontalAlignment = Alignment.CenterHorizontally,
           ) {
             Text(
-              text = state.title.ifBlank { "Playing Media" },
+              text = state.title.ifBlank { stringResource(R.string.audit_playing_media) },
               style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
               maxLines = 1,
               overflow = TextOverflow.Ellipsis,
@@ -727,7 +729,7 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = if (isShuffle) Icons.Filled.ShuffleOn else Icons.Filled.Shuffle,
-                contentDescription = "Toggle Shuffle",
+                contentDescription = stringResource(R.string.audit_toggle_shuffle),
                 modifier = Modifier.size(24.dp),
               )
             }
@@ -742,7 +744,7 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = Icons.Filled.SkipPrevious,
-                contentDescription = "Previous Track",
+                contentDescription = stringResource(R.string.audit_previous_track),
                 modifier = Modifier.size(28.dp),
               )
             }
@@ -768,7 +770,7 @@ fun MiniPlayer(
                 ) { isPaused ->
                   Icon(
                     imageVector = if (isPaused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                    contentDescription = if (isPaused) "Play" else "Pause",
+                    contentDescription = if (isPaused) stringResource(R.string.audit_play) else stringResource(R.string.audit_pause),
                     tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(34.dp),
                   )
@@ -786,7 +788,7 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = Icons.Filled.SkipNext,
-                contentDescription = "Next Track",
+                contentDescription = stringResource(R.string.audit_next_track),
                 modifier = Modifier.size(28.dp),
               )
             }
@@ -808,7 +810,7 @@ fun MiniPlayer(
             ) {
               Icon(
                 imageVector = repeatIcon,
-                contentDescription = "Cycle Repeat Mode",
+                contentDescription = stringResource(R.string.audit_change_repeat_mode),
                 modifier = Modifier.size(24.dp),
               )
             }

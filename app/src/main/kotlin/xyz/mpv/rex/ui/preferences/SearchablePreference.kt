@@ -920,8 +920,8 @@ object SearchablePreferences {
                 targetIndex = 1,
             ))
             add(SearchablePreference(
-                title = "HDR-to-SDR Tone Mapping (hdr-toys)",
-                summary = "Apply high quality GLSL shaders for HDR-to-SDR conversion. Requires gpu-next.",
+                titleRes = R.string.audit_search_hdr_to_sdr_tone_mapping_hdr_toys,
+                summaryRes = R.string.audit_search_apply_high_quality_glsl_shaders_for_hdr_to_sdr_conversion_requires_gpu,
                 keywords = listOf("hdr", "sdr", "tone", "mapping", "hdr-toys", "shaders", "glsl", "color"),
                 category = "Decoder",
                 screen = DecoderPreferencesScreen,
@@ -1044,15 +1044,15 @@ object SearchablePreferences {
                 targetIndex = 3,
             ))
             add(SearchablePreference(
-                title = "Advanced Search Filters",
+                titleRes = R.string.audit_search_advanced_search_filters,
                 keywords = listOf("advanced", "filters", "subtitle", "search", "formats", "encodings", "hearing impaired"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
                 targetIndex = 3,
             ))
             add(SearchablePreference(
-                title = "Hearing-impaired friendly",
-                summary = "Only show subtitles optimized for hearing impaired",
+                titleRes = R.string.audit_search_hearing_impaired_friendly,
+                summaryRes = R.string.audit_search_only_show_subtitles_adapted_for_people_with_hearing_loss,
                 keywords = listOf("hearing", "impaired", "sdh", "accessibility", "subtitles", "deaf"),
                 category = "Subtitles",
                 screen = SubtitlesPreferencesScreen,
@@ -1347,7 +1347,7 @@ object SearchablePreferences {
             // Integrations preferences
             add(SearchablePreference(
                 title = "Jellyfin",
-                summary = "External player sync",
+                summaryRes = R.string.audit_search_external_player_sync,
                 keywords = listOf("jellyfin", "server", "sync", "stream", "media", "integration"),
                 category = "Integrations",
                 screen = JellyfinSettingsScreen,
@@ -1355,55 +1355,55 @@ object SearchablePreferences {
             ))
             add(SearchablePreference(
                 title = "yt-dlp",
-                summary = "Manage REX Ytdlp & extractor preferences",
+                summaryRes = R.string.audit_search_manage_rex_ytdlp_and_extractor_preferences,
                 keywords = listOf("ytdl", "yt-dlp", "youtube", "extractor", "stream", "downloader", "addon"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 0,
             ))
             add(SearchablePreference(
-                title = "Resolution Preference",
-                summary = "Auto / Best, 4K, 2K, 1080p, 720p, 480p, Audio Only",
+                titleRes = R.string.audit_search_resolution_preference,
+                summaryRes = R.string.audit_search_auto_best_4k_2k_1080p_720p_480p_audio_only,
                 keywords = listOf("resolution", "quality", "1080p", "4k", "yt-dlp", "stream", "video"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 2,
             ))
             add(SearchablePreference(
-                title = "Geo-Bypass",
-                summary = "Bypass geographic video restrictions where possible",
+                titleRes = R.string.audit_search_geo_bypass,
+                summaryRes = R.string.audit_search_bypass_geographic_video_restrictions_where_possible,
                 keywords = listOf("geo-bypass", "region", "country", "restrictions", "yt-dlp", "bypass"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 2,
             ))
             add(SearchablePreference(
-                title = "Prefer Nightly Channel",
-                summary = "Receive cutting-edge yt-dlp nightly extractor fixes",
+                titleRes = R.string.audit_search_prefer_nightly_channel,
+                summaryRes = R.string.audit_search_receive_the_latest_yt_dlp_extractor_fixes_from_nightly_builds,
                 keywords = listOf("nightly", "channel", "updates", "yt-dlp", "extractor", "cutting-edge"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 2,
             ))
             add(SearchablePreference(
-                title = "Auto-detect Web Pages",
-                summary = "Proactively probe unknown URLs to route HTML web pages through yt-dlp",
+                titleRes = R.string.audit_search_auto_detect_web_pages,
+                summaryRes = R.string.audit_search_probe_unknown_urls_to_route_web_pages_through_yt_dlp,
                 keywords = listOf("auto-detect", "web", "pages", "urls", "probe", "yt-dlp", "routing"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 4,
             ))
             add(SearchablePreference(
-                title = "Custom Supported Domains",
-                summary = "Domains (comma or space separated) routed through yt-dlp",
+                titleRes = R.string.audit_search_custom_supported_domains,
+                summaryRes = R.string.audit_search_domains_comma_or_space_separated_routed_through_yt_dlp,
                 keywords = listOf("custom domains", "domains", "websites", "url", "routing", "yt-dlp"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 4,
             ))
             add(SearchablePreference(
-                title = "Custom Format Selector",
-                summary = "yt-dlp format selector (e.g. bestvideo+bestaudio/best)",
+                titleRes = R.string.audit_search_custom_format_selector,
+                summaryRes = R.string.audit_search_yt_dlp_format_selector_e_g_bestvideo_bestaudio_best,
                 keywords = listOf("format", "format selector", "bestvideo", "bestaudio", "yt-dlp", "stream"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
@@ -1411,15 +1411,15 @@ object SearchablePreferences {
             ))
             add(SearchablePreference(
                 title = "Proxy",
-                summary = "Proxy URL for yt-dlp connections",
+                summaryRes = R.string.audit_search_proxy_url_for_yt_dlp_connections,
                 keywords = listOf("proxy", "http", "socks5", "network", "yt-dlp"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,
                 targetIndex = 6,
             ))
             add(SearchablePreference(
-                title = "Custom User-Agent",
-                summary = "User-Agent Header for yt-dlp requests",
+                titleRes = R.string.audit_search_custom_user_agent,
+                summaryRes = R.string.audit_search_user_agent_header_for_yt_dlp_requests,
                 keywords = listOf("user-agent", "header", "http", "browser", "yt-dlp"),
                 category = "Integrations",
                 screen = YtdlSettingsScreen,

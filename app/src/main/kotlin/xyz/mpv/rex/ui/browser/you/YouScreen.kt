@@ -635,7 +635,7 @@ object YouScreen : Screen {
                 overflow = TextOverflow.Ellipsis,
               )
               Text(
-                text = if (playlist.isM3uPlaylist) "Network Playlist" else "Local Playlist",
+                text = if (playlist.isM3uPlaylist) stringResource(R.string.audit_network_playlist) else stringResource(R.string.audit_local_playlist),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.outline,
               )
@@ -745,7 +745,7 @@ object YouScreen : Screen {
       AlertDialog(
         onDismissRequest = { playlistToDelete = null },
         title = { Text(stringResource(R.string.delete)) },
-        text = { Text("Delete playlist \"${playlistToDelete!!.name}\"?") },
+        text = { Text(stringResource(R.string.audit_delete_playlist, playlistToDelete!!.name)) },
         confirmButton = {
           TextButton(
             onClick = {
@@ -1413,7 +1413,7 @@ object YouScreen : Screen {
             )
             Icon(
               imageVector = iconVector,
-              contentDescription = "Playlist",
+              contentDescription = stringResource(R.string.audit_playlist),
               modifier = Modifier
                 .align(Alignment.Center)
                 .size(iconSize),
@@ -1479,7 +1479,7 @@ object YouScreen : Screen {
           )
 
           Text(
-            text = if (playlist.isM3uPlaylist) "Network" else "Local",
+            text = if (playlist.isM3uPlaylist) stringResource(R.string.audit_network) else stringResource(R.string.audit_local),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.outline,
           )
@@ -1598,7 +1598,7 @@ object YouScreen : Screen {
       },
       title = {
         Text(
-          text = "Customize Profile",
+          text = stringResource(R.string.audit_customize_profile),
           style = MaterialTheme.typography.titleLarge,
           fontWeight = FontWeight.Bold,
         )
@@ -1687,7 +1687,7 @@ object YouScreen : Screen {
                 modifier = Modifier.size(18.dp),
               )
               Spacer(modifier = Modifier.width(6.dp))
-              Text(if (selectedBitmap != null) "Change Photo" else "Choose Photo")
+              Text(if (selectedBitmap != null) stringResource(R.string.audit_change_photo) else stringResource(R.string.audit_choose_photo))
             }
 
             if (selectedBitmap != null) {
@@ -1709,7 +1709,7 @@ object YouScreen : Screen {
                   modifier = Modifier.size(18.dp),
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text("Remove")
+                Text(stringResource(R.string.audit_remove))
               }
             }
           }
@@ -1727,7 +1727,7 @@ object YouScreen : Screen {
                 IconButton(onClick = { nameText = "" }) {
                   Icon(
                     imageVector = Icons.Filled.Clear,
-                    contentDescription = "Clear",
+                    contentDescription = stringResource(R.string.audit_clear),
                   )
                 }
               }

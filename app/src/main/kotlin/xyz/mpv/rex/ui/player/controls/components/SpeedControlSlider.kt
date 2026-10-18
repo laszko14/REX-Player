@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls.components
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.Spring
@@ -211,7 +213,7 @@ fun CompactSpeedIndicator(
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Default.Close,
-                        contentDescription = "Reset Speed",
+                        contentDescription = stringResource(R.string.audit_reset_speed),
                         modifier = Modifier.size(14.dp),
                         tint = if (matchTheme && !enableGlass) MaterialTheme.colorScheme.primary else contentColor
                     )

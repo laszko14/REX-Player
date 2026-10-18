@@ -156,7 +156,7 @@ fun OnlineSubtitleSearchSheet(
               onSearchMedia(mediaInfo.title)
               keyboardController?.hide()
             }) {
-              Icon(Icons.Default.Refresh, contentDescription = "Reset Search", tint = MaterialTheme.colorScheme.primary)
+              Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.audit_reset_search), tint = MaterialTheme.colorScheme.primary)
             }
           },
           trailingIcon = {
@@ -454,7 +454,7 @@ fun SeriesDetailsSection(
                 modifier = Modifier.padding(horizontal = 10.dp)
               ) {
                 Text(
-                  text = selectedSeason?.let { "S${it.season_number}" } ?: "Season",
+                  text = selectedSeason?.let { "S${it.season_number}" } ?: stringResource(R.string.audit_season),
                   style = MaterialTheme.typography.labelMedium,
                   fontWeight = FontWeight.Bold
                 )
@@ -468,7 +468,7 @@ fun SeriesDetailsSection(
             ) {
               tvShow.seasons.forEach { season ->
                 DropdownMenuItem(
-                  text = { Text("Season ${season.season_number}", style = MaterialTheme.typography.bodyMedium) },
+                  text = { Text(stringResource(R.string.audit_season_number, season.season_number), style = MaterialTheme.typography.bodyMedium) },
                 onClick = {
                   onSelectSeason(season)
                   seasonDropdownExpanded.value = false
@@ -497,7 +497,7 @@ fun SeriesDetailsSection(
                       Spacer(Modifier.width(4.dp))
                     }
                     Text(
-                      text = selectedEpisode?.let { "E${it.episode_number}" } ?: "Ep",
+                      text = selectedEpisode?.let { "E${it.episode_number}" } ?: stringResource(R.string.audit_ep),
                       style = MaterialTheme.typography.labelMedium,
                       fontWeight = FontWeight.Bold
                     )
@@ -513,7 +513,7 @@ fun SeriesDetailsSection(
                     DropdownMenuItem(
                         text = {
                           Column {
-                            Text("Ep ${episode.episode_number}", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.audit_episode_number, episode.episode_number), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyMedium)
                             episode.name?.let {
                               Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                               }

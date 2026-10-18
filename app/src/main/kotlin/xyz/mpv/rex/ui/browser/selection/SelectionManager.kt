@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.browser.selection
 
+import xyz.mpv.rex.R
 import android.content.Context
 import android.content.Intent
 import android.widget.Toast
@@ -113,12 +114,12 @@ class SelectionManager<T, ID>(
       runCatching {
         val (deleted, failed) = onDeleteItems(selected, deleteFiles)
         if (deleted > 0) {
-          Toast.makeText(context, "Deleted successfully", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, context.getString(R.string.audit_deleted_successfully), Toast.LENGTH_SHORT).show()
         } else if (failed > 0) {
-          Toast.makeText(context, "Failed to delete", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, context.getString(R.string.audit_failed_to_delete), Toast.LENGTH_SHORT).show()
         }
       }.onFailure {
-        Toast.makeText(context, "Failed to delete: ${it.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.audit_delete_failed, it.message), Toast.LENGTH_SHORT).show()
       }
       clear()
       onOperationComplete()
@@ -137,12 +138,12 @@ class SelectionManager<T, ID>(
       runCatching {
         val result = onRenameItem(item, newName)
         result.onSuccess {
-          Toast.makeText(context, "Renamed successfully", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, context.getString(R.string.audit_renamed_successfully), Toast.LENGTH_SHORT).show()
         }.onFailure { error ->
-          Toast.makeText(context, "Failed to rename: ${error.message}", Toast.LENGTH_SHORT).show()
+          Toast.makeText(context, context.getString(R.string.audit_rename_failed, error.message), Toast.LENGTH_SHORT).show()
         }
       }.onFailure {
-        Toast.makeText(context, "Failed to rename: ${it.message}", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.audit_rename_failed, it.message), Toast.LENGTH_SHORT).show()
       }
       clear()
       onOperationComplete()

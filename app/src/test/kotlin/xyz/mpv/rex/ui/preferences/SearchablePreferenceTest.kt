@@ -10,6 +10,11 @@ import xyz.mpv.rex.R
 class SearchablePreferenceTest {
 
     private val stringMap = mapOf(
+        R.string.audit_search_resolution_preference to "Resolution Preference",
+        R.string.audit_search_geo_bypass to "Geo-Bypass",
+        R.string.audit_search_prefer_nightly_channel to "Prefer Nightly Channel",
+        R.string.audit_search_hearing_impaired_friendly to "Hearing-impaired friendly",
+        R.string.audit_search_advanced_search_filters to "Advanced Search Filters",
         // Appearance
         R.string.pref_appearance_title to "Appearance",
         R.string.pref_appearance_summary to "Theme, layout, and colors",
@@ -171,7 +176,7 @@ class SearchablePreferenceTest {
         val results = SearchablePreferences.search("yt-dlp", stringResolver)
         assertFalse(results.isEmpty())
 
-        val titles = results.map { it.title }
+        val titles = results.map { it.titleRes?.let(stringResolver) ?: it.title }
         assertTrue("Expected yt-dlp in results", titles.contains("yt-dlp"))
         assertTrue("Expected Resolution Preference in results", titles.contains("Resolution Preference"))
         assertTrue("Expected Geo-Bypass in results", titles.contains("Geo-Bypass"))
@@ -184,7 +189,7 @@ class SearchablePreferenceTest {
         assertFalse(results.isEmpty())
 
         val first = results.first()
-        assertEquals("Resolution Preference", first.title)
+        assertEquals(R.string.audit_search_resolution_preference, first.titleRes)
         assertEquals(YtdlSettingsScreen, first.screen)
         assertEquals(2, first.targetIndex)
     }
@@ -270,7 +275,7 @@ class SearchablePreferenceTest {
         val results = SearchablePreferences.search("hearing impaired", stringResolver)
         assertFalse(results.isEmpty())
 
-        val match = results.firstOrNull { it.title == "Hearing-impaired friendly" }
+        val match = results.firstOrNull { it.titleRes == R.string.audit_search_hearing_impaired_friendly }
         assertNotNull("Expected Hearing-impaired friendly preference in results", match)
         assertEquals(SubtitlesPreferencesScreen, match?.screen)
         assertEquals(3, match?.targetIndex)
@@ -282,7 +287,7 @@ class SearchablePreferenceTest {
         val results = SearchablePreferences.search("Advanced Search Filters", stringResolver)
         assertFalse(results.isEmpty())
 
-        val match = results.firstOrNull { it.title == "Advanced Search Filters" }
+        val match = results.firstOrNull { it.titleRes == R.string.audit_search_advanced_search_filters }
         assertNotNull("Expected Advanced Search Filters preference in results", match)
         assertEquals(SubtitlesPreferencesScreen, match?.screen)
         assertEquals(3, match?.targetIndex)
@@ -537,6 +542,25 @@ class SearchablePreferenceTest {
         }
         assertEquals(2, results.size)
     }
+    @Test
+    fun `Polish queries resolve localized settings titles and preserve navigation targets`() {
+        val polish = mapOf(
+            R.string.audit_search_resolution_preference to "Preferowana rozdzielczość",
+            R.string.audit_search_hearing_impaired_friendly to "Dla osób niedosłyszących",
+            R.string.pref_gesture_double_tap_seek_area_width_title to "Szerokość obszaru dwukrotnego dotknięcia",
+        )
+        val resolve: (Int) -> String = { polish[it] ?: stringResolver(it) }
+        val resolution = SearchablePreferences.search("rozdzielczość", resolve).first()
+        assertEquals(R.string.audit_search_resolution_preference, resolution.titleRes)
+        assertEquals(YtdlSettingsScreen, resolution.screen)
+        assertEquals(2, resolution.targetIndex)
+        val subtitles = SearchablePreferences.search("niedosłyszących", resolve).first()
+        assertEquals(SubtitlesPreferencesScreen, subtitles.screen)
+        assertTrue(SearchablePreferences.search("dwukrotnego dotknięcia", resolve).any {
+            it.titleRes == R.string.pref_gesture_double_tap_seek_area_width_title
+        })
+    }
+
 }
 
 

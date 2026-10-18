@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="web_share_ui_page_title">REX Player — udostępnianie</string>
+    <string name="web_share_ui_badge">Udostępnianie w REX Player</string>
+    <string name="web_share_ui_heading">Udostępnione pliki</string>
+    <string name="web_share_ui_download">Pobierz</string>
+    <string name="web_share_ui_play">Odtwórz</string>
+    <string name="web_share_ui_upload_title">Wyślij pliki do REX Player</string>
+    <string name="web_share_ui_upload_description">Dotknij, aby wybrać pliki, lub upuść je tutaj, aby wysłać</string>
+    <string name="web_share_ui_download_all">Pobierz wszystko (ZIP)</string>
+    <string name="web_share_ui_saved">✓ Zapisano</string>
+    <string name="web_share_ui_upload_failed">✗ Nie udało się wysłać</string>
+    <string name="web_share_ui_connection_error">✗ Błąd połączenia</string>
+    <string name="web_share_ui_close">Zamknij odtwarzacz</string>
+    <plurals name="web_share_ui_summary">
+        <item quantity="one">%1$d plik • łącznie %2$s</item>
+        <item quantity="few">%1$d pliki • łącznie %2$s</item>
+        <item quantity="many">%1$d plików • łącznie %2$s</item>
+        <item quantity="other">%1$d pliku • łącznie %2$s</item>
+    </plurals>
+    <string name="web_share_ui_access_denied">Brak dostępu: token zabezpieczający jest nieprawidłowy lub nie został podany.</string>
+    <string name="web_share_ui_not_found">404 — nie znaleziono strony</string>
+    <string name="web_share_ui_internal_error">500 — błąd serwera: %1$s</string>
+    <string name="web_share_ui_file_not_found">Nie znaleziono pliku</string>
+    <string name="web_share_ui_file_unreadable">Nie można odczytać pliku na urządzeniu</string>
+    <string name="web_share_ui_unknown_error">Nieznany błąd</string>
+    <string name="web_share_ui_upload_error_details">Przesyłanie nie powiodło się: %1$s</string>
+</resources>

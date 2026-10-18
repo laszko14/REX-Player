@@ -627,7 +627,7 @@ object FolderListScreen : Screen {
               filePicker.launch(arrayOf("video/*"))
             },
             icon = { Icon(Icons.Filled.FileOpen, contentDescription = null) },
-            text = { Text(text = "Open File") },
+            text = { Text(text = stringResource(R.string.audit_open_file)) },
           )
 
           FloatingActionButtonMenuItem(
@@ -642,7 +642,7 @@ object FolderListScreen : Screen {
               }
             },
             icon = { Icon(Icons.Filled.History, contentDescription = null) },
-            text = { Text(text = "Recently Played") },
+            text = { Text(text = stringResource(R.string.audit_recently_played)) },
           )
 
           FloatingActionButtonMenuItem(
@@ -651,7 +651,7 @@ object FolderListScreen : Screen {
               showLinkDialog.value = true
             },
             icon = { Icon(Icons.Filled.Link, contentDescription = null) },
-            text = { Text(text = "Open Link") },
+            text = { Text(text = stringResource(R.string.audit_open_link)) },
           )
         }
         }

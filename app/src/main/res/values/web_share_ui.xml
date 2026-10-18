@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- These new strings are translated to Polish, with an intentional English fallback for other locales.
+     check_polish.py independently checks completeness and formatting for the Polish locale. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="web_share_ui_page_title">REX Player Web Share</string>
+    <string name="web_share_ui_badge">REX Player Share</string>
+    <string name="web_share_ui_heading">Shared Files</string>
+    <string name="web_share_ui_download">Download</string>
+    <string name="web_share_ui_play">Play</string>
+    <string name="web_share_ui_upload_title">Send Files to REX Player</string>
+    <string name="web_share_ui_upload_description">Tap to browse or drop files to send</string>
+    <string name="web_share_ui_download_all">Download All (ZIP)</string>
+    <string name="web_share_ui_saved">✓ Saved</string>
+    <string name="web_share_ui_upload_failed">✗ Upload failed</string>
+    <string name="web_share_ui_connection_error">✗ Connection error</string>
+    <string name="web_share_ui_close">Close player</string>
+    <plurals name="web_share_ui_summary">
+        <item quantity="one">%1$d file • %2$s total</item>
+        <item quantity="other">%1$d files • %2$s total</item>
+    </plurals>
+    <string name="web_share_ui_access_denied">Access denied: invalid or missing security token.</string>
+    <string name="web_share_ui_not_found">404 Not Found</string>
+    <string name="web_share_ui_internal_error">500 Internal Server Error: %1$s</string>
+    <string name="web_share_ui_file_not_found">File not found</string>
+    <string name="web_share_ui_file_unreadable">File unreadable on device</string>
+    <string name="web_share_ui_unknown_error">Unknown error</string>
+    <string name="web_share_ui_upload_error_details">Upload failed: %1$s</string>
+</resources>

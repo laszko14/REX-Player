@@ -232,19 +232,19 @@ object PreferencesScreen : Screen {
 
           // Integrations Section
           item {
-            PreferenceSection(title = "Integrations") {
+            PreferenceSection(title = stringResource(R.string.audit_integrations)) {
               GroupedListColumn {
                 PreferenceItem(
                   position = GroupPosition.FIRST,
                   title = "Jellyfin",
-                  summary = "External player sync",
+                  summary = stringResource(R.string.audit_external_player_sync),
                   icon = Icons.Outlined.VideoLibrary,
                   onClick = { backstack.add(xyz.mpv.rex.jellyfin.ui.JellyfinSettingsScreen) },
                 )
                 PreferenceItem(
                   position = GroupPosition.LAST,
                   title = "yt-dlp",
-                  summary = "Ustawienia dodatku yt-dlp i ekstraktorów",
+                  summary = stringResource(R.string.audit_yt_dlp_add_on_and_extractor_settings),
                   icon = Icons.Outlined.CloudDownload,
                   onClick = { backstack.add(YtdlSettingsScreen) },
                 )

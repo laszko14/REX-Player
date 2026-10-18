@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.networkstreaming
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -198,7 +200,7 @@ private fun NetworkBrowserContent(
       ) {
         EmptyState(
           icon = Icons.Filled.Folder,
-          title = "Error loading files",
+          title = stringResource(R.string.audit_error_loading_files),
           message = error,
         )
       }
@@ -211,7 +213,7 @@ private fun NetworkBrowserContent(
       ) {
         EmptyState(
           icon = Icons.Filled.Folder,
-          title = "Empty folder",
+          title = stringResource(R.string.audit_empty_folder),
           message = "This folder contains no files or directories",
         )
       }
@@ -260,7 +262,7 @@ private fun NetworkBrowserContent(
             if (folders.isNotEmpty()) {
               item {
                 Text(
-                  text = "Folders",
+                  text = stringResource(R.string.audit_folders),
                   style = MaterialTheme.typography.titleMedium,
                   color = MaterialTheme.colorScheme.primary,
                   modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 8.dp),
@@ -282,7 +284,7 @@ private fun NetworkBrowserContent(
             if (videos.isNotEmpty()) {
               item {
                 Text(
-                  text = "Videos",
+                  text = stringResource(R.string.audit_videos),
                   style = MaterialTheme.typography.titleMedium,
                   color = MaterialTheme.colorScheme.primary,
                   modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp),

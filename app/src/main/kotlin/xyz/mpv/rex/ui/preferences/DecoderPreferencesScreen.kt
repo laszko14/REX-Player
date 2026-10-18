@@ -247,7 +247,7 @@ object DecoderPreferencesScreen : Screen {
                     }
                   },
                   enabled = isVulkanSupported,
-                  title = { Text(stringResource(R.string.pref_decoder_vulkan_title) + " (Experimental)") },
+                  title = { Text(stringResource(R.string.pref_decoder_vulkan_title) + stringResource(R.string.audit_experimental_suffix)) },
                   summary = {
                     Text(
                       stringResource(
@@ -319,7 +319,7 @@ object DecoderPreferencesScreen : Screen {
                         color = MaterialTheme.colorScheme.outline,
                       )
                       Text(
-                        text = "github.com / block97 / Anime4K",
+                        text = "github.com/bloc97/Anime4K",
                         color = MaterialTheme.colorScheme.primary,
                         style = MaterialTheme.typography.bodySmall,
                         textDecoration = TextDecoration.Underline,
@@ -347,15 +347,15 @@ object DecoderPreferencesScreen : Screen {
                         preferences.enableAnime4K.set(false)
                       }
                     },
-                    title = { Text("HDR- to- SDR Tone Mapping (hdr- zabawki)") },
+                    title = { Text(stringResource(R.string.audit_hdr_to_sdr_tone_mapping_hdr_toys)) },
                     summary = {
                       Column {
                         Text(
-                          "Do konwersji HDR- to- SDR należy stosować wysokiej jakości Shadery GLSL. Wymaga gpu- następny.",
+                          stringResource(R.string.audit_apply_high_quality_glsl_shaders_for_hdr_to_sdr_conversion_requires_gpu_next),
                           color = MaterialTheme.colorScheme.outline,
                         )
                         Text(
-                          text = "github.com / natural- harmonia- gropius / hdr- zabawki",
+                          text = "github.com/natural-harmonia-gropius/hdr-toys",
                           color = MaterialTheme.colorScheme.primary,
                           style = MaterialTheme.typography.bodySmall,
                           textDecoration = TextDecoration.Underline,
@@ -375,7 +375,7 @@ object DecoderPreferencesScreen : Screen {
                       value = currentTone,
                       onValueChange = { preferences.hdrToysToneMapping.set(it.name) },
                       values = HdrToysManager.ToneMapping.entries,
-                      title = { Text("  Tone Mapping Algorytm") },
+                      title = { Text(stringResource(R.string.audit_tone_mapping_algorithm)) },
                       summary = {
                         Text(
                           "  " + currentTone.name,
@@ -390,7 +390,7 @@ object DecoderPreferencesScreen : Screen {
                       value = currentGamut,
                       onValueChange = { preferences.hdrToysGamutMapping.set(it.name) },
                       values = HdrToysManager.GamutMapping.entries,
-                      title = { Text("  Gamut Mapping Algorytm") },
+                      title = { Text(stringResource(R.string.audit_gamut_mapping_algorithm)) },
                       summary = {
                         Text(
                           "  " + currentGamut.name,

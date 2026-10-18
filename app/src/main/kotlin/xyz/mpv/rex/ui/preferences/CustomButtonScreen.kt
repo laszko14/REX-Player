@@ -325,7 +325,7 @@ object CustomButtonScreen : Screen {
                                 onClick = { appearanceExpanded = !appearanceExpanded },
                             ) {
                                 Text(
-                                    "Wygląd i położenie $LUA_SLOT_COUNT przycisków " +
+                                    stringResource(R.string.audit_lua_appearance_count, LUA_SLOT_COUNT) +
                                         if (appearanceExpanded) "▲" else "▼"
                                 )
                             }
@@ -336,7 +336,7 @@ object CustomButtonScreen : Screen {
                                 LuaButtonAppearanceSettings(preferences, showQuick = false)
                             } else {
                                 Text(
-                                    "Rozwiń, aby ustawić wymiary, kolumny, czcionkę, odstępy i pozycję.",
+                                    stringResource(R.string.audit_expand_to_set_dimensions_columns_font_spacing_and_position),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -679,7 +679,7 @@ fun ButtonSlotCard(
                         onClick = { customAppearanceOpen = !customAppearanceOpen },
                         modifier = Modifier.fillMaxWidth(),
                     ) {
-                        Text(if (customAppearanceOpen) "Ukryj indywidualny wygląd ▲" else "Widoczność i kolory tego przycisku ▼")
+                        Text(if (customAppearanceOpen) stringResource(R.string.audit_hide_individual_appearance) else stringResource(R.string.audit_button_visibility_and_colors))
                     }
                     if (customAppearanceOpen) {
                         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
@@ -692,7 +692,7 @@ fun ButtonSlotCard(
                     }
                 } else {
                     Text(
-                        "Zapisz przycisk, aby ustawić jego stałą widoczność i własne kolory.",
+                        stringResource(R.string.audit_save_the_button_to_set_its_persistent_visibility_and_custom_colors),
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
                         style = MaterialTheme.typography.bodySmall,
                     )

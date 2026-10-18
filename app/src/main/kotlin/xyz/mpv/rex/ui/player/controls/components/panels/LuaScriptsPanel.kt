@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.player.controls.components.panels
 
+import xyz.mpv.rex.R
 import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -90,7 +91,7 @@ fun LuaScriptsPanel(
                 withContext(Dispatchers.Main) {
                     Toast.makeText(
                         context,
-                        "Error loading scripts: ${e.message}",
+                        context.getString(R.string.audit_load_scripts_error, e.message),
                         Toast.LENGTH_LONG
                     ).show()
                 }
@@ -112,7 +113,7 @@ fun LuaScriptsPanel(
     
     fun toggleScriptSelection(scriptName: String) {
         val newSelection = if (selectedScripts.contains(scriptName)) {
-            Toast.makeText(context, "$scriptName disabled. Video restart required.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.audit_script_disabled, scriptName), Toast.LENGTH_LONG).show()
             selectedScripts - scriptName
         } else {
             selectedScripts + scriptName

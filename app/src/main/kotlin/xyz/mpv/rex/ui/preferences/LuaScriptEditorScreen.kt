@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.preferences
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.layout.Box
@@ -76,7 +78,7 @@ data class LuaScriptEditorScreen(
     val mpvConfStorageLocation by preferences.mpvConfStorageUri.collectAsState()
     
     val isNewScript = scriptName == null
-    val title = if (isNewScript) "Create Lua Script" else "Edit Lua Script"
+    val title = if (isNewScript) stringResource(R.string.audit_create_lua_script) else stringResource(R.string.audit_edit_lua_script)
     
     var scriptContent by remember { mutableStateOf("") }
     var fileName by remember { mutableStateOf(scriptName?.removeSuffix(".lua") ?: "") }
@@ -114,7 +116,7 @@ data class LuaScriptEditorScreen(
     
     fun saveScript() {
       if (fileName.isBlank()) {
-        Toast.makeText(context, "Please enter a file name", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.audit_enter_a_file_name), Toast.LENGTH_SHORT).show()
         return
       }
       
@@ -124,7 +126,7 @@ data class LuaScriptEditorScreen(
         try {
           if (mpvConfStorageLocation.isBlank()) {
             withContext(Dispatchers.Main) {
-              Toast.makeText(context, "No storage location set", Toast.LENGTH_LONG).show()
+              Toast.makeText(context, context.getString(R.string.audit_no_storage_location_set), Toast.LENGTH_LONG).show()
             }
             return@launch
           }
@@ -132,7 +134,7 @@ data class LuaScriptEditorScreen(
           val tree = DocumentFile.fromTreeUri(context, mpvConfStorageLocation.toUri())
           if (tree == null) {
             withContext(Dispatchers.Main) {
-              Toast.makeText(context, "No storage location set", Toast.LENGTH_LONG).show()
+              Toast.makeText(context, context.getString(R.string.audit_no_storage_location_set), Toast.LENGTH_LONG).show()
             }
             return@launch
           }
@@ -151,7 +153,7 @@ data class LuaScriptEditorScreen(
           val scriptFile = existing ?: scriptsDir.createFile("text/plain", finalFileName)?.also { it.renameTo(finalFileName) }
           val uri = scriptFile?.uri ?: run {
             withContext(Dispatchers.Main) {
-              Toast.makeText(context, "Failed to create file", Toast.LENGTH_LONG).show()
+              Toast.makeText(context, context.getString(R.string.audit_failed_to_create_file), Toast.LENGTH_LONG).show()
             }
             return@launch
           }
@@ -161,19 +163,19 @@ data class LuaScriptEditorScreen(
             out.flush()
           } ?: run {
             withContext(Dispatchers.Main) {
-              Toast.makeText(context, "Failed to open output stream", Toast.LENGTH_LONG).show()
+              Toast.makeText(context, context.getString(R.string.audit_failed_to_open_output_stream), Toast.LENGTH_LONG).show()
             }
             return@launch
           }
           
           withContext(Dispatchers.Main) {
             hasUnsavedChanges = false
-            Toast.makeText(context, "$finalFileName saved successfully", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.audit_file_saved, finalFileName), Toast.LENGTH_SHORT).show()
             backStack.removeLastOrNull()
           }
         } catch (e: Exception) {
           withContext(Dispatchers.Main) {
-            Toast.makeText(context, "Failed to save: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.audit_save_failed, e.message), Toast.LENGTH_LONG).show()
           }
         }
       }
@@ -181,7 +183,7 @@ data class LuaScriptEditorScreen(
     
     fun shareScript() {
       if (isNewScript || scriptName == null) {
-        Toast.makeText(context, "Save the script first before sharing", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.audit_save_the_script_before_sharing), Toast.LENGTH_SHORT).show()
         return
       }
       
@@ -218,7 +220,7 @@ data class LuaScriptEditorScreen(
                   putExtra(Intent.EXTRA_SUBJECT, scriptName)
                   addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                 }
-                context.startActivity(Intent.createChooser(shareIntent, "Share $scriptName"))
+                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.audit_share_name, scriptName)))
               }
             }
           }
@@ -226,7 +228,7 @@ data class LuaScriptEditorScreen(
           withContext(Dispatchers.Main) {
             Toast.makeText(
               context,
-              "Failed to share: ${e.message}",
+              context.getString(R.string.audit_share_failed, e.message),
               Toast.LENGTH_LONG
             ).show()
           }
@@ -261,7 +263,7 @@ data class LuaScriptEditorScreen(
                   }
                   
                   withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "$scriptName deleted", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.audit_name_deleted, scriptName), Toast.LENGTH_SHORT).show()
                     backStack.removeLastOrNull()
                   }
                 }
@@ -271,7 +273,7 @@ data class LuaScriptEditorScreen(
           withContext(Dispatchers.Main) {
             Toast.makeText(
               context,
-              "Failed to delete: ${e.message}",
+              context.getString(R.string.audit_delete_failed, e.message),
               Toast.LENGTH_LONG
             ).show()
           }
@@ -301,7 +303,7 @@ data class LuaScriptEditorScreen(
                 Box {
                   if (fileName.isEmpty()) {
                     Text(
-                      text = "Nazwa skryptu",
+                      text = stringResource(R.string.audit_script_name),
                       style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.ExtraBold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
@@ -314,7 +316,7 @@ data class LuaScriptEditorScreen(
             )
             if (hasUnsavedChanges) {
               Text(
-                text = "Niezapisane zmiany",
+                text = stringResource(R.string.audit_unsaved_changes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.secondary,
               )
@@ -325,7 +327,7 @@ data class LuaScriptEditorScreen(
           IconButton(onClick = backStack::removeLastOrNull) {
             Icon(
               Icons.AutoMirrored.Default.ArrowBack,
-              contentDescription = "Back",
+              contentDescription = stringResource(R.string.audit_back),
               tint = MaterialTheme.colorScheme.secondary,
             )
           }
@@ -346,7 +348,7 @@ data class LuaScriptEditorScreen(
             ) {
               Icon(
                 Icons.Default.Share,
-                contentDescription = "Share",
+                contentDescription = stringResource(R.string.audit_share),
               )
             }
           }
@@ -366,7 +368,7 @@ data class LuaScriptEditorScreen(
             ) {
               Icon(
                 Icons.Default.Delete,
-                contentDescription = "Delete",
+                contentDescription = stringResource(R.string.audit_delete),
               )
             }
           }
@@ -396,7 +398,7 @@ data class LuaScriptEditorScreen(
           ) {
             Icon(
               Icons.Default.Check,
-              contentDescription = "Save",
+              contentDescription = stringResource(R.string.audit_save),
             )
           }
         },
@@ -433,8 +435,8 @@ data class LuaScriptEditorScreen(
     // Delete confirmation dialog
     if (showDeleteDialog) {
       ConfirmDialog(
-        title = "Delete Script?",
-        subtitle = "Are you sure you want to delete \"${scriptName ?: fileName}\"? This action cannot be undone.",
+        title = stringResource(R.string.audit_delete_script),
+        subtitle = stringResource(R.string.audit_delete_script_confirm, scriptName ?: fileName),
         onConfirm = {
           deleteScript()
           showDeleteDialog = false

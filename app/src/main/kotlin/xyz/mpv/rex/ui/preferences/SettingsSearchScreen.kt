@@ -147,7 +147,7 @@ object SettingsSearchScreen : Screen {
                             IconButton(onClick = { searchQuery = TextFieldValue("") }) {
                                 Icon(
                                     imageVector = Icons.Outlined.Clear,
-                                    contentDescription = "Clear",
+                                    contentDescription = stringResource(R.string.audit_clear),
                                     tint = MaterialTheme.colorScheme.outline,
                                 )
                             }

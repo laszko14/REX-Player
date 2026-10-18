@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -253,7 +255,7 @@ fun PlayerSheets(
 
           xyz.mpv.rex.ui.browser.dialogs.FilePickerDialog(
               isOpen = true,
-              title = "Select Audio Track",
+              title = stringResource(R.string.audit_select_audio_track),
               currentPath = initialPath,
               onDismiss = { showFilePicker = false },
               onPathChanged = { path ->

@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.preferences
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -67,9 +69,9 @@ object AlphaHudPreferencesScreen : Screen {
     val backgroundColor by prefs.hudBackgroundColor.collectAsState()
 
     Scaffold(topBar = {
-      TopAppBar(title = { Text("HUD Alpha") }, navigationIcon = {
+      TopAppBar(title = { Text(stringResource(R.string.audit_hud_alpha)) }, navigationIcon = {
         IconButton(onClick = backstack::removeLastOrNull) {
-          Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Wróć")
+          Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = stringResource(R.string.audit_back))
         }
       })
     }) { inner ->
@@ -78,100 +80,95 @@ object AlphaHudPreferencesScreen : Screen {
           .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
-        Text("Pasek: bateria • godzina • czas pozostały przy bieżącej prędkości • " +
-          "czas pozostały oryginalny • prędkość. Zmiany zapisują się automatycznie.")
-        HudToggle("Włącz HUD Alpha", enabled) { prefs.showPlaybackInfoOverlay.set(it) }
-        HudToggle("Zawsze widoczny (także bez kontrolek)", always) {
+        Text(stringResource(R.string.audit_hud_description))
+        HudToggle(stringResource(R.string.audit_enable_hud_alpha), enabled) { prefs.showPlaybackInfoOverlay.set(it) }
+        HudToggle(stringResource(R.string.audit_always_visible_also_when_controls_are_hidden), always) {
           prefs.hudAlwaysVisible.set(it)
         }
-        HudToggle("Tryb przesuwania palcem", editMode) {
+        HudToggle(stringResource(R.string.audit_drag_to_reposition), editMode) {
           prefs.hudEditMode.set(it)
         }
-        Text("Przesuwanie: włącz tryb edycji, otwórz film i przeciągnij pasek. " +
-          "Po ustawieniu pozycji wyłącz ten tryb, aby gesty filmu działały normalnie.")
+        Text(stringResource(R.string.audit_hud_drag_help))
 
-        Text("Wyświetlane informacje")
-        HudToggle("Poziom baterii", showBattery) { prefs.hudShowBattery.set(it) }
-        HudToggle("Godzina", showClock) { prefs.hudShowClock.set(it) }
-        HudToggle("Czas pozostały (uwzględnia prędkość)", showAdjustedRemaining) {
+        Text(stringResource(R.string.audit_displayed_information))
+        HudToggle(stringResource(R.string.audit_battery_level), showBattery) { prefs.hudShowBattery.set(it) }
+        HudToggle(stringResource(R.string.audit_clock), showClock) { prefs.hudShowClock.set(it) }
+        HudToggle(stringResource(R.string.audit_remaining_time_adjusted_for_speed), showAdjustedRemaining) {
           prefs.hudShowAdjustedRemaining.set(it)
         }
-        HudToggle("Czas pozostały (oryginalny, jak przy 1×)", showRemaining) {
+        HudToggle(stringResource(R.string.audit_remaining_time_original_at_1), showRemaining) {
           prefs.hudShowRemaining.set(it)
         }
-        HudToggle("Prędkość odtwarzania", showSpeed) { prefs.hudShowSpeed.set(it) }
-        Text("Oba czasy są wyświetlane jednocześnie: pierwszy uwzględnia bieżącą " +
-          "prędkość odtwarzania, drugi odpowiada oryginalnej długości filmu.")
+        HudToggle(stringResource(R.string.audit_playback_speed), showSpeed) { prefs.hudShowSpeed.set(it) }
+        Text(stringResource(R.string.audit_hud_times_help))
 
-        Text("Rozmiar i odstępy")
-        HudIntSlider("Skala całego HUD-u", scale, 35, 300, "%") {
+        Text(stringResource(R.string.audit_size_and_spacing))
+        HudIntSlider(stringResource(R.string.audit_hud_scale), scale, 35, 300, "%") {
           prefs.hudScalePercent.set(it)
         }
-        HudIntSlider("Odstęp między ikonami/informacjami", gap, 0, 64, " dp") {
+        HudIntSlider(stringResource(R.string.audit_spacing_between_icons_and_information), gap, 0, 64, " dp") {
           prefs.hudItemGapDp.set(it)
         }
-        HudIntSlider("Margines wewnętrzny paska", innerPadding, 0, 40, " dp") {
+        HudIntSlider(stringResource(R.string.audit_bar_padding), innerPadding, 0, 40, " dp") {
           prefs.hudPaddingDp.set(it)
         }
-        HudIntSlider("Krycie tła (0% = brak tła)", opacity, 0, 100, "%") {
+        HudIntSlider(stringResource(R.string.audit_background_opacity_0_no_background), opacity, 0, 100, "%") {
           prefs.hudBackgroundOpacity.set(it)
         }
-        HudIntSlider("Zaokrąglenie rogów", radius, 0, 48, " dp") {
+        HudIntSlider(stringResource(R.string.audit_corner_radius), radius, 0, 48, " dp") {
           prefs.hudCornerRadiusDp.set(it)
         }
 
-        Text("Czytelność napisów")
-        HudIntSlider("Pogrubienie czcionki", fontWeightPercent, 0, 100, "%") {
+        Text(stringResource(R.string.audit_text_readability))
+        HudIntSlider(stringResource(R.string.audit_font_weight), fontWeightPercent, 0, 100, "%") {
           prefs.hudFontWeightPercent.set(it)
         }
-        HudIntSlider("Siła kontrastowego obrysu", outlinePercent, 0, 100, "%") {
+        HudIntSlider(stringResource(R.string.audit_contrast_outline_strength), outlinePercent, 0, 100, "%") {
           prefs.hudOutlinePercent.set(it)
         }
-        Text("0% obrysu wyłącza kontur, 100% daje czysty obrys bez halo. " +
-          "40% pogrubienia to SemiBold, 60% to Bold, 90% to Black. " +
-          "Kolory napisów pozostają bez zmian.")
+        Text(stringResource(R.string.audit_hud_readability_help))
         Row(modifier = Modifier.fillMaxWidth(),
           horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           OutlinedButton(onClick = {
             prefs.hudFontWeightPercent.set(40)
             prefs.hudOutlinePercent.set(0)
-          }, modifier = Modifier.weight(1f)) { Text("Naturalny") }
+          }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.audit_natural)) }
           OutlinedButton(onClick = {
             prefs.hudFontWeightPercent.set(60)
             prefs.hudOutlinePercent.set(50)
-          }, modifier = Modifier.weight(1f)) { Text("Czytelny") }
+          }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.audit_readable)) }
           OutlinedButton(onClick = {
             prefs.hudFontWeightPercent.set(90)
             prefs.hudOutlinePercent.set(85)
-          }, modifier = Modifier.weight(1f)) { Text("Mocny") }
+          }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.audit_strong)) }
         }
 
-        Text("Położenie (niezależne od przycisków Lua)")
+        Text(stringResource(R.string.audit_position_independent_of_lua_buttons))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
           OutlinedButton(onClick = { prefs.hudPositionX.set(0f) }, modifier = Modifier.weight(1f)) {
-            Text("Lewa")
+            Text(stringResource(R.string.audit_left))
           }
           OutlinedButton(onClick = { prefs.hudPositionX.set(0.5f) },
-            modifier = Modifier.weight(1f)) { Text("Środek") }
+            modifier = Modifier.weight(1f)) { Text(stringResource(R.string.audit_center)) }
           OutlinedButton(onClick = { prefs.hudPositionX.set(1f) },
-            modifier = Modifier.weight(1f)) { Text("Prawa") }
+            modifier = Modifier.weight(1f)) { Text(stringResource(R.string.audit_right)) }
         }
-        HudIntSlider("Położenie poziome", (x.coerceIn(0f, 1f) * 100).roundToInt(),
+        HudIntSlider(stringResource(R.string.audit_horizontal_position), (x.coerceIn(0f, 1f) * 100).roundToInt(),
           0, 100, "%") { prefs.hudPositionX.set(it / 100f) }
-        HudIntSlider("Położenie pionowe", (y.coerceIn(0f, 1f) * 100).roundToInt(),
+        HudIntSlider(stringResource(R.string.audit_vertical_position), (y.coerceIn(0f, 1f) * 100).roundToInt(),
           0, 100, "%") { prefs.hudPositionY.set(it / 100f) }
 
-        Text("Kolory HEX (#RRGGBB), osobne dla każdego elementu")
-        HudHexInput("Bateria (powyżej 19%)", batteryColor) {
+        Text(stringResource(R.string.audit_hex_colors_rrggbb_separate_for_each_element))
+        HudHexInput(stringResource(R.string.audit_battery_above_19), batteryColor) {
           prefs.hudBatteryColor.set(it)
         }
-        HudHexInput("Zegar", clockColor) { prefs.hudClockColor.set(it) }
-        HudHexInput("Czas pozostały (uwzględnia prędkość)", adjustedRemainingColor) {
+        HudHexInput(stringResource(R.string.audit_clock_color), clockColor) { prefs.hudClockColor.set(it) }
+        HudHexInput(stringResource(R.string.audit_remaining_time_adjusted_for_speed), adjustedRemainingColor) {
           prefs.hudNetworkSpeedColor.set(it)
         }
-        HudHexInput("Czas pozostały (oryginalny)", remainingColor) { prefs.hudRemainingColor.set(it) }
-        HudHexInput("Prędkość", speedColor) { prefs.hudSpeedColor.set(it) }
-        HudHexInput("Tło", backgroundColor) { prefs.hudBackgroundColor.set(it) }
+        HudHexInput(stringResource(R.string.audit_remaining_time_original), remainingColor) { prefs.hudRemainingColor.set(it) }
+        HudHexInput(stringResource(R.string.audit_speed), speedColor) { prefs.hudSpeedColor.set(it) }
+        HudHexInput(stringResource(R.string.audit_background), backgroundColor) { prefs.hudBackgroundColor.set(it) }
 
         Button(onClick = {
           prefs.hudScalePercent.set(100)
@@ -192,7 +189,7 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudBatteryColor.set("#4ADE80")
           prefs.hudBackgroundColor.set("#10151C")
           prefs.hudEditMode.set(false)
-        }, modifier = Modifier.fillMaxWidth()) { Text("Przywróć wygląd i pozycję HUD-u") }
+        }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.audit_reset_hud_appearance_and_position)) }
       }
     }
   }
@@ -235,7 +232,7 @@ private fun HudHexInput(label: String, value: String, onChange: (String) -> Unit
     value = value,
     onValueChange = { if (it.length <= 9) onChange(it) },
     label = { Text(label) },
-    supportingText = { Text("Przykład: #60E2F2") },
+    supportingText = { Text(stringResource(R.string.audit_example_60e2f2)) },
     singleLine = true,
     isError = !Regex("^#[0-9a-fA-F]{6}$").matches(value),
     modifier = Modifier.fillMaxWidth(),

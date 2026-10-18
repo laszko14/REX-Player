@@ -258,7 +258,7 @@ fun SubtitleTrackRow(
         onCheckedChange = { onToggle() },
       )
       Text(
-        text = if (isPrimary) "$title [primary]" else title,
+        text = if (isPrimary) stringResource(R.string.audit_primary_track, title) else title,
         style = MaterialTheme.typography.bodyMedium,
         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
         color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,

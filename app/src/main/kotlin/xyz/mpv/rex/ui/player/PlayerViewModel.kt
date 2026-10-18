@@ -167,6 +167,7 @@ class PlayerViewModel(
    * Manager for audio and subtitle tracks.
    */
   private val _trackManager = TrackManager(
+    context = appContext,
     subtitlesPreferences = subtitlesPreferences,
     playbackManager = _playbackManager,
     scope = viewModelScope,
@@ -1920,7 +1921,7 @@ class PlayerViewModel(
 
     val path = runCatching { MPVLib.getPropertyString("path") }.getOrNull()
     if (path.isNullOrBlank()) {
-      Toast.makeText(context, "No active video source found", Toast.LENGTH_SHORT).show()
+      Toast.makeText(context, context.getString(R.string.audit_no_active_video_source_found), Toast.LENGTH_SHORT).show()
       return
     }
 
@@ -1941,7 +1942,7 @@ class PlayerViewModel(
         } else {
           Toast.makeText(
             context,
-            context.getString(R.string.ab_loop_clip_error, result.exceptionOrNull()?.localizedMessage ?: "Unknown error"),
+            context.getString(R.string.ab_loop_clip_error, result.exceptionOrNull()?.localizedMessage ?: context.getString(R.string.audit_unknown_error)),
             Toast.LENGTH_LONG
           ).show()
         }
@@ -1964,7 +1965,7 @@ class PlayerViewModel(
     _isMirrored.value = newMirrorState
 
     updateVideoFlipFilters()
-    playerUpdate.value = PlayerUpdates.ShowText(if (newMirrorState) "H-Flip On" else "H-Flip Off")
+    playerUpdate.value = PlayerUpdates.ShowText(if (newMirrorState) appContext.getString(R.string.audit_horizontal_flip_on) else appContext.getString(R.string.audit_horizontal_flip_off))
   }
 
   fun toggleVerticalFlip() {
@@ -1972,7 +1973,7 @@ class PlayerViewModel(
     _isVerticalFlipped.value = newState
 
     updateVideoFlipFilters()
-    playerUpdate.value = PlayerUpdates.ShowText(if (newState) "V-Flip On" else "V-Flip Off")
+    playerUpdate.value = PlayerUpdates.ShowText(if (newState) appContext.getString(R.string.audit_vertical_flip_on) else appContext.getString(R.string.audit_vertical_flip_off))
   }
 
   private fun updateVideoFlipFilters() {

@@ -1,5 +1,9 @@
 package xyz.mpv.rex.feature.webshare
 
+import android.content.Context
+import org.json.JSONObject
+import xyz.mpv.rex.R
+import xyz.mpv.rex.utils.locale.LocaleHelper
 import java.text.DecimalFormat
 
 object WebShareHtmlTemplate {
@@ -16,12 +20,43 @@ object WebShareHtmlTemplate {
   fun renderHtml(
     files: List<SharedFileItem>,
     token: String? = null,
-    serverTitle: String = "REX Player Web Share",
+    serverTitle: String? = null,
+    context: Context? = null,
   ): String {
     val totalSize = files.sumOf { it.size }
     val totalSizeFormatted = formatFileSize(totalSize)
     val fileCount = files.size
     val multipleFiles = fileCount > 1
+    val localizedContext = context?.let(LocaleHelper::wrapContext)
+    val labels = linkedMapOf(
+      "page_title" to (localizedContext?.getString(R.string.web_share_ui_page_title) ?: "REX Player Web Share"),
+      "badge" to (localizedContext?.getString(R.string.web_share_ui_badge) ?: "REX Player Share"),
+      "heading" to (localizedContext?.getString(R.string.web_share_ui_heading) ?: "Shared Files"),
+      "download" to (localizedContext?.getString(R.string.web_share_ui_download) ?: "Download"),
+      "play" to (localizedContext?.getString(R.string.web_share_ui_play) ?: "Play"),
+      "upload_title" to (localizedContext?.getString(R.string.web_share_ui_upload_title) ?: "Send Files to REX Player"),
+      "upload_description" to (localizedContext?.getString(R.string.web_share_ui_upload_description) ?: "Tap to browse or drop files to send"),
+      "download_all" to (localizedContext?.getString(R.string.web_share_ui_download_all) ?: "Download All (ZIP)"),
+      "saved" to (localizedContext?.getString(R.string.web_share_ui_saved) ?: "✓ Saved"),
+      "upload_failed" to (localizedContext?.getString(R.string.web_share_ui_upload_failed) ?: "✗ Upload failed"),
+      "connection_error" to (localizedContext?.getString(R.string.web_share_ui_connection_error) ?: "✗ Connection error"),
+      "close" to (localizedContext?.getString(R.string.web_share_ui_close) ?: "Close player"),
+    )
+    val summary = localizedContext?.resources?.getQuantityString(
+      R.plurals.web_share_ui_summary, fileCount, fileCount, totalSizeFormatted,
+    ) ?: "$fileCount ${if (fileCount == 1) "file" else "files"} • $totalSizeFormatted total"
+    fun label(key: String) = escapeHtml(labels.getValue(key))
+    val pageTitle = escapeHtml(serverTitle ?: labels.getValue("page_title"))
+    // Only Polish is translated here; other app languages use the English fallback.
+    val language = if (localizedContext?.resources?.configuration?.locales?.get(0)?.language == "pl") "pl" else "en"
+    // JSON quoting protects JavaScript strings; escaping '<' also prevents a translated
+    // value containing </script> from terminating the enclosing HTML script element.
+    val scriptLabels = JSONObject(labels).toString()
+      .replace("<", "\\u003c")
+      .replace(">", "\\u003e")
+      .replace("&", "\\u0026")
+      .replace("\u2028", "\\u2028")
+      .replace("\u2029", "\\u2029")
     val querySuffix = if (!token.isNullOrEmpty()) "?t=$token" else ""
 
     val fileCards = buildString {
@@ -51,14 +86,14 @@ object WebShareHtmlTemplate {
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                Download
+                ${label("download")}
               </a>
               <button class="btn btn-secondary" onclick="playMedia('$streamUrl', '$safeName')">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"></circle>
                   <polygon points="10 8 16 12 10 16 10 8"></polygon>
                 </svg>
-                Play
+                ${label("play")}
               </button>
             </div>
           </div>
@@ -68,11 +103,11 @@ object WebShareHtmlTemplate {
 
     return """
       <!DOCTYPE html>
-      <html lang="en">
+      <html lang="$language">
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>$serverTitle</title>
+        <title>$pageTitle</title>
         <style>
           :root {
             --bg-color: #0f141c;
@@ -477,10 +512,10 @@ object WebShareHtmlTemplate {
                 <circle cx="12" cy="12" r="10"></circle>
                 <polygon points="10 8 16 12 10 16 10 8"></polygon>
               </svg>
-              REX Player Share
+              ${label("badge")}
             </div>
-            <h1 class="title">Shared Files</h1>
-            <p class="subtitle">$fileCount ${if (multipleFiles) "files" else "file"} • $totalSizeFormatted total</p>
+            <h1 class="title">${label("heading")}</h1>
+            <p class="subtitle">${escapeHtml(summary)}</p>
           </header>
 
           <!-- Send Files to Host Dropzone -->
@@ -495,8 +530,8 @@ object WebShareHtmlTemplate {
                 </svg>
               </div>
               <div class="upload-text">
-                <div class="upload-title">Send Files to REX Player</div>
-                <div class="upload-desc">Tap to browse or drop files to send</div>
+                <div class="upload-title">${label("upload_title")}</div>
+                <div class="upload-desc">${label("upload_description")}</div>
               </div>
             </div>
             <div id="uploadQueue" class="upload-queue"></div>
@@ -510,7 +545,7 @@ object WebShareHtmlTemplate {
                   <rect x="1" y="3" width="22" height="5"></rect>
                   <line x1="10" y1="12" x2="14" y2="12"></line>
                 </svg>
-                Download All (ZIP)
+                ${label("download_all")}
               </a>
             </div>
           """ else ""}
@@ -525,7 +560,7 @@ object WebShareHtmlTemplate {
           <div class="modal-content">
             <div class="modal-header">
               <div id="modalTitle" class="modal-title"></div>
-              <button class="modal-close" onclick="closePlayer()">&times;</button>
+              <button class="modal-close" onclick="closePlayer()" aria-label="${label("close")}">&times;</button>
             </div>
             <div class="modal-body">
               <video id="mediaPlayer" controls autoplay playsinline preload="metadata"></video>
@@ -534,6 +569,7 @@ object WebShareHtmlTemplate {
         </div>
 
         <script>
+          const uiLabels = $scriptLabels;
           function truncateTitle(el) {
             const fullName = el.getAttribute('data-full-name') || el.textContent;
             if (!fullName) return;
@@ -686,10 +722,10 @@ object WebShareHtmlTemplate {
               if (xhr.status >= 200 && xhr.status < 300) {
                 itemEl.classList.add('success');
                 if (fillEl) fillEl.style.width = '100%';
-                if (statusEl) statusEl.textContent = '✓ Saved';
+                if (statusEl) statusEl.textContent = uiLabels.saved;
               } else {
                 itemEl.classList.add('error');
-                if (statusEl) statusEl.textContent = '✗ Upload failed';
+                if (statusEl) statusEl.textContent = uiLabels.upload_failed;
               }
               if (onComplete) onComplete();
             };
@@ -697,7 +733,7 @@ object WebShareHtmlTemplate {
             xhr.onerror = function() {
               const statusEl = document.getElementById(itemId + '-status');
               itemEl.classList.add('error');
-              if (statusEl) statusEl.textContent = '✗ Connection error';
+              if (statusEl) statusEl.textContent = uiLabels.connection_error;
               if (onComplete) onComplete();
             };
 

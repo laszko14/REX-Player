@@ -1,5 +1,7 @@
 package xyz.mpv.rex.ui.browser.filesystem
 
+import xyz.mpv.rex.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -73,7 +75,7 @@ fun BreadcrumbNavigation(
         if (index > 0) {
           Icon(
             imageVector = Icons.Filled.ChevronRight,
-            contentDescription = "Separator",
+            contentDescription = stringResource(R.string.audit_separator),
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
             modifier = Modifier.size(16.dp),
           )
@@ -111,14 +113,14 @@ fun BreadcrumbNavigation(
             if (isRoot) {
               Icon(
                 imageVector = Icons.Filled.Home,
-                contentDescription = "Root",
+                contentDescription = stringResource(R.string.audit_root_folder),
                 modifier = Modifier.size(16.dp),
                 tint = contentColor,
               )
             } else if (isCurrent) {
               Icon(
                 imageVector = Icons.Filled.FolderOpen,
-                contentDescription = "Current Folder",
+                contentDescription = stringResource(R.string.audit_current_folder),
                 modifier = Modifier.size(16.dp),
                 tint = contentColor,
               )

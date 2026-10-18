@@ -379,7 +379,7 @@ private fun SubtitleDelayContent(
             tint = MaterialTheme.colorScheme.primary,
           )
           Text(
-            text = "Subtitle Sync Assistant",
+            text = stringResource(R.string.audit_subtitle_sync_assistant),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
           )

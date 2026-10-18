@@ -63,7 +63,7 @@ fun AudioTracksSheet(
             Icon(Icons.Default.MoreTime, null)
           }
           IconButton(onClick = onOpenEqualizer) {
-            Icon(Icons.Default.Equalizer, contentDescription = "Korektor dzwieku")
+            Icon(Icons.Default.Equalizer, contentDescription = stringResource(R.string.audit_audio_equalizer))
           }
         },
       )

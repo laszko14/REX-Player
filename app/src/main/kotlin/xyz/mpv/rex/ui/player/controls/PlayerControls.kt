@@ -203,6 +203,7 @@ fun PlayerControls(
     delay(130L)
     RexDrcAudio.apply(drcEnabled)
   }
+  val context = LocalContext.current
   val gesturePreferences = koinInject<GesturePreferences>()
   val playerTutorialManager = koinInject<PlayerTutorialManager>()
   val enableReleaseToCancel by gesturePreferences.enableReleaseToCancel.collectAsState()
@@ -301,12 +302,12 @@ fun PlayerControls(
     if (controlsShown) {
       val hasActiveSubtitle = (MPVLib.getPropertyInt("sid") ?: 0) != 0
       if (hasActiveSubtitle && playerTutorialManager.shouldShowSubtitleDragHint()) {
-        viewModel.playerUpdate.value = PlayerUpdates.ShowText("Swipe vertically at bottom to adjust subtitle position")
+        viewModel.playerUpdate.value = PlayerUpdates.ShowText(context.getString(R.string.audit_swipe_vertically_at_the_bottom_to_adjust_subtitle_position))
         playerTutorialManager.incrementSubtitleDragHintCount()
         delay(3000L)
         if (viewModel.playerUpdate.value is PlayerUpdates.ShowText) {
           val currentText = (viewModel.playerUpdate.value as PlayerUpdates.ShowText).value
-          if (currentText == "Swipe vertically at bottom to adjust subtitle position") {
+          if (currentText == context.getString(R.string.audit_swipe_vertically_at_the_bottom_to_adjust_subtitle_position)) {
             viewModel.playerUpdate.value = PlayerUpdates.None
           }
         }
@@ -776,7 +777,7 @@ fun PlayerControls(
             is PlayerUpdates.VideoZoom -> {
               val zoomPercentage = (videoZoom * 100).toInt()
               TextPlayerUpdate(
-                text = String.format("Zoom:%3d%%", zoomPercentage), 
+                text = stringResource(R.string.audit_zoom_percent, zoomPercentage),
                 modifier = Modifier, // Let content size determine width
               )
             }
@@ -1079,7 +1080,7 @@ fun PlayerControls(
                       ) {
                         Icon(
                           imageVector = Icons.Default.SkipPrevious,
-                          contentDescription = "Previous",
+                          contentDescription = stringResource(R.string.audit_previous),
                           tint = if (canGoPrevious) contentColor.copy(alpha = 0.85f) else contentColor.copy(alpha = 0.35f),
                           modifier = Modifier.size(if (isPlaybackControlsAtBottom) 22.dp else 28.dp),
                         )
@@ -1131,7 +1132,7 @@ fun PlayerControls(
                       ) {
                         Icon(
                           imageVector = Icons.Default.SkipNext,
-                          contentDescription = "Next",
+                          contentDescription = stringResource(R.string.audit_next),
                           tint = if (canGoNext) contentColor.copy(alpha = 0.85f) else contentColor.copy(alpha = 0.35f),
                           modifier = Modifier.size(if (isPlaybackControlsAtBottom) 22.dp else 28.dp),
                         )
@@ -1160,7 +1161,7 @@ fun PlayerControls(
                     ) {
                       Icon(
                         imageVector = Icons.Default.SkipPrevious,
-                        contentDescription = "Previous",
+                        contentDescription = stringResource(R.string.audit_previous),
                         tint = if (canGoPrevious) contentColor.copy(alpha = 0.85f) else contentColor.copy(alpha = 0.35f),
                         modifier = Modifier.size(if (isPlaybackControlsAtBottom) 24.dp else 32.dp),
                       )
@@ -1208,7 +1209,7 @@ fun PlayerControls(
                     ) {
                       Icon(
                         imageVector = Icons.Default.SkipNext,
-                        contentDescription = "Next",
+                        contentDescription = stringResource(R.string.audit_next),
                         tint = if (canGoNext) contentColor.copy(alpha = 0.85f) else contentColor.copy(alpha = 0.35f),
                         modifier = Modifier.size(if (isPlaybackControlsAtBottom) 24.dp else 32.dp),
                       )
@@ -1398,7 +1399,7 @@ fun PlayerControls(
 
                 if (close) {
                   isCloseToStart = true
-                  viewModel.playerUpdate.value = PlayerUpdates.ShowText("Release to cancel")
+                  viewModel.playerUpdate.value = PlayerUpdates.ShowText(context.getString(R.string.audit_release_to_cancel))
                 } else {
                   if (isCloseToStart) {
                     isCloseToStart = false
@@ -1766,7 +1767,7 @@ fun PlayerControls(
         ) {
           if (currentPlayerUpdate is PlayerUpdates.SpeedLockHint) {
             val update = currentPlayerUpdate as PlayerUpdates.SpeedLockHint
-            LockHint(text = if (update.isLocked) "Speed Locked" else "Swipe up to lock")
+            LockHint(text = if (update.isLocked) stringResource(R.string.audit_speed_locked) else stringResource(R.string.audit_swipe_up_to_lock))
           }
         }
 
@@ -1819,7 +1820,7 @@ fun PlayerControls(
               Box(contentAlignment = Alignment.Center) {
                 Icon(
                   imageVector = Icons.Default.Close,
-                  contentDescription = "Clear Loop",
+                  contentDescription = stringResource(R.string.audit_clear_loop),
                   tint = MaterialTheme.colorScheme.onSurface,
                   modifier = Modifier.size(16.dp),
                 )
@@ -1906,7 +1907,7 @@ fun PlayerControls(
               Box(contentAlignment = Alignment.Center) {
                 Icon(
                   imageVector = Icons.Default.FastRewind,
-                  contentDescription = "Previous Frame",
+                  contentDescription = stringResource(R.string.audit_previous_frame),
                   tint = MaterialTheme.colorScheme.onSurface,
                   modifier = Modifier.size(24.dp),
                 )
@@ -1946,7 +1947,7 @@ fun PlayerControls(
                 Box(contentAlignment = Alignment.Center) {
                   Icon(
                     imageVector = Icons.Default.CameraAlt,
-                    contentDescription = "Take Screenshot",
+                    contentDescription = stringResource(R.string.audit_take_screenshot),
                     tint = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp),
                   )
@@ -1968,7 +1969,7 @@ fun PlayerControls(
               Box(contentAlignment = Alignment.Center) {
                 Icon(
                   imageVector = Icons.Default.FastForward,
-                  contentDescription = "Next Frame",
+                  contentDescription = stringResource(R.string.audit_next_frame),
                   tint = MaterialTheme.colorScheme.onSurface,
                   modifier = Modifier.size(24.dp),
                 )
@@ -1989,7 +1990,7 @@ fun PlayerControls(
               Box(contentAlignment = Alignment.Center) {
                 Icon(
                   imageVector = Icons.Default.Close,
-                  contentDescription = "Close Frame Nav",
+                  contentDescription = stringResource(R.string.audit_close_frame_navigation),
                   tint = MaterialTheme.colorScheme.onSurface,
                   modifier = Modifier.size(16.dp),
                 )

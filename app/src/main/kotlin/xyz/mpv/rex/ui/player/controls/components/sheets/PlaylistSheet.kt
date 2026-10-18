@@ -247,7 +247,7 @@ fun PlaylistSheet(
               ) {
                 Icon(
                   imageVector = Icons.Default.Close,
-                  contentDescription = "Cancel Selection",
+                  contentDescription = stringResource(R.string.audit_cancel_selection),
                   tint = MaterialTheme.colorScheme.onSurface
                 )
               }
@@ -270,7 +270,7 @@ fun PlaylistSheet(
             ) {
               Icon(
                 imageVector = Icons.Default.Delete,
-                contentDescription = "Delete Selected",
+                contentDescription = stringResource(R.string.audit_delete_selected),
                 tint = if (selectedIndexes.isNotEmpty()) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
               )
             }
@@ -295,7 +295,7 @@ fun PlaylistSheet(
             ) {
               Icon(
                 imageVector = Icons.Default.Check,
-                contentDescription = "Done",
+                contentDescription = stringResource(R.string.audit_done),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
               )
             }
@@ -337,7 +337,7 @@ fun PlaylistSheet(
             ) {
               Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Close Search",
+                contentDescription = stringResource(R.string.audit_close_search),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
               )
             }
@@ -386,7 +386,7 @@ fun PlaylistSheet(
               ) {
                 Icon(
                   imageVector = Icons.Default.Search,
-                  contentDescription = "Search",
+                  contentDescription = stringResource(R.string.audit_search),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
               }
@@ -396,7 +396,7 @@ fun PlaylistSheet(
               ) {
                 Icon(
                   imageVector = Icons.Outlined.SwapVert,
-                  contentDescription = "Reorder",
+                  contentDescription = stringResource(R.string.audit_reorder),
                   tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
               }
@@ -450,7 +450,7 @@ fun PlaylistSheet(
                     ) {
                       Icon(
                         imageVector = Icons.Default.DragHandle,
-                        contentDescription = "Drag to reorder",
+                        contentDescription = stringResource(R.string.audit_drag_to_reorder),
                         tint = accentColor,
                       )
                     }
@@ -585,7 +585,7 @@ fun PlaylistTrackListItem(
         thumbnail?.let { bmp ->
           Image(
             bitmap = bmp.asImageBitmap(),
-            contentDescription = "Thumbnail",
+            contentDescription = stringResource(R.string.audit_thumbnail),
             modifier = Modifier.matchParentSize(),
             contentScale = ContentScale.Crop,
           )

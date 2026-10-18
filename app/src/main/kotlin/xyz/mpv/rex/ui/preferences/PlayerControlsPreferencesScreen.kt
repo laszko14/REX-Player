@@ -591,7 +591,7 @@ object PlayerControlsPreferencesScreen : Screen {
                                     onValueChange = {
                                         playerPrefs.playerOverlayOpacityPercent.set(it.toInt().coerceIn(0, 100))
                                     },
-                                    title = { Text("Widoczność całej nakładki odtwarzacza") },
+                                    title = { Text(stringResource(R.string.audit_player_overlay_visibility)) },
                                     valueRange = 0f..100f,
                                     summary = {
                                         Text(

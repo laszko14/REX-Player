@@ -139,12 +139,12 @@ data class ConfigEditorScreen(
 
           withContext(Dispatchers.Main) {
             hasUnsavedChanges = false
-            Toast.makeText(context, "$fileName saved", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.audit_saved_name, fileName), Toast.LENGTH_SHORT).show()
             backStack.removeLastOrNull()
           }
         } catch (e: Exception) {
           withContext(Dispatchers.Main) {
-            Toast.makeText(context, "Failed to save: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.audit_save_failed, e.message), Toast.LENGTH_LONG).show()
           }
         }
       }

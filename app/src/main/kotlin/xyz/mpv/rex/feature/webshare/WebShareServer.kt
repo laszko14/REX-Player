@@ -1,5 +1,7 @@
 package xyz.mpv.rex.feature.webshare
 
+import xyz.mpv.rex.R
+import xyz.mpv.rex.utils.locale.LocaleHelper
 import android.content.Context
 import android.net.Uri
 import android.os.Environment
@@ -40,6 +42,22 @@ class WebShareServer(
 
   private val fileMap = files.associateBy { it.id }
 
+  private fun ui(id: Int, vararg args: Any): String {
+    context?.let { return LocaleHelper.wrapContext(it).getString(id, *args) }
+    // Context-less servers are used by JVM tests; preserve their English fallback.
+    val fallback = when (id) {
+      R.string.web_share_ui_access_denied -> "Access denied: invalid or missing security token."
+      R.string.web_share_ui_not_found -> "404 Not Found"
+      R.string.web_share_ui_internal_error -> "500 Internal Server Error: %1\$s"
+      R.string.web_share_ui_file_not_found -> "File not found"
+      R.string.web_share_ui_file_unreadable -> "File unreadable on device"
+      R.string.web_share_ui_unknown_error -> "Unknown error"
+      R.string.web_share_ui_upload_error_details -> "Upload failed: %1\$s"
+      else -> error("Unknown Web Share UI resource")
+    }
+    return String.format(java.util.Locale.ENGLISH, fallback, *args)
+  }
+
   override fun serve(session: IHTTPSession): Response {
     val uri = session.uri
     val params = session.parameters
@@ -50,7 +68,7 @@ class WebShareServer(
       return newFixedLengthResponse(
         Response.Status.FORBIDDEN,
         MIME_PLAINTEXT,
-        "Access Denied: Invalid or missing security token."
+        ui(R.string.web_share_ui_access_denied)
       )
     }
 
@@ -67,13 +85,13 @@ class WebShareServer(
           serveFile(session, fileId, isAttachment = false)
         }
         uri == "/download-all" -> serveZipArchive()
-        else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "404 Not Found")
+        else -> newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, ui(R.string.web_share_ui_not_found))
       }
     } catch (e: Exception) {
       newFixedLengthResponse(
         Response.Status.INTERNAL_ERROR,
         MIME_PLAINTEXT,
-        "500 Internal Server Error: ${e.message}"
+        ui(R.string.web_share_ui_internal_error, e.message ?: ui(R.string.web_share_ui_unknown_error))
       )
     }
   }
@@ -89,12 +107,12 @@ class WebShareServer(
         mimeType = getMimeType(item.displayName),
       )
     }
-    val html = WebShareHtmlTemplate.renderHtml(items, token)
+    val html = WebShareHtmlTemplate.renderHtml(items, token, context = context)
     return newFixedLengthResponse(Response.Status.OK, "text/html; charset=UTF-8", html)
   }
 
   private fun serveFile(session: IHTTPSession, fileId: String, isAttachment: Boolean): Response {
-    val shareable = fileMap[fileId] ?: return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "File not found")
+    val shareable = fileMap[fileId] ?: return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, ui(R.string.web_share_ui_file_not_found))
     val fileLength = shareable.size
     val mimeType = if (isAttachment) "application/octet-stream" else getMimeType(shareable.displayName)
     val headers = session.headers
@@ -130,7 +148,7 @@ class WebShareServer(
     val inputStream = openInputStream(shareable) ?: return newFixedLengthResponse(
       Response.Status.NOT_FOUND,
       MIME_PLAINTEXT,
-      "File unreadable on device"
+      ui(R.string.web_share_ui_file_unreadable)
     )
 
     if (startFrom > 0) {
@@ -296,7 +314,7 @@ class WebShareServer(
       response
     } catch (e: Exception) {
       android.util.Log.e("WebShareServer", "Failed to handle file upload", e)
-      newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "application/json; charset=UTF-8", "{\"success\":false,\"error\":\"${escapeJson(e.message ?: "Upload failed")}\"}")
+      newFixedLengthResponse(Response.Status.INTERNAL_ERROR, "application/json; charset=UTF-8", "{\"success\":false,\"error\":\"${escapeJson(ui(R.string.web_share_ui_upload_error_details, e.message ?: ui(R.string.web_share_ui_unknown_error)))}\"}")
     }
   }
 
