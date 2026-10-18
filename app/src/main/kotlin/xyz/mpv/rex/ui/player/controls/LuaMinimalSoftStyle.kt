@@ -3,6 +3,8 @@ package xyz.mpv.rex.ui.player.controls
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.matchParentSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -18,10 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
-/**
- * The old Minimal Soft and individual overrides are not migrated or overwritten.
- * v2 changes the drawing only; button dimensions and pointer handlers live in LuaButtonGrid.
- */
+/** v29 constants stay intact when the reversible v2 appearance is off. */
 internal val LuaSoftText = Color(0xFFC9D1D9)
 internal val LuaSoftActiveText = Color(0xFF9EB6C8)
 internal val LuaSoftActiveBackground = Color(0xFF26333D)
@@ -36,18 +35,30 @@ internal const val LUA_SOFT_V2_ACTIVE_ALPHA = .95f
 internal const val LUA_SOFT_V2_ACTIVE_BACKGROUND_ALPHA = .50f
 internal const val LUA_SOFT_TOUCH_DURATION_MS = 3000L
 
-/** Transparency has historically defaulted to 20%; preserve the setting on upgrade. */
+/** Only used by v29. Retain its old transparency logic and saved settings. */
 internal fun luaSoftEffectiveAlpha(softAlpha: Float, savedTransparency: Int): Float =
     (softAlpha * (100 - savedTransparency.coerceIn(0, 100)) / 80f).coerceIn(0f, 1f)
 
-/** Four inexpensive, fixed contrast profiles: no frame sampling or GL readback. */
-internal fun luaSoftContrastShadowAlpha(profile: Int): Float = when (profile.coerceIn(0, 3)) {
+/** v2: background opacity does not also fade the text, icon and touch target. */
+internal fun luaSoftV2BackgroundOpacity(savedTransparency: Int): Float =
+    .55f * (100 - savedTransparency.coerceIn(0, 100)) / 100f
+
+/** Increasing contrast changes both outline coverage and shadow, not only a label. */
+internal fun luaSoftContrastOutlinePx(profile: Int): Float = when (profile.coerceIn(0, 3)) {
     0 -> 0f
-    1 -> .20f
-    2 -> .24f
+    1 -> .65f
+    2 -> .82f
+    else -> 1f
+}
+internal fun luaSoftContrastShadowAlpha(profile: Int): Float = when (profile.coerceIn(0, 3)) {
+    0 -> .20f
+    1 -> .22f
+    2 -> .25f
     else -> .28f
 }
 
+/** v2 affects rendering only; caller's original dimensions and gesture modifier remain on
+ * the OUTER Box. Circle draws a real circle inside that unchanged touch rectangle. */
 @Composable
 internal fun LuaMinimalSoftTile(
     text: String,
@@ -57,6 +68,8 @@ internal fun LuaMinimalSoftTile(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(7.dp),
     v2: Boolean = false,
+    shapeMode: Int = 2,
+    circleDiameterDp: Float = 27f,
     normalBackgroundColor: Color = Color(0xFF1F2A33),
     activeBackgroundColor: Color = Color(0xFF1F2A33),
     foreground: Color = LuaSoftText,
@@ -68,29 +81,39 @@ internal fun LuaMinimalSoftTile(
     textShadow: Boolean = true,
 ) {
     val density = LocalDensity.current
-    // ContrastVideoLabel uses a stroke of twice the radius: exactly 1 physical px.
-    val outlineRadiusDp = with(density) { .5f / this.density }
-    val shadow = if (v2 && textShadow && contrastProfile > 0) {
+    val lineRadiusDp = with(density) {
+        (if (v2) luaSoftContrastOutlinePx(contrastProfile) else 1f) / (2f * this.density)
+    }
+    val shadow = if (v2 && textShadow) {
         Shadow(
-            color = Color.Black.copy(alpha = luaSoftContrastShadowAlpha(contrastProfile)),
+            color = Color(0xFF0A1018).copy(alpha = luaSoftContrastShadowAlpha(contrastProfile)),
             offset = Offset(0f, with(density) { .5f.dp.toPx() }),
             blurRadius = with(density) { 1.dp.toPx() },
         )
     } else null
-    Box(
-        modifier = modifier.then(if (v2) Modifier.border(1.dp,
-            Color.White.copy(alpha = borderOpacity.coerceIn(0, 100) / 100f * .35f), shape)
-            else Modifier).then(
-            if (active) Modifier.background(
-                if (v2) activeBackgroundColor.copy(alpha = activeBackgroundColor.alpha * activeBackgroundOpacity.coerceIn(0f, 1f))
-                else LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f)),
-                shape,
-            ) else if (v2) Modifier.background(
-                normalBackgroundColor.copy(alpha = normalBackgroundColor.alpha * normalBackgroundOpacity.coerceIn(0f, 1f)), shape,
-            ) else Modifier,
-        ),
-        contentAlignment = Alignment.Center,
-    ) {
+
+    val fill = when {
+        !v2 && active -> LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f))
+        !v2 -> Color.Transparent
+        active -> activeBackgroundColor.copy(
+            alpha = activeBackgroundColor.alpha * activeBackgroundOpacity.coerceIn(0f, 1f))
+        else -> normalBackgroundColor.copy(
+            alpha = normalBackgroundColor.alpha * normalBackgroundOpacity.coerceIn(0f, 1f))
+    }
+    val borderAlpha = if (v2) borderOpacity.coerceIn(0, 100) / 200f else 0f
+    val borderWidth = with(density) { (1f / this.density).dp }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        val tileModifier = if (v2 && shapeMode == 0) {
+            Modifier.size(circleDiameterDp.coerceAtLeast(1f).dp)
+        } else {
+            Modifier.matchParentSize()
+        }
+        Box(
+            modifier = tileModifier
+                .background(fill, shape)
+                .then(if (borderAlpha > 0f) Modifier.border(borderWidth,
+                    Color.White.copy(alpha = borderAlpha), shape) else Modifier),
+        )
         ContrastVideoLabel(
             text = text,
             color = if (!v2) { if (active) LuaSoftActiveText else LuaSoftText }
@@ -99,7 +122,7 @@ internal fun LuaMinimalSoftTile(
             fontSize = fontSize,
             fontWeight = fontWeight,
             outlined = !v2 || contrastProfile > 0,
-            outlineWidthDp = if (v2 && contrastProfile == 0) 0f else outlineRadiusDp,
+            outlineWidthDp = if (v2) lineRadiusDp else lineRadiusDp,
             outlineColorOverride = if (v2) Color(0xFF1E2630) else null,
             shadowStyle = shadow,
             maxLines = 1,
