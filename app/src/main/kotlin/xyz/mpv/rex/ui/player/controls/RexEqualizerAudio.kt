@@ -15,6 +15,9 @@ object RexEqualizerAudio {
     "Bass Boost" to listOf(5, 3, 0, -1, -2),
     "Treble Boost" to listOf(-2, -1, 0, 3, 5),
     "Voice Boost" to listOf(2, 4, 5, 3, 1),
+    "Głos Naturalny" to listOf(-2, -1, 1, 2, -1),
+    "Dialogi Wyraźne" to listOf(-3, -2, 2, 4, -2),
+    "Głos Mocny" to listOf(-5, -3, 4, 5, -3),
     "Loudness" to listOf(4, 2, 0, 2, 4),
   )
 
