@@ -1,58 +1,99 @@
 package xyz.mpv.rex.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import xyz.mpv.rex.R
 
-// Google Sans Flex font family (variable font supporting weights 100-900)
+// Match MPV Infinity: the bundled Google Sans Flex variable font with maximum
+// rounded letterforms (ROND=100) and the corresponding weight axis per style.
+// Keep using the existing font resource; no additional font files are needed.
+@OptIn(ExperimentalTextApi::class)
 val GoogleSansFlex = FontFamily(
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Thin,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Thin.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.ExtraLight,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.ExtraLight.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Light,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Light.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Normal,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Normal.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Medium,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Medium.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.SemiBold,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.SemiBold.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Bold,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Bold.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.ExtraBold,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.ExtraBold.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
   Font(
     resId = R.font.google_sans_flex,
     weight = FontWeight.Black,
     style = FontStyle.Normal,
+    variationSettings = FontVariation.Settings(
+      FontVariation.weight(FontWeight.Black.weight),
+      FontVariation.Setting("ROND", 100f),
+    ),
   ),
 )
 
