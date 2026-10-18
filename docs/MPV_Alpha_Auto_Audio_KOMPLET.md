@@ -95,6 +95,31 @@ Test wykonano trybem **3×10 s** w wersjach **v44** i **v45**. Dane użytkownika
 
 **Wniosek:** wyniki były praktycznie takie same. v45 poprawiła wiarygodność/ciągłość próbek, ale nie inteligencję wyboru filtrów. Żaden z ustalonych bezpiecznych warunków nie wywołał rekomendacji. W opisie PR #46 wyraźnie podano, że nie wykryto przekroczeń progów „jasne/ciemne/szumopodobne” — nie należy twierdzić na podstawie samych liczb, że klasyfikator rozpoznał mowę, szum albo ciemne widmo. **Najbardziej istotny problem praktyczny:** aktywne mocne Dialogue Enhance 5/5 i DRC 3/3, odczuwalnie nieoptymalny dźwięk, a Auto Audio nie reagował.
 
+### Test urządzeniowy v46 — wywiad uliczny z dużym szumem (18.10.2026)
+
+Źródło danych: cztery zrzuty ekranu użytkownika z panelu Auto Audio dla dwóch ustawień istniejących filtrów, podczas streamingu. To **ten sam materiał testowy co wcześniej**, ale inne odcinki czasowe; niewielkie różnice statystyk nie są miarą jakości dźwięku po filtrach.
+
+| Pomiar | DRC 2/3 | DRC 3/3 |
+|---|---:|---:|
+| Dialogue Enhance | 5/5 | 5/5 |
+| Szum Lua | OFF | OFF |
+| Długość próbek | 30,0 s | 30,0 s |
+| RMS | −18,4 dBFS | −18,2 dBFS |
+| Tło (szacunek) | −23,1 dBFS | −23,5 dBFS |
+| Dynamika globalna | 8,0 dB | 8,5 dB |
+| Centroid widma | 1675 Hz | 1661 Hz |
+| Flatness | 0,04 | 0,04 |
+| Rolloff | 2531 Hz | 2531 Hz |
+| Rekomendacja | brak | **DRC 3→2** |
+
+Dla testu z DRC 3/3 poszczególne fragmenty: **F1**: centroid 1663 Hz, flatness 0,04, rolloff 2602 Hz, tło −25,2 dBFS, dynamika 10,5 dB; **F2**: 1651 Hz / 0,03 / 2461 Hz / −21,3 dBFS / 6,3 dB; **F3**: 1668 Hz / 0,04 / 2555 Hz / −24,2 dBFS / 9,0 dB.
+
+**Potwierdzone wizualnie na urządzeniu:** panel raportuje streaming, oryginalny PCM przed filtrami, 30,0 s analizy oraz sprawdzoną ciągłość PTS; przy DRC 3/3 spełnione warunki globalnej dynamiki ≤12 dB i ≥2 fragmentów ≤14 dB, a aplikacja proponuje tylko obniżenie DRC do 2/3. Przy już ustawionym DRC 2/3 propozycja nie pojawiła się. Dla porównania i A/B przyciski są widoczne i B jest dostępne, ale **brak potwierdzenia odsłuchowego i testu zastosowania/cofnięcia**.
+
+**Ograniczenie:** duży słyszalny szum uliczny pochodzi z relacji użytkownika, **nie z detekcji klasyfikatora**. Widmo oznaczone jasne 0/3, ciemne 0/3, szumopodobne 0/3; VAD nadal nieobecny. Nie twierdzić, że v46 automatycznie odszumia ulicę. Komunikat interfejsu „bez automatycznego DRC” może być niejasny wobec bezpiecznej *propozycji zmniejszenia już aktywnego DRC* — przyszłe doprecyzowanie treści, bez zmiany logiki.
+
+**Następny test:** na tym samym materiale przełączyć A→B→A; sprawdzić słyszalną różnicę, zachowanie łańcucha audio i dokładny powrót do DRC 3/3, a dopiero potem ewentualnie zatwierdzić 2/3. Dodatkowe sprawdzanie VAD/rozpoznawania szumu dopiero w osobnym etapie. Nie wymagano nowego APK dla tego wpisu dokumentacyjnego.
+
 ## 7. Konkretne zabezpieczenia i reguły
 
 ### v43 — ostrożność wobec sprzecznych próbek
@@ -131,7 +156,7 @@ Test wykonano trybem **3×10 s** w wersjach **v44** i **v45**. Dane użytkownika
 
 **Wdrożone w kodzie według PR:** podstawy analizy 15 s i 3×10 s, streaming w aktualnym torze mpv, pomiary przed filtrami, podstawowe statystyki poziomów/widma, osobne próbki, ograniczone reguły bezpieczeństwa, A/B i cofnięcie, zabezpieczenia czasu/PTS, propozycje v46.
 
-**Potwierdzone przez użytkownika:** testy streamingu bez zacięć we wcześniejszym etapie; dostępne pomiary i wyniki v44/v45. Nie ma jeszcze potwierdzenia odsłuchowego działania v46 na fizycznym telefonie.
+**Potwierdzone przez użytkownika:** testy streamingu bez zacięć we wcześniejszym etapie; dostępne pomiary i wyniki v44/v45; w v46 wykonana na fizycznym telefonie kompletna analiza streamingu 3×10 s i zaobserwowana poprawna rekomendacja **DRC 3→2** po ustawieniu DRC 3/3. Nadal **niepotwierdzone odsłuchowo**: przełączenie A/B, skuteczność brzmieniowa i trwałe zastosowanie/cofnięcie zmiany.
 
 **Nieukończone albo nieweryfikowane:**
 
@@ -169,7 +194,7 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 
 ## 11. Punkt wznowienia projektu — instrukcja dla nowej rozmowy
 
-> Kontynuujemy MPV Alpha Auto Audio w repozytorium https://github.com/laszko14/REX-Player. Przeczytaj najnowszą dokumentację `docs/MPV_Alpha_Auto_Audio_KOMPLET.md` z aktualnej gałęzi `master` repozytorium GitHub (kopia w źródłach projektu ChatGPT może być nieaktualna), a następnie zweryfikuj aktualny kod i wersję aplikacji. Etapy Auto Audio v40–v46 zostały wykonane, PR #46 jest scalony, a CI PR było zielone. Nie powtarzaj zrobionych zmian. Zachowaj streaming bez drugiego pobierania, oryginalną analizę przed filtrami, tryby 15 s i 3×10 s, A/B, brak normalizacji, komplet istniejących Lua, numerację i podpis APK. **Najbliższy etap:** test v46 na telefonie i ocena natywnego dostępu do surowego PCM przed próbą wdrożenia prawdziwego VAD. Nie nazywaj pomiarów widma wykrywaniem mowy. Stosuj Systematic Debugging. Po zmianach uruchom testy, nie deklaruj niezweryfikowanego zachowania jako pewnego.
+> Kontynuujemy MPV Alpha Auto Audio w repozytorium https://github.com/laszko14/REX-Player. Przeczytaj najnowszą dokumentację `docs/MPV_Alpha_Auto_Audio_KOMPLET.md` z aktualnej gałęzi `master` repozytorium GitHub (kopia w źródłach projektu ChatGPT może być nieaktualna), a następnie zweryfikuj aktualny kod i wersję aplikacji. Etapy Auto Audio v40–v46 zostały wykonane, PR #46 jest scalony, a CI PR było zielone. Nie powtarzaj zrobionych zmian. Zachowaj streaming bez drugiego pobierania, oryginalną analizę przed filtrami, tryby 15 s i 3×10 s, A/B, brak normalizacji, komplet istniejących Lua, numerację i podpis APK. **Najbliższy etap:** zakończyć weryfikację A/B i cofnięcia po potwierdzonym na telefonie teście rekomendacji DRC 3→2 w v46, następnie ocenić natywny dostęp do surowego PCM potrzebny do prawdziwego VAD. Nie nazywaj pomiarów widma wykrywaniem mowy. Stosuj Systematic Debugging. Po zmianach uruchom testy, nie deklaruj niezweryfikowanego zachowania jako pewnego.
 
 ## 12. Odnośniki do potwierdzonych zmian
 
