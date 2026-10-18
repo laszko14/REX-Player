@@ -182,13 +182,6 @@ internal fun MiniProgressSettingsDialog(
   preferences: PlayerPreferences,
   onDismiss: () -> Unit,
 ) {
-  val enabled by preferences.miniProgressEnabled.collectAsState()
-  val thickness by preferences.miniProgressThicknessPx.collectAsState()
-  val colorHex by preferences.miniProgressColorHex.collectAsState()
-  val opacity by preferences.miniProgressOpacityPercent.collectAsState()
-  val margin by preferences.miniProgressBottomMarginDp.collectAsState()
-  val visibleOnPause by preferences.miniProgressVisibleOnPause.collectAsState()
-  var showColors by remember { mutableStateOf(false) }
   Dialog(
     onDismissRequest = onDismiss,
     properties = DialogProperties(usePlatformDefaultWidth = false),
@@ -200,80 +193,40 @@ internal fun MiniProgressSettingsDialog(
         .padding(12.dp),
       contentAlignment = Alignment.CenterEnd,
     ) {
-      val availableWidth = (maxWidth - 4.dp).coerceAtMost(520.dp)
-      val availableHeight = (maxHeight - 4.dp).coerceAtLeast(160.dp)
-      Surface(
-        modifier = Modifier
-          .width(availableWidth)
-          .heightIn(max = availableHeight)
-          .clickable(onClick = {}),
-        color = miniPanelBg,
-        contentColor = Color.White,
-        shape = RoundedCornerShape(28.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
-        shadowElevation = 12.dp,
-      ) {
-        Column(
-          modifier = Modifier.verticalScroll(rememberScrollState()),
-        ) {
-          Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(start = 9.dp, top = 12.dp, end = 20.dp, bottom = 9.dp),
-          ) {
-            IconButton(onClick = onDismiss) {
-              Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zamknij ustawienia", tint = miniTextMuted)
-            }
-            Text(
-              "Mini pasek postępu",
-              fontWeight = FontWeight.SemiBold,
-              fontSize = 23.sp,
-              maxLines = 1,
-              overflow = TextOverflow.Ellipsis,
-            )
-          }
-          Column(modifier = Modifier.padding(horizontal = 15.dp, vertical = 0.dp)) {
-            MiniSwitchRow(
-              title = "Włącz mini pasek",
-              detail = "Wyświetlaj minimalny pasek postępu na dole ekranu",
-              checked = enabled,
-              onCheckedChange = preferences.miniProgressEnabled::set,
-            )
-            MiniDivider()
-            MiniSliderRow("Grubość", thickness.coerceIn(1, 8), 1, 8, "px") {
-              preferences.miniProgressThicknessPx.set(it)
-            }
-            MiniDivider()
-            Row(
-              modifier = Modifier.fillMaxWidth().height(64.dp).clickable { showColors = true }.padding(horizontal = 10.dp),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Text("Kolor", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
-              Box(
-                Modifier.size(36.dp).background(miniColor(colorHex), CircleShape),
-              )
-              Spacer(Modifier.width(12.dp))
-              Text(miniColorName(colorHex), color = miniTextMuted, fontSize = 14.sp, maxLines = 1)
-              Icon(Icons.Default.ChevronRight, contentDescription = "Wybierz kolor", tint = miniTextMuted)
-            }
-            MiniDivider()
-            MiniSliderRow("Przezroczystość", opacity.coerceIn(0, 100), 0, 100, "%") {
-              preferences.miniProgressOpacityPercent.set(it)
-            }
-            MiniDivider()
-            MiniSliderRow("Margines od dołu", margin.coerceIn(0, 30), 0, 30, "dp") {
-              preferences.miniProgressBottomMarginDp.set(it)
-            }
-            MiniDivider()
-            MiniSwitchRow(
-              title = "Widoczny przy pauzie",
-              detail = "Pokazuj pasek postępu również podczas pauzy",
-              checked = visibleOnPause,
-              onCheckedChange = preferences.miniProgressVisibleOnPause::set,
-            )
-          }
-          Spacer(Modifier.height(12.dp))
-        }
-      }
+      MiniProgressSettingsPanel(
+        preferences = preferences,
+        onDismiss = onDismiss,
+        modifier = Modifier.width((maxWidth - 4.dp).coerceAtMost(520.dp))
+          .heightIn(max = (maxHeight - 4.dp).coerceAtLeast(160.dp)),
+      )
+    }
+  }
+}
+
+/** Also rendered by the real Compose screenshot fixture (without opening an Android dialog window). */
+@Composable
+internal fun MiniProgressSettingsPanel(
+  preferences: PlayerPreferences,
+  onDismiss: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val enabled by preferences.miniProgressEnabled.collectAsState()
+  val thickness by preferences.miniProgressThicknessPx.collectAsState()
+  val colorHex by preferences.miniProgressColorHex.collectAsState()
+  val opacity by preferences.miniProgressOpacityPercent.collectAsState()
+  val margin by preferences.miniProgressBottomMarginDp.collectAsState()
+  val visibleOnPause by preferences.miniProgressVisibleOnPause.collectAsState()
+  var showColors by remember { mutableStateOf(false) }
+  Surface(
+    modifier = modifier.clickable(onClick = {}),
+    color = miniPanelBg,
+    contentColor = Color.White,
+    shape = RoundedCornerShape(28.dp),
+    border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.20f)),
+    shadowElevation = 12.dp,
+  ) {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+
     }
   }
   if (showColors) {
