@@ -35,6 +35,32 @@ class StreamAstatsParserTest {
     assertEquals(11000.0, metrics.spectralRolloffHz ?: 0.0, 0.001)
   }
 
+  @Test fun threeWindowsRetainTheirOwnIndependentSpectralMeasurements() {
+    val raw = buildString {
+      for (frame in 0 until 36 * 50) {
+        val timestamp = frame / 50.0
+        val centroid = when {
+          timestamp < 12.0 -> 5500
+          timestamp < 24.0 -> 1700
+          else -> 450
+        }
+        append("frame:").append(frame).append(" pts_time:").append(timestamp).append('\n')
+        append("lavfi.aspectralstats.1.centroid=").append(centroid).append('\n')
+        append("lavfi.aspectralstats.1.flatness=0.27\n")
+        append("lavfi.aspectralstats.1.rolloff=10000\n")
+        append("lavfi.astats.Overall.Peak_level=-3\n")
+        append("lavfi.astats.Overall.RMS_level=-25\n")
+      }
+    }
+    val report = StreamAstatsParser.parse(
+      raw, listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0),
+    )
+    assertEquals(3, report.segments.size)
+    assertEquals(5500.0, report.segments[0].spectralCentroidHz ?: 0.0, 0.01)
+    assertEquals(1700.0, report.segments[1].spectralCentroidHz ?: 0.0, 0.01)
+    assertEquals(450.0, report.segments[2].spectralCentroidHz ?: 0.0, 0.01)
+  }
+
   @Test fun quickModeReadsOnlyFifteenSeconds() {
     val report = StreamAstatsParser.parse(syntheticStats(36), listOf(0.0 to 15.0))
     assertEquals(15.0, report.seconds, 0.001)
