@@ -214,3 +214,32 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 4. **Sprawdź zmiany równoległe:** przed edycją porównaj aktualny `master`, otwarte PR-y i numerację aplikacji. Nie powtarzaj już zrealizowanych etapów.
 5. **Dokumentacja sama się nie aktualizuje.** Każda kolejna rozmowa wykonująca etap Auto Audio powinna świadomie uzupełnić ten plik i uwzględnić go w PR. Samo utworzenie APK lub scalenie kodu nie modyfikuje dokumentacji.
 6. **Zmiana samej dokumentacji nie wymaga wydania nowego APK.** Nie dodawaj znacznika `[mpv-alpha-apk]` do dokumentacyjnych commitów ani nie uruchamiaj podpisanej kompilacji bez osobnej potrzeby.
+
+## 14. Auto Audio v47 — rozwój prawdziwego VAD na rzeczywistych próbkach PCM (etap 1)
+
+**Stan wpisu:** PR #49 (etap fundamentu v47) zweryfikowany automatycznie w GitHub Actions, ale VAD na telefonie i streaming nadal niezweryfikowane. Ostatnia wersja sprawdzona na streamingu pozostaje v46. Nie traktować v47 jako ukończonego VAD dla streamingu.
+
+### Zdiagnozowana blokada streamingu
+
+- Zintegrowana w aplikacji biblioteka `com.github.sfsakhawat999:mpvRex-libmpv:0.0.9` udostępnia `MPVLib` (komendy, właściwości, podglądy obrazu), ale **nie ma dostępnego callbacku, który przekazuje surowe próbki PCM aktualnego strumienia** do Kotlin/Java. `astats` i `aspectralstats` przez `ametadata` podają wyłącznie metryki.
+- Nie wolno „odtwarzać” sygnału PCM z RMS/FFT, udawać VAD ani pobierać filmu drugi raz. Zmiana audio output / AudioPlaybackCapture oznaczałaby analizę po filtrach, przełączanie dźwięku albo wymaganie uprawnień, więc nie spełnia wcześniejszych założeń.
+- Do VAD streamingu konieczne jest zweryfikowane rozszerzenie **natywnego toru mpv**, przekazujące kopię oryginalnych ramek PCM **przed efektami użytkownika**. Należy przygotować wyłącznie jeden ograniczony tap, nie zmieniać toru odsłuchowego, nie zapisywać pełnego streamu, nie wykonywać nowego HTTP i zachować PTS/track/speed.
+
+### Wykonywany zakres kodu v47 — prawdziwy WebRTC VAD dla dostępnego PCM
+
+- Zależność `com.github.gkonovalov.android-vad:webrtc:2.0.10` (MIT; algorytm WebRTC, JNI). Klasyfikator otrzymuje rzeczywiste **mono PCM16 / 16 kHz / 320 próbek co 20 ms**. To model VAD, a nie próg RMS.
+- Bieżący **lokalny** dekoder `MediaExtractor/MediaCodec` w `AutoAudioAnalyzer` posiada prawdziwe, oryginalne próbki. Przesyłane są do WebRTC po bezpiecznym miksie kanałów i lekkim resamplingu. Jeden niewielki bufor (320 próbek) i licznik ramek, brak wysyłania danych.
+- `vadSpeechFraction` oznacza **udział ramek zaklasyfikowanych jako mowa**, nie kalibrowane prawdopodobieństwo i nie miarę jakości dialogów. Co najmniej 50 ramek na każdy fragment; niepełne lub niedostępne wyniki są jawnie niezdefiniowane (`null`). `verifiedSpeechProbability` nadal **nie jest syntetyzowane**.
+- Model służy w tym kroku **wyłącznie do bezpiecznej diagnostyki**: nie uruchamia samodzielnie Szum Lua, DRC, Dialogue Enhance ani EQ. Gdy natywnego PCM brak (stream), wynik VAD pozostaje niedostępny, a działający algorytm v46 zachowuje bezpieczne dotychczasowe reguły.
+- Testy jednostkowe obejmują kompletowanie 20 ms ramek, przetwarzanie wejścia 44,1/48 kHz, zbyt krótkie próbki, nieprawidłowe PCM i rozróżnianie ułamka ramkowego od pewności modelu. Testy JVM używają kontrolowanego testowego klasyfikatora; nie są testem rzeczywistej skuteczności modelu na hałasie ulicznym.
+
+### Wymagana walidacja przed ogłoszeniem pełnego sukcesu
+
+1. `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `check_workflows`; sprawdzić pobieranie natywnej biblioteki WebRTC na ARM64 i brak konfliktów z libmpv.
+2. Lokalny plik z mową, muzyką i ciszą: odczyt rzeczywistych wartości VAD i niezawodność działania; brak regresji v46.
+3. Dopiero po przygotowaniu natywnego tapu: **streaming HTTP/HLS/DASH bez drugiego pobierania**, zgodność PTS, wybrana ścieżka audio, zachowanie 1,5×–3×, brak trzasków/zacięć, bezpieczeństwo pamięci, CPU/bateria.
+4. W osobnym kroku dodać konserwatywne zasady decyzji zależnych od potwierdzonej mowy i zderzyć wyniki z szumem ulicznym. WebRTC VAD może mylić niektóre hałasy i muzykę z mową; nie używać samego udziału ramek jako procentu pewności.
+
+**Automatyczna walidacja (PR #49):** GitHub Actions https://github.com/laszko14/REX-Player/actions/runs/39151890672 — **success** dla kontroli źródeł i zadania `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug`. Podpisany APK nie powstał (zadanie podpisywania pominięte w PR). Zielone CI nie potwierdza działania bibliotek JNI na fizycznym telefonie ani skuteczności VAD.
+
+**Stan fizycznego urządzenia:** brak testu VAD v47. Wymagana najpierw próba na lokalnym PCM, a dla streamingu nadal brak natywnego PCM tapu. Nie wypuszczać oznaczonego jako „VAD streaming” APK.

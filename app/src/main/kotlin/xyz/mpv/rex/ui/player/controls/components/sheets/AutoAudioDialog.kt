@@ -160,6 +160,26 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
+              if (metrics.vadSpeechFraction != null) {
+                Text(
+                  "Prawdziwy VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek z aktywnością mowy. "
+                    .format(metrics.vadSpeechFraction * 100.0) +
+                    "To udział wykrytych ramek, a nie prawdopodobieństwo ani ocena jakości dialogu. " +
+                    "Dobór filtrów zależnych od mowy pozostaje zablokowany do walidacji.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              } else {
+                Text(
+                  if (metrics.sourceDescription.startsWith("Streaming")) {
+                    "VAD: niedostępny dla streamingu — mpv udostępnia tylko statystyki, " +
+                      "nie surowy PCM dla WebRTC. Nie udajemy wykrycia mowy."
+                  } else {
+                    "VAD: niedostępny dla tej lokalnej próbki PCM; " +
+                      "nie wyliczono sztucznego wyniku rozpoznawania mowy."
+                  },
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              }
               if (metrics.spectralCentroidHz != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                   MetricCard(

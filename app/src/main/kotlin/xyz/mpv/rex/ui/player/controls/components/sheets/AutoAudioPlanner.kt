@@ -104,7 +104,15 @@ internal object AutoAudioPlanner {
     // independently verified VAD may authorize speech-specific filter decisions.
     val speechConfirmed = metrics.verifiedSpeechProbability?.let { it >= 0.80 } == true
     if (!speechConfirmed) {
-      findings += "Nie potwierdzono mowy: bez automatycznego DRC, Dialogue Enhance ani wzmacniania odszumiania."
+      if (metrics.vadSpeechFraction != null) {
+        // WebRTC emits binary speech frames, NOT a calibrated probability. For
+        // now this is diagnostic-only; do not trigger noise/DRC/dialogue filters.
+        findings += "WebRTC VAD wykrył %.0f%% ramek mowy w oryginalnym PCM; ".format(
+          metrics.vadSpeechFraction * 100.0,
+        ) + "nie jest to pewność modelu. Automatyczne zmiany zależne od mowy nadal wyłączone."
+      } else {
+        findings += "Nie potwierdzono mowy: bez automatycznego DRC, Dialogue Enhance ani wzmacniania odszumiania."
+      }
     }
     val spectralWindows = metrics.segments.filter {
       it.spectralCentroidHz != null && it.spectralFlatness != null &&

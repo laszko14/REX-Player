@@ -44,6 +44,10 @@ internal data class AutoAudioMetrics(
   val segments: List<AutoAudioSegmentMetrics> = emptyList(),
   // Reserved for an actual verified VAD model. Never populate from loudness / FFT alone.
   val verifiedSpeechProbability: Double? = null,
+  // Real WebRTC VAD binary frame vote fraction, NOT calibrated speech probability.
+  // Used for reporting only until live pre-filter PCM can be obtained safely.
+  val vadSpeechFraction: Double? = null,
+  val vadModel: String? = null,
   val sourceDescription: String = "Lokalny PCM przed filtrami mpv",
 )
 
@@ -83,6 +87,13 @@ internal object AutoAudioAnalyzer {
     val sorted = frames.map { it.db }.sorted()
     val active = sorted.filter { it > -55.0 }
     require(active.size >= 20) { "W próbce przeważa cisza. Nie zmieniono filtrów." }
+    // Each analyzed span must provide a complete genuine VAD result; never
+    // combine 0/unknown frames into a fabricated speech score.
+    val vadComplete = readings.all { it.vadFrames >= 50 }
+    val totalVadFrames = readings.sumOf { it.vadFrames }
+    val vadFraction = if (vadComplete && totalVadFrames > 0) {
+      readings.sumOf { it.vadSpeechFrames }.toDouble() / totalVadFrames
+    } else null
     AutoAudioMetrics(
       seconds = frames.sumOf { it.seconds },
       rmsDb = db(sqrt(frames.map { it.energy }.average())),
@@ -92,15 +103,23 @@ internal object AutoAudioAnalyzer {
       voiceLikeRatio = frames.count { it.db in -48.0..-8.0 && it.zcr in 0.018..0.23 }.toDouble() / frames.size,
       channelCount = channels,
       clipRatio = readings.sumOf { it.clipped }.toDouble() / readings.sumOf { it.samples }.coerceAtLeast(1),
+      vadSpeechFraction = vadFraction,
+      vadModel = if (vadFraction != null) "WebRTC VAD (PCM16 mono, 16 kHz)" else null,
     )
   }
 
   private data class Frame(val energy: Double, val db: Double, val zcr: Double, val seconds: Double)
-  private data class Reading(val frames: List<Frame>, val channels: Int, val samples: Int, val clipped: Int, val peak: Double)
+  private data class Reading(
+    val frames: List<Frame>, val channels: Int, val samples: Int, val clipped: Int,
+    val peak: Double, val vadFrames: Int, val vadSpeechFrames: Int,
+  )
 
   private fun decodeSpan(context: Context, uri: Uri, start: Double, length: Double, isActive: () -> Boolean): Reading {
     val extractor = MediaExtractor()
     var decoder: MediaCodec? = null
+    var vad: AutoAudioVadPcm? = null
+    var vadRate: Int? = null
+    var vadUnavailable = false
     try {
       extractor.setDataSource(context, uri, null)
       val tracks = (0 until extractor.trackCount).filter { i ->
@@ -162,6 +181,12 @@ internal object AutoAudioAnalyzer {
             require(encoding == AudioFormat.ENCODING_PCM_16BIT || encoding == AudioFormat.ENCODING_PCM_FLOAT) {
               "Nieobsługiwany format PCM."
             }
+            if (vadRate != null && vadRate != rate) {
+              // Mid-span decoder format change invalidates VAD segment timing.
+              vad?.close()
+              vad = null
+              vadUnavailable = true
+            }
           }
           in 0..Int.MAX_VALUE -> {
             if (info.size > 0 && info.presentationTimeUs >= fromUs && info.presentationTimeUs < toUs) {
@@ -176,12 +201,30 @@ internal object AutoAudioAnalyzer {
                 val buffer = pcm.asShortBuffer()
                 DoubleArray(buffer.remaining()) { buffer.get().toDouble() / 32768.0 }
               }
+              if (vad == null && !vadUnavailable) {
+                // Native detector is optional: never break playback analysis if
+                // the JNI artifact is missing or cannot initialize on device.
+                vad = runCatching {
+                  AutoAudioVadPcm(rate, WebRtcAutoAudioVadClassifier())
+                }.getOrNull()
+                if (vad == null) vadUnavailable = true else vadRate = rate
+              }
               for (offset in values.indices step channels) {
                 var value = 0.0
                 for (channel in 0 until channels) {
                   if (offset + channel < values.size) value += values[offset + channel] / channels
                 }
                 value = value.coerceIn(-1.0, 1.0)
+                if (vad != null && !vadUnavailable) {
+                  // WebRTC sees exactly the original decoded, downmixed samples.
+                  // This does NOT touch any mpv filter or speaker output.
+                  val accepted = runCatching { vad?.accept(value) }.isSuccess
+                  if (!accepted) {
+                    vad?.close()
+                    vad = null
+                    vadUnavailable = true
+                  }
+                }
                 peak = maxOf(peak, kotlin.math.abs(value))
                 if (kotlin.math.abs(value) >= 0.995) clipped++
                 if ((value >= 0) != (previous >= 0)) zeroCrossings++
@@ -205,8 +248,13 @@ internal object AutoAudioAnalyzer {
         }
       }
       require(attempts < 20000) { "Przekroczono limit odczytu audio." }
-      return Reading(frames, channels, samples, clipped, peak)
+      return Reading(
+        frames, channels, samples, clipped, peak,
+        vadFrames = if (vadUnavailable) 0 else vad?.totalFrames ?: 0,
+        vadSpeechFrames = if (vadUnavailable) 0 else vad?.speechFrames ?: 0,
+      )
     } finally {
+      vad?.close()
       runCatching { decoder?.stop() }
       runCatching { decoder?.release() }
       extractor.release()
