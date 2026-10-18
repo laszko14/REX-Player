@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -289,7 +290,9 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     ) {
                         LuaMinimalSoftTile(
                             text = "1.5x", active = index == 1,
-                            modifier = Modifier.size(tileWidth, tileHeight),
+                            modifier = Modifier.size(tileWidth, tileHeight).graphicsLayer {
+                                alpha = if (index == 1) LUA_SOFT_V2_ACTIVE_ALPHA else LUA_SOFT_V2_IDLE_ALPHA
+                            },
                             fontSize = (font.coerceIn(8, 22) * ratio).sp,
                             activeBackgroundOpacity = .50f *
                                 (100 - activeTransparency.coerceIn(0, 100)) / 100f,
