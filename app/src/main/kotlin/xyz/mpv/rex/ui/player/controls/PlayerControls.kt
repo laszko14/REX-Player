@@ -1372,7 +1372,7 @@ fun PlayerControls(
                   }
                 } else {
                   if (bottomControlsBelowSeekbar) {
-                    val bottomMargin = landscapeButtonDockHeight + 2 * controlsToTimelineGap + navBottom
+                    val bottomMargin = landscapeButtonDockHeight + controlsToTimelineGap * 2 + navBottom
                     bottom.linkTo(parent.bottom, bottomMargin)
                   } else {
                     bottom.linkTo(parent.bottom, bottomEdgeGap)
