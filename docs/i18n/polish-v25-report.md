@@ -46,7 +46,7 @@ Podglądy renderują produkcyjne ekrany Compose: **Gesty, Wygląd, Odtwarzanie, 
 - Istniejące workflow wykonują testy JVM, Android Lint, kompilację i renderowanie. Nie dodano nowego workflow.
 - Niezależny przegląd kodu wskazał pominięte komunikaty, odmianę potwierdzenia usunięcia z listy, zgodność innych języków i zachowanie spacji w zasobach. Poprawiono wskazane miejsca.
 
-Wyniki uruchomień, podglądy i odnośniki zostaną dopisane po zakończeniu testów. Wygenerowanie lub zapis instrukcji nie jest traktowane jako pomyślny wynik testu.
+Wyniki faktycznie ukończonych testów i podglądy zawiera końcowa sekcja raportu.
 
 ## Granice weryfikacji i ręczna kontrola
 
@@ -58,3 +58,16 @@ Wyniki uruchomień, podglądy i odnośniki zostaną dopisane po zakończeniu tes
 ## Aktualizacja v25
 
 Wydanie następuje dopiero po pomyślnych testach na GitHubie. Wykorzystywany jest istniejący klucz z GitHub Actions, bez udostępniania sekretów. Pakiet musi pozostać `xyz.mpv.rex.debug`, wersja ma mieć nazwę `v25` i kod większy od `1000242` z v24. Podpis jest porównywany z publicznym odciskiem certyfikatu wydanej v24; inny podpis zatrzymuje wydanie.
+
+## Zakończenie v25 — wyniki
+
+- **1230** poprawionych/dodanych polskich wartości tekstowych (697 zmian i 40 uzupełnień w dawnym XML, 470 nowych wartości ustawień, 23 Web Share; formy liczby mnogiej liczone oddzielnie).
+- PR #25 (scalony po zielonym CI): https://github.com/laszko14/REX-Player/pull/25
+- Kontrola i18n, YAML/Python/Lua, Android Build, testy JVM i Android Lint: **SUCCESS** na head PR: https://github.com/laszko14/REX-Player/actions/runs/39082841107
+- Podglądy PNG: **SUCCESS** — pięć rzeczywistych ekranów ustawień przy 100% i 130% fontu: https://github.com/laszko14/REX-Player/actions/runs/39082841122/artifacts/12119028477
+- Ręczny przegląd PNG wykrył i usunął łamanie etykiety motywu (obecnie „System”) i gniecenie „Mocny” w presetach Lua; ponownie wyrenderowane obrazy potwierdzają poprawkę.
+- Jeden podpisany APK ARM64 v25 (73 271 665 bajtów): https://github.com/laszko14/REX-Player/actions/runs/39083513429/artifacts/12119887651
+- Workflow podpisał dotychczasowym certyfikatem i zweryfikował: xyz.mpv.rex.debug, versionName v25, versionCode 1000252. Nowy tag: mpv-alpha-v25.
+- SHA-256 APK: 7c7ace24cf1854e9cf050871dc716c2fd440e83fbb0801e33047b7e7fd1a883d.
+- Android Lint wykorzystuje dotychczasowy baseline. Dwa nowe pliki angielskich zasobów mają ściśle zakresowy wyjątek MissingTranslation dla języków innych niż polski, których dotąd nie tłumaczono; event-handlery w zbadanych plikach mają zakresowy wyjątek LocalContextGetResourceValueCall. Pozostałe reguły Lint działają; polskie tłumaczenia osobno kontroluje check_polish.py.
+- Wymagające ręcznego sprawdzenia na urządzeniu: układ poziomy, niestandardowy rozmiar ekranu/czcionki, dialogi, gesty, HUD i przyciski Lua w trakcie filmu, systemowe komunikaty oraz zewnętrzne biblioteki. Statyczne podglądy nie gwarantują bezbłędności wszystkich stanów dynamicznych.
