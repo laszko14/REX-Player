@@ -187,7 +187,7 @@ internal fun LuaSoftSwitch(title: String, checked: Boolean, onChange: (Boolean) 
 internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
     val scale by prefs.luaButtonScalePercent.collectAsState()
     val corner by prefs.luaButtonCornerRadius.collectAsState()
-    val opacity by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val opacity by prefs.luaButtonBackgroundTransparency.collectAsState()
     val background by prefs.luaSoftBackgroundColor.collectAsState()
     val textColor by prefs.luaSoftTextColor.collectAsState()
     val activeText by prefs.luaSoftActiveTextColor.collectAsState()
@@ -238,7 +238,7 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     fontSize = 11.sp)
             }
             LuaSoftSlider(stringResource(R.string.lua_v2_background_opacity), opacity, 0, 100, "%",
-                prefs.threeFingerSpeedPanelTransparency::set)
+                prefs.luaButtonBackgroundTransparency::set)
         }
         LuaSoftCard(stringResource(R.string.lua_v2_colors)) {
             Text(stringResource(R.string.lua_v2_shape), color = LuaDarkMuted, fontSize = 12.sp)
