@@ -292,6 +292,7 @@ fun LuaButtonGrid(
                     shape = shape,
                     v2 = softV2,
                     normalBackgroundColor = Color(saved?.backgroundColor ?: softBg),
+                    activeBackgroundColor = Color(saved?.activeBackgroundColor ?: softBg),
                     foreground = Color(saved?.textColor ?: softText),
                     activeForeground = Color(saved?.activeTextColor ?: softActiveText),
                     normalBackgroundOpacity = if (softV2) .12f * (1f - transparency.coerceIn(0, 100) / 100f) else 0f,
