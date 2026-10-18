@@ -55,4 +55,13 @@
     <string name="lua_v2_drag" tools:ignore="MissingTranslation">Drag to reorder</string>
     <string name="lua_v2_legacy" tools:ignore="MissingTranslation">Classic appearance (before Minimal Soft)</string>
     <string name="lua_v2_icon" tools:ignore="MissingTranslation">Icon (optional, up to 3 characters)</string>
+    <string name="lua_v3_style" tools:ignore="MissingTranslation">Button style</string>
+    <string name="lua_v3_v29" tools:ignore="MissingTranslation">Minimal Soft v29</string>
+    <string name="lua_v3_classic" tools:ignore="MissingTranslation">Classic</string>
+    <string name="lua_v3_disabled_tip" tools:ignore="MissingTranslation">The settings below apply to Minimal Soft v2. Select that style to see changes on buttons.</string>
+    <string name="lua_v3_corner_tip" tools:ignore="MissingTranslation">Corner rounding applies only to Rounded shape.</string>
+    <string name="lua_v3_icon_tip" tools:ignore="MissingTranslation">Icons change only for recognized buttons. Custom labels stay unchanged.</string>
+    <string name="lua_v3_advanced" tools:ignore="MissingTranslation">Dimensions, spacing and active colors</string>
+    <string name="lua_v3_preview" tools:ignore="MissingTranslation">Preview on light and dark backgrounds</string>
+    <string name="lua_v3_preview_tip" tools:ignore="MissingTranslation">Preview is for checking contrast and does not change the video.</string>
 </resources>
