@@ -266,9 +266,9 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               Text("Propozycja zmian", fontWeight = FontWeight.Bold)
               if (plan.changes.isEmpty()) {
                 Text(
-                  "Brak pewnej korekty. Gdy trzy fragmenty się różnią, nie należy " +
-                    "dopasowywać całego filmu do jednej sceny. Możesz ponowić " +
-                    "analizę w miejscu z wyraźnie słyszalnymi dialogami.",
+                  "Brak wystarczająco pewnych przesłanek do zmiany aktualnych filtrów. " +
+                    "To nie oznacza, że fragmenty różnią się między sobą. " +
+                    "Możesz pozostawić obecne ustawienia lub ponowić analizę na innym materiale.",
                   color = mutedAudioText,
                 )
               }
