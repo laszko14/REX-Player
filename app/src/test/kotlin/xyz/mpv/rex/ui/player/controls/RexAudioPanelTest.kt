@@ -33,6 +33,19 @@ class RexAudioPanelTest {
   }
 
   @Test
+  fun noiseLuaActionExpandsExistingModelAndUpdatesSharedLevel() {
+    val levelFive = RexSzumAudio.luaCommandForLevel(5)
+    assertTrue(levelFive.contains("expand-path"))
+    assertTrue(levelFive.contains("~~/script-opts/std.rnnn"))
+    assertTrue(levelFive.contains("mix=0.20"))
+    assertTrue(levelFive.contains("mp.set_property_number(key, ok and 5 or 0)"))
+    assertTrue(levelFive.contains("\n"))
+    val disabled = RexSzumAudio.luaCommandForLevel(0)
+    assertTrue(disabled.contains("mp.commandv('af', 'remove', '@rex_szum')"))
+    assertTrue(disabled.contains("mp.set_property_number(key, 0)"))
+  }
+
+  @Test
   fun drcPreservesLegacyLevelTwoAndOffersThreeStrengths() {
     assertEquals(RexDrcAudio.FILTER_SPEC, RexDrcAudio.specificationForLevel(2))
     assertEquals(3, (1..3).map(RexDrcAudio::specificationForLevel).distinct().size)
