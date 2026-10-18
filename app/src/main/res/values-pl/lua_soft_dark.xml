@@ -33,7 +33,7 @@
     <string name="lua_v2_apply">Zastosuj</string>
     <string name="lua_v2_cancel">Anuluj</string>
     <string name="lua_v2_advanced">Dodatkowe ustawienia (v29)</string>
-    <string name="lua_v2_soft_v2">Minimal Soft v2</string>
+    <string name="lua_v2_soft_v2">Nowy styl Minimal Soft v2</string>
     <string name="lua_v2_soft_v29">Zachowaj możliwość powrotu do v29</string>
     <string name="lua_v2_layout">Układ i zarządzanie</string>
     <string name="lua_v2_left_cols">Liczba kolumn (lewa strona)</string>
