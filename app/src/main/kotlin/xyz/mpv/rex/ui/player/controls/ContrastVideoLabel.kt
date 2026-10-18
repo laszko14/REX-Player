@@ -5,6 +5,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
@@ -29,11 +30,13 @@ internal fun ContrastVideoLabel(
     outlined: Boolean,
     // null retains the appearance of old screenshot tests/callers.
     outlineWidthDp: Float? = null,
+    outlineColorOverride: Color? = null,
+    shadowStyle: Shadow? = null,
     textAlign: TextAlign? = null,
     maxLines: Int = 1,
     overflow: TextOverflow = TextOverflow.Clip,
 ) {
-    val outlineColor = if (color.luminance() >= 0.5f) Color.Black else Color.White
+    val outlineColor = outlineColorOverride ?: if (color.luminance() >= 0.5f) Color.Black else Color.White
     // v23 used up to 2.4dp (stroke diameter 4.8dp): it overwhelmed 11sp
     // labels and looked like displaced glyphs. Cap the clean round outline.
     val widthDp = (outlineWidthDp ?: if (outlined) 0.65f else 0f).coerceIn(0f, 1.05f)
@@ -59,6 +62,7 @@ internal fun ContrastVideoLabel(
             textAlign = textAlign,
             maxLines = maxLines,
             overflow = overflow,
+            style = TextStyle(shadow = shadowStyle),
         )
     }
 }
