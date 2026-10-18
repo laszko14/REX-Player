@@ -282,3 +282,28 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 - **Warunek wdrożenia:** nie podmieniono jeszcze `com.github.sfsakhawat999:mpvRex-libmpv:0.0.9` na AAR z forka. Wymagana zgodna, przetestowana para `libmpv.so`/`libplayer.so`, publikacja osobno nazwanej paczki `com.github.laszko14`, a następnie ponowny CI i testy streamingu HLS/HTTP/DASH.
 - **Brak gotowego APK v47**: nie uruchamiano podpisanej aktualizacji. Unikalny numer v47 ma być użyty dopiero dla pierwszej faktycznej kompilacji nowego podpisanego APK; bez podwójnego wydania tej samej wersji.
 - **Następna czynność:** przeczytaj wynik CI w PR natywnym #1. Przy błędzie zastosuj Systematic Debugging na logach, popraw przyczynę, zweryfikuj nowe CI, dopiero potem scal PR natywny i opublikuj AAR. Nie deklaruj pełnego VAD streamingu na podstawie samych testów JVM czy lokalnego PCM.
+
+
+## 17. Auto Audio v47 — błąd kompilacji Vulkan w forku natywnym (18.10.2026)
+
+**Stan:** etap naprawy środowiska CI, **bez wydania bibliotek/AAR/APK**. Historia i warunki z sekcji 1–16 pozostają w mocy.
+
+### Diagnoza z realnego logu
+
+- Sprawdzono dwa uruchomione przebiegi forka: [39157889511](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157889511) oraz [39157890994](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157890994). W początkowym odczycie prace trwały; następnie pobrano pełny log zadania ARMv7 (job 117764816340).
+- Podczas **Build the release artifacts**, przy konfiguracji Meson w `buildscripts/deps/mpv/_build_armv7l`, nastąpił rzeczywisty błąd: `meson.build:1346:9: ERROR: Dependency lookup for vulkan ... need '>= 1.4.309' found '1.3.275'`. Zakończenie tego zadania: kod wyjścia 1.
+- Przyczyna: przypięta wersja źródeł mpv wymaga nowszych nagłówków Vulkan, a `buildscripts/scripts/mpv.sh` wytwarzał `vulkan.pc` z wersją **1.3.275**, odpowiadającą zbyt starym nagłówkom środowiska. To **nie jest wynik testu JNI, VAD ani poprawności przechwytywania PCM**.
+
+### Minimalna poprawka w istniejącym natywnym PR #1
+
+- Commit [dabdf9d](https://github.com/laszko14/mpvRex-libmpv/commit/dabdf9d3c7088f1d61b42713ac64be23a3726b0d) na gałęzi `feature/v47-native-pre-af-pcm-tap` zmienia wyłącznie `buildscripts/scripts/mpv.sh`.
+- Przypina rzeczywiste `KhronosGroup/Vulkan-Headers` **v1.4.309**, pobiera źródło nagłówków przy braku lokalnej kopii, sprawdza `VK_HEADER_VERSION == 309` i instaluje nagłówki w prefiksie danej architektury.
+- Wpis `vulkan.pc` wskazuje wersję faktycznych nagłówków i ścieżkę `-I/usr/local/include` (mapowaną przez `PKG_CONFIG_SYSROOT_DIR` na prefiks cross-kompilacji). Zostawiono `-lvulkan` od Androida, a opcja `-Dvulkan=enabled` pozostała niezmieniona; **nie wyłączono Vulkan ani żadnego istniejącego modułu odtwarzania**.
+- Nowy przebieg [39159621224](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39159621224) został utworzony dla tego commita; podczas pierwszego sprawdzenia miał stan `queued`. Wynik **nie jest jeszcze potwierdzony**. Dawne przebiegi dotyczą wcześniejszego kodu i nie mogą potwierdzać skuteczności poprawki.
+
+### Następny punkt decyzyjny
+
+1. Sprawdzić CI nowego commita dla ARM64/ARMv7/x86/x86_64, analizując pierwszą rzeczywistą przyczynę ewentualnego błędu.
+2. Sprawdzić obecność symbolu `mpv_rex_set_pcm_sink`, zgodną parę `libmpv.so`/`libplayer.so` oraz artefakt AAR. Nie uznawać samego sukcesu Meson za gotowy tor VAD.
+3. Po zielonym CI dokończyć przegląd kodu natywnego, scalić PR #1 i opublikować **nową osobną wersję** biblioteki.
+4. Dopiero po weryfikacji artefaktów zintegrować AAR w MPV Alpha, wykonać testy aplikacji i rzeczywisty odsłuch na streamingu. **Nie ogłaszać ani nie wydawać APK v47 przed potwierdzeniem realnego VAD.**
