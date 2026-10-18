@@ -32,6 +32,12 @@ class PlayerPreferences(
   // Half-pixel units provide exactly 0..6px in 0.5px steps; first activation uses 2px.
   val luaButtonTextOutlineHalfPx = preferenceStore.getInt("lua_button_text_outline_half_px", 4)
   val luaButtonTextOutlineColor = preferenceStore.getInt("lua_button_text_outline_argb", 0xFF000000.toInt())
+  // Active playback-speed halo is independent of the text contour and tile background.
+  // Both new switches preserve the previous appearance when upgrading.
+  val luaActiveSpeedGlowEnabled = preferenceStore.getBoolean("lua_active_speed_glow_enabled", false)
+  val luaActiveSpeedGlowColor = preferenceStore.getInt("lua_active_speed_glow_argb", 0xFFFF2929.toInt())
+  val luaActiveSpeedGlowSizePx = preferenceStore.getInt("lua_active_speed_glow_size_px", 5)
+  val luaActiveSpeedBackgroundEnabled = preferenceStore.getBoolean("lua_active_speed_bg_enabled", true)
   // Minimal Soft changes only rendering; legacy/per-button colors remain saved.
   val luaButtonMinimalSoft = preferenceStore.getBoolean("lua_button_minimal_soft", true)
   // v2 is additive: disabling it restores the original Minimal Soft from v29.
