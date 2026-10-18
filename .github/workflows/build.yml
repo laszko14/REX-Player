@@ -107,6 +107,18 @@ jobs:
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
 
+      # The v47 Auto Audio PR needs an installable diagnostic build for
+      # real HTTP/HLS/DASH speech detection on ARM64, without replacing
+      # the user's signed production APK or changing its version number.
+      - name: Testowy APK ARM64 Auto Audio v47 (oddzielny pakiet .debug)
+        if: ${{ github.head_ref == 'feature/v47-arm64-native-vad-integration' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: mpv-alpha-auto-audio-v47-arm64-debug
+          path: app/build/outputs/apk/debug/*arm64-v8a*debug.apk
+          if-no-files-found: error
+          retention-days: 7
+
       - name: Zapisz raport Lint przy bledzie
         if: failure()
         uses: actions/upload-artifact@v4
