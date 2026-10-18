@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -28,6 +29,8 @@ internal fun ContrastVideoLabel(
     fontSize: TextUnit,
     fontWeight: FontWeight,
     outlined: Boolean,
+    fontFamily: FontFamily = FontFamily.Default,
+    outlineWidthPx: Float? = null,
     // null retains the appearance of old screenshot tests/callers.
     outlineWidthDp: Float? = null,
     outlineColorOverride: Color? = null,
@@ -40,7 +43,9 @@ internal fun ContrastVideoLabel(
     // v23 used up to 2.4dp (stroke diameter 4.8dp): it overwhelmed 11sp
     // labels and looked like displaced glyphs. Cap the clean round outline.
     val widthDp = (outlineWidthDp ?: if (outlined) 0.65f else 0f).coerceIn(0f, 1.05f)
-    val outlineWidth = with(LocalDensity.current) { widthDp.dp.toPx() }
+    // A true glyph stroke, measured in physical pixels, not a blurred duplicate.
+    val outlineWidth = outlineWidthPx?.coerceIn(0f, 6f)
+        ?: with(LocalDensity.current) { widthDp.dp.toPx() }
     Box(contentAlignment = Alignment.Center) {
         if (outlineWidth > 0f) {
             Text(
@@ -48,6 +53,7 @@ internal fun ContrastVideoLabel(
                 color = outlineColor,
                 fontSize = fontSize,
                 fontWeight = fontWeight,
+                fontFamily = fontFamily,
                 textAlign = textAlign,
                 maxLines = maxLines,
                 overflow = overflow,
@@ -59,6 +65,7 @@ internal fun ContrastVideoLabel(
             color = color,
             fontSize = fontSize,
             fontWeight = fontWeight,
+            fontFamily = fontFamily,
             textAlign = textAlign,
             maxLines = maxLines,
             overflow = overflow,

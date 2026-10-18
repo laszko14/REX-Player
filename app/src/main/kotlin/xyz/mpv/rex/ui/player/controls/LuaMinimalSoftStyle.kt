@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -78,6 +79,9 @@ internal fun LuaMinimalSoftTile(
     fontWeight: FontWeight = FontWeight.Medium,
     contrastProfile: Int = 1,
     textShadow: Boolean = true,
+    fontFamily: FontFamily = FontFamily.Default,
+    userOutlinePx: Float? = null,
+    userOutlineColor: Color = Color.Black,
 ) {
     val density = LocalDensity.current
     val lineRadiusDp = with(density) {
@@ -120,9 +124,11 @@ internal fun LuaMinimalSoftTile(
             textAlign = TextAlign.Center,
             fontSize = fontSize,
             fontWeight = fontWeight,
-            outlined = !v2 || contrastProfile > 0,
+            fontFamily = fontFamily,
+            outlined = userOutlinePx != null || !v2 || contrastProfile > 0,
+            outlineWidthPx = userOutlinePx,
             outlineWidthDp = lineRadiusDp,
-            outlineColorOverride = if (v2) Color(0xFF1E2630) else null,
+            outlineColorOverride = if (userOutlinePx != null) userOutlineColor else if (v2) Color(0xFF1E2630) else null,
             shadowStyle = shadow,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,

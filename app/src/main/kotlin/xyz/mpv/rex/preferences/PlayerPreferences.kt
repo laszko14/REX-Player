@@ -26,6 +26,12 @@ class PlayerPreferences(
   val luaButtonWidth = preferenceStore.getInt("lua_button_width_dp", 52)
   val luaButtonHeight = preferenceStore.getInt("lua_button_height_dp", 27)
   val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
+  // New additive typography controls; existing installations keep their current look.
+  val luaButtonTypeface = preferenceStore.getInt("lua_button_typeface", 0)
+  val luaButtonTextOutlineEnabled = preferenceStore.getBoolean("lua_button_text_outline_enabled", false)
+  // Half-pixel units provide exactly 0..6px in 0.5px steps; first activation uses 2px.
+  val luaButtonTextOutlineHalfPx = preferenceStore.getInt("lua_button_text_outline_half_px", 4)
+  val luaButtonTextOutlineColor = preferenceStore.getInt("lua_button_text_outline_argb", 0xFF000000.toInt())
   // Minimal Soft changes only rendering; legacy/per-button colors remain saved.
   val luaButtonMinimalSoft = preferenceStore.getBoolean("lua_button_minimal_soft", true)
   // v2 is additive: disabling it restores the original Minimal Soft from v29.

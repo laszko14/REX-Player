@@ -2239,6 +2239,13 @@ internal fun PersistentPlayerBackButton(
       .clickable(onClick = onBackPress),
     contentAlignment = Alignment.Center,
   ) {
+    // Glyph-shaped 1dp shadow keeps the white arrow legible on bright scenes.
+    Icon(
+      imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+      contentDescription = null,
+      tint = Color.Black.copy(alpha = .75f),
+      modifier = Modifier.size(28.dp).offset(y = 1.dp),
+    )
     Icon(
       imageVector = Icons.AutoMirrored.Filled.ArrowBack,
       contentDescription = stringResource(R.string.back),
