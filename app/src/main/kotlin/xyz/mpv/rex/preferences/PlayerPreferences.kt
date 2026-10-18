@@ -69,6 +69,13 @@ class PlayerPreferences(
   val threeFingerSpeedSeekButton3 = preferenceStore.getInt("three_finger_seek_signed_3", threeFingerSpeedJumpForward2.get())
   val threeFingerSpeedPositionX = preferenceStore.getFloat("three_finger_speed_position_x", 0.5f)
   val threeFingerSpeedPositionY = preferenceStore.getFloat("three_finger_speed_position_y", 0.16f)
+  // Mini-player progress: independent of the original seekbar, HUD and Lua preferences.
+  val miniProgressEnabled = preferenceStore.getBoolean("mini_progress_enabled", true)
+  val miniProgressThicknessPx = preferenceStore.getInt("mini_progress_thickness_px", 2)
+  val miniProgressColorHex = preferenceStore.getString("mini_progress_color_hex", "#00E5E5")
+  val miniProgressOpacityPercent = preferenceStore.getInt("mini_progress_opacity_percent", 65)
+  val miniProgressBottomMarginDp = preferenceStore.getInt("mini_progress_bottom_margin_dp", 8)
+  val miniProgressVisibleOnPause = preferenceStore.getBoolean("mini_progress_visible_on_pause", true)
   val showPlaybackInfoOverlay = preferenceStore.getBoolean("show_playback_info_overlay", true)
   // HUD Alpha v1: separate from Lua controls and the system status bar.
   // Allow very small and very large HUDs; renderer always clamps unsafe saved values.
