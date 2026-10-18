@@ -43,6 +43,6 @@ class LuaSoftDarkSettingsTest {
         assertEquals("Moja własna komenda", luaSafeIconLabel("Moja własna komenda", null, 1))
         assertEquals("▶", luaSafeIconLabel("Odtwarzaj / Pauza", null, 1))
         assertEquals("★", luaSafeIconLabel("Dowolny przycisk", "★", 2))
-        assertEquals(.28f, luaSoftContrastShadowAlpha(3))
+        assertEquals(.28f, luaSoftContrastShadowAlpha(3), 0.001f)
     }
 }
