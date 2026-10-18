@@ -47,6 +47,7 @@ fun TopLeftPlayerControlsLandscape(
   onBackPress: () -> Unit,
   onOpenSheet: (Sheets) -> Unit,
   viewModel: PlayerViewModel,
+  showBackButton: Boolean = true,
 ) {
   val appearancePreferences = org.koin.compose.koinInject<xyz.mpv.rex.preferences.AppearancePreferences>()
   val matchTheme by appearancePreferences.matchPlayerControlsToTheme.collectAsState()
@@ -66,13 +67,16 @@ fun TopLeftPlayerControlsLandscape(
     shape = RoundedCornerShape(16.dp),
     modifier = Modifier.width(IntrinsicSize.Max).height(42.dp),
   ) {
-    ControlsButton(
-      icon = Icons.AutoMirrored.Default.ArrowBack,
-      onClick = onBackPress,
-      modifier = Modifier.size(38.dp),
-    )
+    // The player can render Back in an independent, always-visible overlay.
+    if (showBackButton) {
+      ControlsButton(
+        icon = Icons.AutoMirrored.Default.ArrowBack,
+        onClick = onBackPress,
+        modifier = Modifier.size(38.dp),
+      )
+    }
 
-    if (!hideBackground) {
+    if (showBackButton && !hideBackground) {
       Box(
         modifier = Modifier
           .width(1.dp)
