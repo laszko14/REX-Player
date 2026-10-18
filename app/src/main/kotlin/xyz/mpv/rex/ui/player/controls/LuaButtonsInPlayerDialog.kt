@@ -49,6 +49,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.mpv.rex.preferences.PlayerPreferences
@@ -74,88 +75,84 @@ fun LuaButtonsInPlayerDialog(
 ) {
     val landscape = LocalConfiguration.current.orientation == ORIENTATION_LANDSCAPE
     val savedTab by prefs.luaEditorLastTab.collectAsState()
-    val tab = savedTab.coerceIn(0, 2)
-
-    // Same window as the playback buttons: unlike Dialog, touches on the
-    // left-side Lua grid remain available for drag-and-drop.
+    val tab = if (savedTab == 2) 1 else 0
+    val autoHideOnDrag by prefs.luaAutoHideOnDrag.collectAsState()
+    val isDragHidden = hiddenDuringDrag && autoHideOnDrag
     BackHandler(onBack = onDismiss)
+    // This is deliberately in the player window, NOT a Dialog: touches to the
+    // exposed Lua grid and drop targets continue to work while settings are open.
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = if (landscape) Alignment.CenterEnd else Alignment.BottomCenter,
     ) {
-            if (!hiddenDuringDrag && manualMinimized) {
-                TextButton(
-                    modifier = Modifier.align(Alignment.BottomCenter),
-                    onClick = { onManualMinimize(false) },
-                ) { Text(stringResource(R.string.audit_show_lua_settings)) }
-            }
-            if (!hiddenDuringDrag && !manualMinimized) Surface(
+        if (!isDragHidden && manualMinimized) {
+            TextButton(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                onClick = { onManualMinimize(false) },
+            ) { Text(stringResource(R.string.audit_show_lua_settings), color = LuaDarkText) }
+        }
+        if (!isDragHidden && !manualMinimized) {
+            Surface(
                 modifier = Modifier
-                    .fillMaxWidth(if (landscape) 0.53f else 0.96f)
-                    .fillMaxHeight(if (landscape) 0.96f else 0.46f)
+                    .fillMaxWidth(if (landscape) .53f else .96f)
+                    .fillMaxHeight(if (landscape) .96f else .84f)
                     .padding(end = if (landscape) 6.dp else 0.dp)
                     .imePadding(),
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
+                shape = RoundedCornerShape(20.dp),
+                color = androidx.compose.ui.graphics.Color(0xF5161B23),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp, androidx.compose.ui.graphics.Color.White.copy(alpha = .14f)),
+                shadowElevation = 12.dp,
             ) {
                 Column(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 6.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp),
                 ) {
-                    // Compact two-row header. Lua itself stays enabled through the app settings;
-                    // no master switch or long engine-status text is needed in this editor.
-                    Row(
-                        modifier = Modifier.fillMaxWidth().height(32.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            stringResource(R.string.audit_lua_buttons),
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("⚙", fontSize = 20.sp,
+                            color = LuaDarkMuted, modifier = Modifier.padding(end = 10.dp))
+                        Text(stringResource(R.string.lua_v2_title), color = LuaDarkText,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.weight(1f),
-                        )
-                        TextButton(onClick = { onManualMinimize(true) }) { Text(stringResource(R.string.audit_hide)) }
-                        TextButton(onClick = onDismiss) { Text("✕") }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                        FilterChip(
-                            selected = tab == 0,
-                            onClick = { prefs.luaEditorLastTab.set(0) },
-                            label = { Text(stringResource(R.string.audit_quick)) },
-                        )
-                        FilterChip(
-                            selected = tab == 1,
-                            onClick = { prefs.luaEditorLastTab.set(1) },
-                            label = { Text(stringResource(R.string.audit_appearance)) },
-                        )
-                        FilterChip(
-                            selected = tab == 2,
-                            onClick = { prefs.luaEditorLastTab.set(2) },
-                            label = { Text(stringResource(R.string.audit_lua_code_count, LUA_SLOT_COUNT)) },
-                        )
-                    }
-                    HorizontalDivider()
-                    Text(
-                        stringResource(R.string.audit_lua_drag_help),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    when (tab) {
-                        0 -> Column(
-                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                        ) {
-                            LuaButtonCompactQuickSettings(prefs)
+                            fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+                        TextButton(onClick = { onManualMinimize(true) }) {
+                            Text("—", color = LuaDarkMuted)
                         }
-                        1 -> Column(
-                            modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()),
-                        ) {
-                            LuaButtonOrganizedAppearanceSettings(prefs)
+                        TextButton(onClick = onDismiss) { Text("✕", color = LuaDarkMuted) }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth()
+                            .background(androidx.compose.ui.graphics.Color(0xFF242C38),
+                                RoundedCornerShape(12.dp)).padding(3.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        listOf(stringResource(R.string.lua_v2_appearance),
+                            stringResource(R.string.lua_v2_buttons)).forEachIndexed { i, text ->
+                            Box(
+                                modifier = Modifier.weight(1f)
+                                    .background(if (tab == i) LuaDarkAccent
+                                        else androidx.compose.ui.graphics.Color.Transparent,
+                                        RoundedCornerShape(9.dp))
+                                    .clickable { prefs.luaEditorLastTab.set(if (i == 0) 1 else 2) }
+                                    .padding(vertical = 11.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(text, color = LuaDarkText,
+                                    fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                            }
                         }
-                        else -> LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
+                    }
+                    if (tab == 0) {
+                        Column(modifier = Modifier.weight(1f)
+                            .verticalScroll(rememberScrollState()),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            LuaSoftDarkAppearanceSettings(prefs)
+                        }
+                    } else {
+                        LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
                     }
                 }
             }
+        }
     }
 }
 
@@ -169,56 +166,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
     val listState = rememberLazyListState()
 
     if (selectedIndex !in 0 until LUA_SLOT_COUNT) {
-        Column(modifier = modifier) {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(3.dp),
-                contentPadding = PaddingValues(bottom = 6.dp),
-            ) {
-                items((0 until LUA_SLOT_COUNT).toList(), key = { it }) { index ->
-                    val button = slots[index]
-                    Row(
-                        modifier = Modifier.fillMaxWidth()
-                            .heightIn(min = 42.dp)
-                            .background(MaterialTheme.colorScheme.surfaceContainerLow, RoundedCornerShape(8.dp))
-                            .clickable { selectedIndex = index }
-                            .padding(horizontal = 9.dp, vertical = 5.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(when {
-                                index >= LUA_EXTRA_START -> "P${index - LUA_EXTRA_START + 1}."
-                                index >= LUA_MAIN_SLOT_COUNT -> "ARCH${index - LUA_MAIN_SLOT_COUNT + 1}."
-                                else -> "L${index + 1}."
-                            }, style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.width(47.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(button?.title ?: when {
-                                index >= LUA_EXTRA_START -> stringResource(R.string.audit_right_4_2_slot)
-                                index >= LUA_MAIN_SLOT_COUNT -> stringResource(R.string.audit_v23_archive_hidden)
-                                else -> stringResource(R.string.audit_empty_button)
-                            },
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = if (button == null) FontWeight.Normal else FontWeight.Medium)
-                            val summary = if (button == null) stringResource(R.string.audit_empty_slot) else
-                                stringResource(R.string.audit_lua_slot_summary,
-                                    if (button.enabled) stringResource(R.string.audit_on) else stringResource(R.string.audit_off),
-                                    if (button.content.isNotBlank()) "✓" else "—",
-                                    if (button.longPressContent.isNotBlank()) "✓" else "—",
-                                    if (button.onStartup.isNotBlank()) "✓" else "—")
-                            Text(summary, style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                        Text(if (button == null) "+" else "›",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary)
-                    }
-                }
-            }
-        }
+        LuaSoftDarkButtonList(prefs, onEdit = { selectedIndex = it }, modifier = modifier)
     } else {
         val index = selectedIndex
         val old = slots[index]
@@ -227,6 +175,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
         var longCode by remember(index, old?.id) { mutableStateOf(old?.longPressContent ?: "") }
         var startCode by remember(index, old?.id) { mutableStateOf(old?.onStartup ?: "") }
         var enabled by remember(index, old?.id) { mutableStateOf(old?.enabled ?: true) }
+        var icon by remember(index, old?.id) { mutableStateOf(old?.icon.orEmpty()) }
 
         fun write(button: CustomButton?, closeEditor: Boolean = true) {
             // Update the current serialized slot, preserving unrelated buttons.
@@ -270,6 +219,12 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
             OutlinedTextField(
                 value = name, onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.audit_button_name)) },
+                singleLine = true,
+            )
+            OutlinedTextField(
+                value = icon, onValueChange = { if (it.length <= 3) icon = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text(stringResource(R.string.lua_v2_icon)) },
                 singleLine = true,
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -327,6 +282,7 @@ private fun LuaInPlayerCodeBrowser(prefs: PlayerPreferences, modifier: Modifier 
                         textColor = old?.textColor,
                         activeBackgroundColor = old?.activeBackgroundColor,
                         activeTextColor = old?.activeTextColor,
+                        icon = icon.trim().ifEmpty { null },
                     ))
                 },
                 enabled = name.isNotBlank(),
