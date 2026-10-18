@@ -54,7 +54,8 @@ androidx-navigation3-ui = { module = "androidx.navigation3:navigation3-ui", vers
 androidx-documentfile = { group = "androidx.documentfile", name = "documentfile", version = "1.1.0" }
 seeker = "com.github.abdallahmehiz:seeker:2.0.1"
 mediainfo-lib = "com.github.marlboro-advance:mediainfoAndroid:v1.0.0-fix"
-mpv-lib = "com.github.sfsakhawat999:mpvRex-libmpv:0.0.9"
+# v47 ARM64 native libmpv AAR is an explicit '@aar' dependency in app/build.gradle.kts.
+# Old sfsakhawat999 AAR intentionally removed; do not load mixed JNI libraries.
 
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin" }
 koin-core = { module = "io.insert-koin:koin-core" }
