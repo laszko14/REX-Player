@@ -40,7 +40,7 @@
     <string name="audit_hud_description">Pasek: bateria • godzina • czas pozostały przy bieżącej prędkości • oryginalny czas pozostały • prędkość. Zmiany zapisują się automatycznie.</string>
     <string name="audit_hud_drag_help">Aby przesunąć pasek, włącz tryb przeciągania, otwórz film i przeciągnij pasek. Następnie wyłącz ten tryb, aby przywrócić gesty filmu.</string>
     <string name="audit_hud_times_help">Oba czasy są wyświetlane jednocześnie: pierwszy uwzględnia bieżącą prędkość odtwarzania, a drugi odpowiada oryginalnej długości filmu.</string>
-    <string name="audit_hud_readability_help" formatted="false">Obrys 0% wyłącza kontur, a 100% daje wyraźny kontur bez poświaty. Grubość czcionki: 40% SemiBold, 60% Bold, 90% Black. Kolory tekstu pozostają bez zmian.</string>
+    <string name="audit_hud_readability_help" formatted="false">Obrys 0% wyłącza kontur, a 100% daje wyraźny kontur bez poświaty. Grubość czcionki: 40% lekko pogrubiona, 60% pogrubiona, 90% bardzo gruba. Kolory tekstu pozostają bez zmian.</string>
     <string name="audit_columns">Kolumny</string>
     <string name="audit_button_width">Szerokość przycisku</string>
     <string name="audit_button_height">Wysokość przycisku</string>
@@ -103,7 +103,7 @@
     <string name="audit_active_background">Aktywne tło</string>
     <string name="audit_rounding">Zaokrąglenie</string>
     <string name="audit_reset_transparency_and_border">Przywróć przezroczystość i obramowanie</string>
-    <string name="audit_lua_readability_help" formatted="false">0% = zwykła czcionka bez obrysu; 60% = Bold, 90% = Black. Kontrast 100% daje cienki, wyraźny kontur bez poświaty. Kolory pozostają bez zmian.</string>
+    <string name="audit_lua_readability_help" formatted="false">0% = zwykła czcionka bez obrysu; 60% = pogrubiona, 90% = bardzo gruba. Kontrast 100% daje cienki, wyraźny kontur bez poświaty. Kolory pozostają bez zmian.</string>
     <string name="audit_lua_individual_settings">Indywidualne ustawienia: %1$s</string>
     <string name="audit_lua_more_colors">Więcej kolorów (%1$d)</string>
     <string name="audit_show_lua_settings">Pokaż ustawienia Lua</string>
