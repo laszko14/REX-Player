@@ -93,7 +93,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
     val height by prefs.luaButtonHeight.collectAsState()
     val font by prefs.luaButtonFontSize.collectAsState()
     val scale by prefs.luaButtonScalePercent.collectAsState()
-    val transparent by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val transparent by prefs.luaButtonBackgroundTransparency.collectAsState()
     val rowGap by prefs.luaButtonRowGap.collectAsState()
     val columnGap by prefs.luaButtonColumnGap.collectAsState()
     val posX by prefs.luaButtonPositionX.collectAsState()
@@ -116,7 +116,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
         LuaOptionSlider(stringResource(R.string.audit_row_spacing), rowGap, 0, 24, " dp", compact = compact) { prefs.luaButtonRowGap.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_right_offset), posX, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionX.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_downward_offset), posY, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
-        LuaOptionSlider(stringResource(R.string.audit_background_transparency), transparent, 0, 100, "%", compact = compact) { prefs.threeFingerSpeedPanelTransparency.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_background_transparency), transparent, 0, 100, "%", compact = compact) { prefs.luaButtonBackgroundTransparency.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_corner_radius), radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_border), border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
         OutlinedButton(
@@ -135,7 +135,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonRowGap.set(2)
                 prefs.luaButtonPositionX.set(0)
                 prefs.luaButtonPositionY.set(100)
-                prefs.threeFingerSpeedPanelTransparency.set(20)
+                prefs.luaButtonBackgroundTransparency.set(20)
                 prefs.luaButtonCornerRadius.set(7)
                 prefs.luaButtonBorderOpacity.set(20)
                 prefs.luaButtonBaseColor.set(0xFF252631.toInt())
@@ -496,7 +496,7 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
     val scale by prefs.luaButtonScalePercent.collectAsState()
     val columnGap by prefs.luaButtonColumnGap.collectAsState()
     val rowGap by prefs.luaButtonRowGap.collectAsState()
-    val alpha by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val alpha by prefs.luaButtonBackgroundTransparency.collectAsState()
     val posX by prefs.luaButtonPositionX.collectAsState()
     val posY by prefs.luaButtonPositionY.collectAsState()
     val textColor by prefs.luaButtonTextColor.collectAsState()
@@ -514,7 +514,7 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
         LuaOptionSlider(stringResource(R.string.audit_x_position), posX, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionX::set)
         LuaOptionSlider(stringResource(R.string.audit_y_position), posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
         LuaOptionSlider(stringResource(R.string.audit_background_transparency), alpha, 0, 100, "%", compact = true,
-            onChange = prefs.threeFingerSpeedPanelTransparency::set)
+            onChange = prefs.luaButtonBackgroundTransparency::set)
         LuaFontReadabilitySettings(prefs, compact = true)
         LuaQuickColorRow(stringResource(R.string.audit_text), textColor, prefs.luaButtonTextColor::set,
             LUA_TEXT_PALETTE.take(8))
@@ -567,7 +567,7 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
     val activeColor by prefs.luaButtonActiveColor.collectAsState()
     val fontColor by prefs.luaButtonTextColor.collectAsState()
     val activeFont by prefs.luaButtonActiveTextColor.collectAsState()
-    val transparency by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val transparency by prefs.luaButtonBackgroundTransparency.collectAsState()
     val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
@@ -638,7 +638,7 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
         }
         LuaAppearanceSection(stringResource(R.string.audit_transparency_and_border)) {
             LuaOptionSlider(stringResource(R.string.audit_normal_background), transparency, 0, 100, "%", true,
-                prefs.threeFingerSpeedPanelTransparency::set)
+                prefs.luaButtonBackgroundTransparency::set)
             LuaOptionSlider(stringResource(R.string.audit_active_background), activeTransparency, 0, 100, "%", true,
                 prefs.luaButtonActiveTransparency::set)
             LuaOptionSlider(stringResource(R.string.audit_border), border, 0, 100, "%", true,
@@ -646,7 +646,7 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
             LuaOptionSlider(stringResource(R.string.audit_rounding), corner, 0, 24, " dp", true,
                 prefs.luaButtonCornerRadius::set)
             OutlinedButton(onClick = {
-                prefs.threeFingerSpeedPanelTransparency.set(20)
+                prefs.luaButtonBackgroundTransparency.set(20)
                 prefs.luaButtonActiveTransparency.set(0)
                 prefs.luaButtonBorderOpacity.set(20)
                 prefs.luaButtonCornerRadius.set(7)
