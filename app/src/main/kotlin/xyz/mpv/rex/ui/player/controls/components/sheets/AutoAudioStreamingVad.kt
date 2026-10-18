@@ -95,6 +95,13 @@ internal class AutoAudioStreamingVad(
     return if (count > 0) positives.toDouble() / count else null
   }
 
+  /** Diagnostics are returned only for the same complete, gap-free windows
+   * that qualify for the aggregate vote. No silent fallback to partial PCM. */
+  fun windowDiagnostics(): List<AutoAudioVadWindowDiagnostics>? {
+    if (speechFraction() == null) return null
+    return slices.map { it.detector?.diagnostics() ?: return null }
+  }
+
   override fun close() {
     if (closed) return
     closed = true
