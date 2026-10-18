@@ -2079,7 +2079,7 @@ fun PlayerControls(
           .align(Alignment.TopStart)
           .padding(
             start = spacing.large,
-            top = if (isPortrait) spacing.extraLarge else spacing.small,
+            top = if (LocalConfiguration.current.orientation == ORIENTATION_PORTRAIT) spacing.extraLarge else spacing.small,
           ),
       )
     }
