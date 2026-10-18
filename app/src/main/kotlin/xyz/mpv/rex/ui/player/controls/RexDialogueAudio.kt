@@ -19,7 +19,7 @@ object RexDialogueAudio {
 
   fun specificationForLevel(level: Int): String {
     val (enhance, voice) = settings[(level.coerceIn(1, 5) - 1)]
-    return "$" + "{FILTER_NAME}:lavfi=[dialoguenhance=original=1:enhance=$" + "{enhance}:voice=$" + "{voice}]"
+    return "${FILTER_NAME}:lavfi=[dialoguenhance=original=1:enhance=${enhance}:voice=${voice}]"
   }
 
   fun apply(level: Int) {
