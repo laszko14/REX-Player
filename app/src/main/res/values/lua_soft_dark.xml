@@ -65,4 +65,6 @@
     <string name="lua_v3_preview" tools:ignore="MissingTranslation">Preview on light and dark backgrounds</string>
     <string name="lua_v3_preview_tip" tools:ignore="MissingTranslation">Preview is for checking contrast and does not change the video.</string>
     <string name="lua_v3_custom_override_hint" tools:ignore="MissingTranslation">Buttons with individual colors keep their overrides. Change them under Buttons → Edit.</string>
+    <string name="lua_v3_mode_v2" tools:ignore="MissingTranslation">New v2</string>
+    <string name="lua_v3_mode_v29" tools:ignore="MissingTranslation">Older v29</string>
 </resources>
