@@ -194,6 +194,30 @@ internal object AutoAudioPlanner {
       findings += "Wysoki poziom szczytowy: bezpieczniej wyłączyć dodatkowy boost EQ."
     }
 
+    // v46: A successful detailed scan can also identify an avoidable processing
+    // risk: aggressive user-selected effects stacked on an already low-dynamic
+    // source. This is NOT VAD and does not diagnose dialogue intelligibility.
+    // Propose only ONE reversible reduction, never automatically enable a filter.
+    // A/B playback remains the only way to judge whether it sounds better.
+    val reliableDetailedScan = metrics.seconds >= 29.0 &&
+      metrics.segments.size == 3 && metrics.segments.all { it.frameCount >= 15 }
+    if (after == before && reliableDetailedScan) {
+      val consistentlyLowDynamics = metrics.dynamicRangeDb <= 12.0 &&
+        metrics.segments.count { it.dynamicRangeDb <= 14.0 } >= 2
+      when {
+        before.drcOn && before.drcLevel == 3 && consistentlyLowDynamics -> {
+          after = after.copy(drcLevel = 2)
+          findings += "Niewielka dynamika oryginalnego dźwięku i aktywne DRC 3/3: " +
+            "wypróbuj łagodniejsze DRC 2/3. To ostrożny test A/B, a nie wykrycie mowy."
+        }
+        before.dialogue == 5 && before.drcOn && before.drcLevel == 3 -> {
+          after = after.copy(dialogue = 4)
+          findings += "Dialogue Enhance 5/5 i DRC 3/3 działają jednocześnie: " +
+            "wypróbuj łagodniejsze Dialogue Enhance 4/5. To test A/B, nie ocena jakości mowy."
+        }
+      }
+    }
+
     val diffs = buildList {
       if (before.voiceLevel != after.voiceLevel) add(AutoAudioChange(
         "Głos (Lua)", level(before.voiceLevel), level(after.voiceLevel),
@@ -213,12 +237,17 @@ internal object AutoAudioPlanner {
       ))
       if (before.dialogue != after.dialogue) add(AutoAudioChange(
         "Dialogue Enhance", level(before.dialogue), level(after.dialogue),
-        "Próbne wzmocnienie dialogów stereo; wynik należy ocenić w odsłuchu.",
+        if (after.dialogue < before.dialogue)
+          "Łagodniejsze ustawienie już aktywnego Dialogue Enhance. Porównaj odsłuch A/B."
+        else "Próbne wzmocnienie dialogów stereo; wynik należy ocenić w odsłuchu.",
       ))
       if (before.drcOn != after.drcOn || before.drcLevel != after.drcLevel) add(AutoAudioChange(
         "DRC", if (before.drcOn) level(before.drcLevel) else "OFF",
         if (after.drcOn) level(after.drcLevel) else "OFF",
-        if (after.drcOn) "Duża dynamika; delikatna kompresja." else "Brak uzasadnienia dla kompresji.",
+        if (after.drcOn && before.drcOn && after.drcLevel < before.drcLevel)
+          "Mniejsza kompresja już aktywnego DRC przy niskiej dynamice źródła. Sprawdź A/B."
+        else if (after.drcOn) "Duża dynamika; delikatna kompresja."
+        else "Brak uzasadnienia dla kompresji.",
       ))
       if (before.eqOn != after.eqOn || before.eqBoost != after.eqBoost) add(AutoAudioChange(
         "EQ / Boost", if (before.eqOn) "+${before.eqBoost} dB" else "OFF",
