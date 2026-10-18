@@ -22,9 +22,9 @@ class StreamAstatsParserTest {
     val silent = buildString {
       for (frame in 0 until 34 * 50) {
         append("frame:").append(frame).append(" pts_time:")
-          .append(frame / 50.0).append('\\n')
-        append("lavfi.astats.Overall.Peak_level=-inf\\n")
-        append("lavfi.astats.Overall.RMS_level=-inf\\n")
+          .append(frame / 50.0).append('\n')
+        append("lavfi.astats.Overall.Peak_level=-inf\n")
+        append("lavfi.astats.Overall.RMS_level=-inf\n")
       }
     }
     val report = StreamAstatsParser.parse(
@@ -46,9 +46,9 @@ class StreamAstatsParserTest {
       for (frame in 0 until 34 * 50) {
         if (frame in 200..350) continue
         append("frame:").append(frame).append(" pts_time:")
-          .append(frame / 50.0).append('\\n')
-        append("lavfi.astats.Overall.Peak_level=-inf\\n")
-        append("lavfi.astats.Overall.RMS_level=-inf\\n")
+          .append(frame / 50.0).append('\n')
+        append("lavfi.astats.Overall.Peak_level=-inf\n")
+        append("lavfi.astats.Overall.RMS_level=-inf\n")
       }
     }
     StreamAstatsParser.parse(raw, listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0))
