@@ -27,6 +27,9 @@ internal data class AutoAudioMetrics(
   val voiceLikeRatio: Double,
   val channelCount: Int,
   val clipRatio: Double,
+  val spectralCentroidHz: Double? = null,
+  val spectralFlatness: Double? = null,
+  val spectralRolloffHz: Double? = null,
   val sourceDescription: String = "Lokalny PCM przed filtrami mpv",
 )
 
