@@ -92,4 +92,40 @@ class AutoAudioVadPcmTest {
     assertEquals(0.5, pcm.speechFraction()!!, 0.00001)
     pcm.close()
   }
+
+  @Test fun diagnosticsMeasureExactlyTheResampledPcmFedToVad() {
+    val fake = FakeVad(true)
+    val pcm = AutoAudioVadPcm(44100, fake)
+    repeat(44100) { pcm.accept(0.5) }
+    val diagnostics = pcm.diagnostics()!!
+    assertEquals(44100, diagnostics.inputRate)
+    assertEquals(50, diagnostics.frames)
+    assertEquals(50, diagnostics.speechFrames)
+    assertEquals(1.0, diagnostics.positiveFraction, 0.00001)
+    assertEquals(-6.02, diagnostics.rmsDbfs, 0.12)
+    assertEquals(-6.02, diagnostics.peakDbfs, 0.12)
+    assertEquals(0.0, diagnostics.nearSilenceFraction, 0.00001)
+    assertEquals(0.0, diagnostics.nearFullScaleFraction, 0.00001)
+    pcm.close()
+  }
+
+  @Test fun silentOrNearFullScalePcmIsVisibleEvenIfClassifierVotesSpeech() {
+    AutoAudioVadPcm(16000, FakeVad(true)).use { pcm ->
+      repeat(16000) { pcm.accept(0.0) }
+      val d = pcm.diagnostics()!!
+      assertEquals(1.0, d.positiveFraction, 0.00001)
+      assertEquals(1.0, d.nearSilenceFraction, 0.00001)
+      assertEquals(0.0, d.nearFullScaleFraction, 0.00001)
+      assertEquals(-140.0, d.rmsDbfs, 0.01)
+    }
+    AutoAudioVadPcm(16000, FakeVad(false)).use { pcm ->
+      repeat(16000) { pcm.accept(1.0) }
+      val d = pcm.diagnostics()!!
+      assertEquals(0.0, d.positiveFraction, 0.00001)
+      assertEquals(0.0, d.nearSilenceFraction, 0.00001)
+      assertEquals(1.0, d.nearFullScaleFraction, 0.00001)
+      assertEquals(0.0, d.peakDbfs, 0.01)
+    }
+  }
+
 }
