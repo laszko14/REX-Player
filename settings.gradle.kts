@@ -25,6 +25,7 @@ dependencyResolutionManagement {
       content {
         // Only use JitPack for specific dependencies to avoid unnecessary checks
         includeGroup("com.github.sfsakhawat999")
+        includeGroup("com.github.gkonovalov.android-vad")
         includeGroup("io.github.abdallahmehiz")
         includeGroup("com.github.abdallahmehiz")
         includeGroup("com.github.K1rakishou")
