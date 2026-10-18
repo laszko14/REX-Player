@@ -125,34 +125,36 @@ internal object AutoAudioPlanner {
       }
       findings += "Zgodność 3 fragmentów: jasne $brightVotes/3, ciemne $darkVotes/3, szumopodobne $noisyVotes/3."
 
-      // Conservative tonal suggestions, not diagnosis of sibilance or dialogue.
+      // Measured spectral brightness is NOT speech or sibilance detection. v43
+      // could turn treble ON when audio was already very bright. EQ wysokie
+      // is a boost in the user's Lua; never add it based on brightness.
+      // Prefer reducing ONE already-active brightening filter per A/B trial.
       if (brightVotes >= 2 && darkVotes == 0) {
         when {
-          before.voiceLevel in 3..4 -> {
+          before.trebleLevel > 0 -> {
+            after = after.copy(trebleLevel = 0)
+            findings += "Co najmniej 2 fragmenty są jasne: porównaj wyłączenie podbicia EQ wysokie."
+          }
+          before.voiceLevel in 2..4 -> {
             after = after.copy(voiceLevel = 1)
-            findings += "Co najmniej 2 fragmenty są jasne: porównaj łagodniejszy Głos 1."
+            findings += "Co najmniej 2 fragmenty są jasne: porównaj łagodniejszy Głos 1 z de-esserem."
           }
-          brightVotes == 3 && before.trebleLevel == 0 &&
-            before.voiceLevel !in 5..7 -> {
-            after = after.copy(trebleLevel = 1)
-            findings += "Wszystkie 3 fragmenty są jasne: porównaj EQ wysokie 1."
-          }
+          else -> findings += "Jasne widmo, ale nie ma aktywnego podbicia do bezpiecznego ograniczenia."
         }
       } else if (darkVotes == 3 && brightVotes == 0) {
-        when {
-          before.voiceLevel in 6..7 -> {
-            after = after.copy(voiceLevel = 1)
-            findings += "Wszystkie 3 fragmenty są ciemne: porównaj łagodniejszy profil."
-          }
-          before.voiceLevel == 0 && before.bassLevel == 0 -> {
-            after = after.copy(voiceLevel = 2)
-            findings += "Wszystkie 3 fragmenty są ciemne: porównaj Głos 2 (Jasny)."
-          }
-          before.voiceLevel == 1 && before.bassLevel == 0 -> {
-            after = after.copy(bassLevel = 1)
-            findings += "Wszystkie 3 fragmenty są ciemne: porównaj lekkie ograniczenie basu."
-          }
+        // A dark soundtrack does not prove unintelligible dialogue. Only undo
+        // existing extreme roll-off, never automatically start a treble boost.
+        if (before.voiceLevel in 5..7) {
+          after = after.copy(voiceLevel = 1)
+          findings += "Trzy ciemne fragmenty z silnym tłumieniem Głosu: porównaj naturalny profil 1."
+        } else {
+          findings += "Trzy ciemne fragmenty: bez automatycznego rozjaśniania przed potwierdzeniem mowy."
         }
+      } else {
+        findings += "Fragmenty różnią się lub brak zgodności 2/3: nie zmieniam tonalności całego filmu."
+      }
+      if (noisyVotes >= 2 && !speechConfirmed) {
+        findings += "Szumopodobne widmo w $noisyVotes/3 fragmentach nie dowodzi szumu przy dialogach — pozostawiono Szum Lua."
       }
 
       // Never infer "background noise during speech" from flatness alone.
@@ -195,11 +197,11 @@ internal object AutoAudioPlanner {
     val diffs = buildList {
       if (before.voiceLevel != after.voiceLevel) add(AutoAudioChange(
         "Głos (Lua)", level(before.voiceLevel), level(after.voiceLevel),
-        "Zmiana profilu tonalnego na podstawie widma, nie wykrywania słów. Porównaj A/B.",
+        "Zmniejszenie istniejącego skrajnego EQ głosu, nie rozpoznawanie mowy. Porównaj A/B.",
       ))
       if (before.trebleLevel != after.trebleLevel) add(AutoAudioChange(
         "EQ wysokie (Lua)", level(before.trebleLevel), level(after.trebleLevel),
-        "Łagodne obniżenie nadmiaru wysokich częstotliwości. Porównaj A/B.",
+        "Wyłączenie istniejącego podbicia wysokich tonów przy utrzymującym się jasnym widmie. Porównaj A/B.",
       ))
       if (before.bassLevel != after.bassLevel) add(AutoAudioChange(
         "EQ niskie (Lua)", level(before.bassLevel), level(after.bassLevel),
