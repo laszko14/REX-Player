@@ -178,6 +178,10 @@ class PlayerPreferencesTest {
     prefs.luaButtonScalePercent.set(125)
     assertEquals(125, prefs.luaButtonScalePercent.get())
     assertEquals(100, prefs.threeFingerSpeedPanelSize.get())
+    assertEquals(20, prefs.luaButtonBackgroundTransparency.get())
+    prefs.luaButtonBackgroundTransparency.set(70)
+    assertEquals(70, prefs.luaButtonBackgroundTransparency.get())
+    assertEquals(20, prefs.threeFingerSpeedPanelTransparency.get())
     assertEquals(savedButtons, prefs.customButtons.get())
   }
 
