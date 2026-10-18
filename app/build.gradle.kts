@@ -236,6 +236,9 @@ dependencies {
   implementation(libs.fsaf)
   implementation(libs.mediainfo.lib)
   implementation(libs.mpv.lib)
+  // Real offline frame-based VAD; consumes original decoded PCM, never FFT metadata.
+  // MIT-licensed Android wrapper around WebRTC VAD, arm64 JNI artifact.
+  implementation("com.github.gkonovalov.android-vad:webrtc:2.0.10")
   implementation(libs.androidx.security.crypto)
 
   // Network protocol libraries
