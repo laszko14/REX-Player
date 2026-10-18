@@ -51,8 +51,9 @@ internal object AutoAudioStreamAnalyzer {
         listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0)
       }
       val file = File.createTempFile("auto_audio_probe_", ".txt", context.cacheDir)
+      try {
       val startTrack = runCatching { MPVLib.getPropertyString("aid") }.getOrNull()
-      var installed = false
+      var attempted = false
       try {
         check(MPVLib.getPropertyString("path") == sourcePath) { "Zmieniono film przed analizą." }
         check(!MPVLib.getPropertyString("af").orEmpty().contains("rex_auto_audio_probe")) {
@@ -64,9 +65,9 @@ internal object AutoAudioStreamAnalyzer {
           "measure_overall=RMS_level+Peak_level," +
           "ametadata=mode=print:file=" + file.absolutePath
         val spec = PROBE + ":lavfi=[" + graph + "]"
+        attempted = true
         MPVLib.command("change-list", "af", "pre", spec)
-        installed = MPVLib.getPropertyString("af").orEmpty().contains("rex_auto_audio_probe")
-        check(installed) {
+        check(MPVLib.getPropertyString("af").orEmpty().contains("rex_auto_audio_probe")) {
           "Ten build mpv nie przyjął filtra pomiarowego astats/ametadata."
         }
         val startAt = playbackPosition()
@@ -100,11 +101,8 @@ internal object AutoAudioStreamAnalyzer {
           if (current - startAt >= length) break
         }
       } finally {
-        if (installed) {
+        if (attempted) {
           // Closing the lavfi graph flushes the ametadata file to disk.
-          runCatching { MPVLib.command("change-list", "af", "remove", PROBE) }
-        } else {
-          // In case creation failed halfway, try removing only our named probe.
           runCatching { MPVLib.command("change-list", "af", "remove", PROBE) }
         }
       }
@@ -117,6 +115,9 @@ internal object AutoAudioStreamAnalyzer {
       } finally {
         file.delete()
       }
+      } finally {
+        file.delete() // Also clean up on cancellation and failed filter initialization.
+      }
     }
   }
 
@@ -127,6 +128,7 @@ internal object AutoAudioStreamAnalyzer {
 
 internal object StreamAstatsParser {
   private data class Sample(val time: Double, val rms: Double, val peak: Double)
+  private val timePattern = Regex("""\\bpts_time:\\s*([-+0-9.eE]+)""")
 
   fun parse(raw: String, windows: List<Pair<Double, Double>>): AutoAudioMetrics {
     val samples = ArrayList<Sample>()
