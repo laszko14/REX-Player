@@ -232,8 +232,8 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                     try {
                       val result = AutoAudioAnalyzer.analyze(context, mediaPath, position, duration, mode)
                       if (validSource()) {
-                        report = result
                         proposal = AutoAudioPlanner.plan(result, initial)
+                        report = result
                       } else issue = "Zmienił się film podczas analizy. Wynik odrzucono."
                     } catch (cancelled: CancellationException) {
                       throw cancelled
