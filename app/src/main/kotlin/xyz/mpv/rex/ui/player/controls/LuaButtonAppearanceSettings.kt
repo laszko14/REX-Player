@@ -69,6 +69,22 @@ private val LUA_ACTIVE_TEXT_PALETTE =
         LUA_TEXT_PALETTE.filterNot { it in listOf(0xFF071426.toInt(), 0xFFFFFFFF.toInt(),
             0xFF000000.toInt(), 0xFFFFFFAE.toInt(), 0xFF143D29.toInt(), 0xFF29244B.toInt()) }
 
+/** One reversible style switch; no stored per-button appearance values are rewritten. */
+@Composable
+private fun LuaMinimalSoftToggle(prefs: PlayerPreferences) {
+    val enabled by prefs.luaButtonMinimalSoft.collectAsState()
+    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(stringResource(R.string.lua_minimal_soft_title),
+                style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.lua_minimal_soft_description),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Switch(checked = enabled, onCheckedChange = prefs.luaButtonMinimalSoft::set)
+    }
+}
+
 /** Shared settings UI: accessible both in Preferences and on top of a playing film. */
 @Composable
 fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = false, showQuick: Boolean = true) {
@@ -88,6 +104,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
         if (showQuick) {
             LuaButtonQuickSettings(prefs, compact = compact)
         } else {
+            LuaMinimalSoftToggle(prefs)
             LuaFontReadabilitySettings(prefs, compact)
         }
         LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", compact = compact) { prefs.luaPanelColumns.set(it) }
@@ -108,6 +125,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
                 prefs.luaButtonWidth.set(52)
                 prefs.luaButtonHeight.set(27)
                 prefs.luaButtonFontSize.set(11)
+                prefs.luaButtonMinimalSoft.set(true)
                 prefs.luaButtonHighContrastText.set(false)
                 prefs.luaButtonBoldText.set(false)
                 prefs.luaButtonFontWeightPercent.set(0)
@@ -146,6 +164,7 @@ fun LuaButtonQuickSettings(prefs: PlayerPreferences, compact: Boolean = false) {
     val activeTextColor by prefs.luaButtonActiveTextColor.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(if (compact) 2.dp else 6.dp)) {
+        LuaMinimalSoftToggle(prefs)
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -485,6 +504,7 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
 
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         Text(stringResource(R.string.audit_frequently_used), style = MaterialTheme.typography.titleSmall)
+        LuaMinimalSoftToggle(prefs)
         LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", compact = true, onChange = prefs.luaPanelColumns::set)
         LuaOptionSlider(stringResource(R.string.audit_width), width, 30, 140, " dp", compact = true, onChange = prefs.luaButtonWidth::set)
         LuaOptionSlider(stringResource(R.string.audit_height), height, 22, 80, " dp", compact = true, onChange = prefs.luaButtonHeight::set)
@@ -551,6 +571,7 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
     val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
 
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        LuaMinimalSoftToggle(prefs)
         LuaAppearanceSection(stringResource(R.string.audit_size_and_layout), initiallyOpen = true) {
             LuaOptionSlider(stringResource(R.string.audit_columns), cols, 1, 8, "", true, prefs.luaPanelColumns::set)
             LuaOptionSlider(stringResource(R.string.audit_width), width, 30, 140, " dp", true, prefs.luaButtonWidth::set)
