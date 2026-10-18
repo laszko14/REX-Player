@@ -17,6 +17,17 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 
+/** One actual playback-time analysis window; avoid aggregating music and dialogue blindly. */
+internal data class AutoAudioSegmentMetrics(
+  val rmsDb: Double,
+  val noiseFloorDb: Double,
+  val dynamicRangeDb: Double,
+  val spectralCentroidHz: Double?,
+  val spectralFlatness: Double?,
+  val spectralRolloffHz: Double?,
+  val frameCount: Int,
+)
+
 /** Signal statistics measured on ORIGINAL PCM, before mpv filters and speed changes. */
 internal data class AutoAudioMetrics(
   val seconds: Double,
@@ -30,6 +41,9 @@ internal data class AutoAudioMetrics(
   val spectralCentroidHz: Double? = null,
   val spectralFlatness: Double? = null,
   val spectralRolloffHz: Double? = null,
+  val segments: List<AutoAudioSegmentMetrics> = emptyList(),
+  // Reserved for an actual verified VAD model. Never populate from loudness / FFT alone.
+  val verifiedSpeechProbability: Double? = null,
   val sourceDescription: String = "Lokalny PCM przed filtrami mpv",
 )
 
