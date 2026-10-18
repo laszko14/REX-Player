@@ -1,5 +1,6 @@
 package xyz.mpv.rex.ui.player.controls.components.sheets
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -126,6 +127,28 @@ class AutoAudioVadPcmTest {
       assertEquals(1.0, d.nearFullScaleFraction, 0.00001)
       assertEquals(0.0, d.peakDbfs, 0.01)
     }
+  }
+
+
+  @Test fun diagnosticTextUsesAllFiveNumericFieldsInCorrectOrder() {
+    val sample = AutoAudioVadWindowDiagnostics(
+      inputRate = 48000, frames = 500, speechFrames = 500,
+      rmsDbfs = -19.5, peakDbfs = -4.1,
+      nearSilenceFraction = 0.002, nearFullScaleFraction = 0.001,
+    )
+    val en = formatVadWindow(0, sample, Locale.US)
+    assertTrue(en.startsWith("F1: 48000 Hz → 16 kHz, 500 ramek; VAD 100%"))
+    assertTrue(en.contains("RMS -19.5 dBFS"))
+    assertTrue(en.contains("szczyt -4.1 dBFS"))
+    assertTrue(en.contains("prawie cisza 0.2%"))
+    assertTrue(en.contains("blisko przesterowania 0.1%"))
+    assertFalse(en.contains("%."))
+    assertFalse(en.contains("przesterowania -"))
+
+    val pl = formatVadWindow(2, sample, Locale.forLanguageTag("pl-PL"))
+    assertTrue(pl.startsWith("F3: 48000 Hz"))
+    assertTrue(pl.contains("RMS -19,5 dBFS"))
+    assertTrue(pl.contains("blisko przesterowania 0,1%"))
   }
 
 }
