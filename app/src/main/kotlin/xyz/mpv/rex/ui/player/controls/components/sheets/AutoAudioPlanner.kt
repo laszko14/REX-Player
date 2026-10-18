@@ -88,6 +88,26 @@ internal data class AutoAudioPlan(
  */
 internal object AutoAudioPlanner {
   fun plan(metrics: AutoAudioMetrics, before: AutoAudioState): AutoAudioPlan {
+    // Fail closed on quiet/inaudible material even when WebRTC itself produced
+    // a complete binary vote. Silence is not evidence for altering EQ/DRC.
+    if (metrics.silenceDominant) {
+      val observation = if (metrics.vadSpeechFraction != null) {
+        "WebRTC VAD: %.0f%% dodatnich ramek na ciszy (diagnostyka, nie mowa)."
+          .format(metrics.vadSpeechFraction * 100.0)
+      } else {
+        "WebRTC VAD: brak pełnych danych PCM do oceny ciszy."
+      }
+      return AutoAudioPlan(
+        before = before,
+        after = before,
+        changes = emptyList(),
+        findings = listOf(
+          "W próbce dominuje cisza. Nie zmieniono filtrów.",
+          observation,
+          "Nie wolno wyciągać z ciszy wniosków o poprawie dialogów.",
+        ),
+      )
+    }
     var after = before
     val findings = mutableListOf<String>()
     findings += "Poziom tła (orientacyjnie): ${metrics.noiseFloorDb.toInt()} dBFS"
