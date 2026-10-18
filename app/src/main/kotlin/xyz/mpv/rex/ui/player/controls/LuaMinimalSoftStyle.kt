@@ -3,12 +3,12 @@ package xyz.mpv.rex.ui.player.controls
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -48,6 +48,9 @@ internal fun LuaMinimalSoftTile(
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(7.dp),
 ) {
+    // ContrastVideoLabel doubles this radius into a stroke diameter.
+    // Use a 1-physical-pixel stroke on any screen density.
+    val outlineRadiusDp = with(LocalDensity.current) { .5f / density }
     Box(
         modifier = modifier.then(
             if (active) Modifier.background(
@@ -63,9 +66,7 @@ internal fun LuaMinimalSoftTile(
             fontSize = fontSize,
             fontWeight = FontWeight.Medium,
             outlined = true,
-            // The underlying stroke uses this as the radius (2x for diameter).
-            // 0.28dp is subtle even on 11sp text, unlike the former broad outline.
-            outlineWidthDp = .28f,
+            outlineWidthDp = outlineRadiusDp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
