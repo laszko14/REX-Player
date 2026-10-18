@@ -94,6 +94,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
@@ -509,6 +510,11 @@ fun PlayerControls(
         val bottomControlsBelowSeekbar by playerPreferences.bottomControlsBelowSeekbar.collectAsState()
         val playbackControlsPosition by playerPreferences.playbackControlsPosition.collectAsState()
         val isPlaybackControlsAtBottom = playbackControlsPosition == PlaybackControlsPosition.Bottom
+        // Keep the media timeline as low as possible without covering system navigation.
+        val bottomEdgeGap = spacing.extraSmall
+        val controlsToTimelineGap = spacing.extraSmall
+        // ControlsGroup has a fixed 42.dp height in landscape.
+        val landscapeButtonDockHeight = 42.dp
 
         val isBrightnessSliderShown by viewModel.isBrightnessSliderShown.collectAsState()
         val isVolumeSliderShown by viewModel.isVolumeSliderShown.collectAsState()
@@ -987,15 +993,15 @@ fun PlayerControls(
                   end.linkTo(parent.end)
                   if (isPortrait) {
                     if (bottomControlsBelowSeekbar) {
-                      bottom.linkTo(parent.bottom, spacing.large)
+                      bottom.linkTo(parent.bottom, bottomEdgeGap)
                     } else {
-                      bottom.linkTo(seekbar.top, spacing.smaller)
+                      bottom.linkTo(seekbar.top, controlsToTimelineGap)
                     }
                   } else {
                     if (bottomControlsBelowSeekbar) {
-                      bottom.linkTo(parent.bottom, spacing.medium)
+                      bottom.linkTo(parent.bottom, bottomEdgeGap)
                     } else {
-                      bottom.linkTo(seekbar.top, spacing.small)
+                      bottom.linkTo(seekbar.top, controlsToTimelineGap)
                     }
                   }
                 } else {
@@ -1360,16 +1366,16 @@ fun PlayerControls(
               .constrainAs(seekbar) {
                 if (isPortrait) {
                   if (bottomControlsBelowSeekbar) {
-                    bottom.linkTo(bottomRightControls.top, spacing.smaller) // Tight gap to grid below
+                    bottom.linkTo(bottomRightControls.top, controlsToTimelineGap) // Just above buttons when their order is reversed
                   } else {
-                    bottom.linkTo(parent.bottom, spacing.large) // Space from screen bottom
+                    bottom.linkTo(parent.bottom, bottomEdgeGap) // Keep edge space, no large fixed margin
                   }
                 } else {
                   if (bottomControlsBelowSeekbar) {
-                    val bottomMargin = 45.dp + spacing.medium + spacing.small
+                    val bottomMargin = landscapeButtonDockHeight + 2 * controlsToTimelineGap + navBottom
                     bottom.linkTo(parent.bottom, bottomMargin)
                   } else {
-                    bottom.linkTo(parent.bottom, spacing.medium)
+                    bottom.linkTo(parent.bottom, bottomEdgeGap)
                   }
                 }
                 start.linkTo(parent.start, spacing.large)
@@ -1507,6 +1513,8 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              // Back button/title render above persistent Lua and HUD overlays.
+              .zIndex(20f)
               .constrainAs(topLeftControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
                 // The back arrow and title always start at the left edge.
@@ -1649,15 +1657,15 @@ fun PlayerControls(
                 if (isPortrait) {
                   if (bottomControlsBelowSeekbar) {
                     if (isPlaybackControlsAtBottom) {
-                      bottom.linkTo(playerPauseButton.top, spacing.smaller)
+                      bottom.linkTo(playerPauseButton.top, controlsToTimelineGap)
                     } else {
-                      bottom.linkTo(parent.bottom, spacing.large) // Space from screen bottom
+                      bottom.linkTo(parent.bottom, bottomEdgeGap) // Keep edge space, no large fixed margin
                     }
                   } else {
                     if (isPlaybackControlsAtBottom) {
-                      bottom.linkTo(playerPauseButton.top, spacing.smaller)
+                      bottom.linkTo(playerPauseButton.top, controlsToTimelineGap)
                     } else {
-                      bottom.linkTo(seekbar.top, spacing.smaller) // Tight gap to seekbar
+                      bottom.linkTo(seekbar.top, controlsToTimelineGap) // Separate the two touch rows
                     }
                   }
                   start.linkTo(parent.start, spacing.medium)
@@ -1665,9 +1673,9 @@ fun PlayerControls(
                   width = Dimension.fillToConstraints
                 } else {
                   if (bottomControlsBelowSeekbar) {
-                    bottom.linkTo(parent.bottom, spacing.medium)
+                    bottom.linkTo(parent.bottom, bottomEdgeGap)
                   } else {
-                    bottom.linkTo(seekbar.top, spacing.small)
+                    bottom.linkTo(seekbar.top, controlsToTimelineGap)
                   }
                   if (isPlaybackControlsAtBottom) {
                     start.linkTo(playerPauseButton.end, spacing.small)
@@ -1694,7 +1702,7 @@ fun PlayerControls(
               onOpenPanel = onOpenPanel,
               viewModel = viewModel,
               activity = activity,
-              bottomPadding = if (bottomControlsBelowSeekbar && !isPlaybackControlsAtBottom) spacing.medium else 0.dp,
+              bottomPadding = 0.dp, // The bottom row is already anchored above the safe area.
             )
           } else {
             BottomRightPlayerControlsLandscape(
@@ -1750,10 +1758,10 @@ fun PlayerControls(
               .constrainAs(bottomLeftControls) {
                 if (bottomControlsBelowSeekbar) {
                   // Bottom controls at very bottom - more margin for navigation bar
-                  bottom.linkTo(parent.bottom, spacing.medium)
+                  bottom.linkTo(parent.bottom, bottomEdgeGap)
                 } else {
                   // Bottom controls above seekbar
-                  bottom.linkTo(seekbar.top, spacing.small)
+                  bottom.linkTo(seekbar.top, controlsToTimelineGap)
                 }
                 start.linkTo(parent.start, spacing.medium)
                 width = Dimension.fillToConstraints
