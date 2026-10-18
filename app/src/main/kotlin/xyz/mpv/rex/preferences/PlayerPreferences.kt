@@ -28,6 +28,18 @@ class PlayerPreferences(
   val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
   // Minimal Soft changes only rendering; legacy/per-button colors remain saved.
   val luaButtonMinimalSoft = preferenceStore.getBoolean("lua_button_minimal_soft", true)
+  // v2 is additive: disabling it restores the original Minimal Soft from v29.
+  val luaButtonMinimalSoftV2 = preferenceStore.getBoolean("lua_button_minimal_soft_v2", true)
+  val luaSoftBackgroundColor = preferenceStore.getInt("lua_soft_bg_argb", 0xFF1F2A33.toInt())
+  val luaSoftTextColor = preferenceStore.getInt("lua_soft_text_argb", 0xFFB8C2CC.toInt())
+  val luaSoftActiveTextColor = preferenceStore.getInt("lua_soft_active_text_argb", 0xFFA9C4D8.toInt())
+  val luaSoftShape = preferenceStore.getInt("lua_soft_shape", 2)
+  val luaSoftTextShadow = preferenceStore.getBoolean("lua_soft_text_shadow", true)
+  val luaSoftContrast = preferenceStore.getInt("lua_soft_contrast", 1)
+  val luaSoftIconStyle = preferenceStore.getInt("lua_soft_icon_style", 0)
+  val luaEmptySlots = preferenceStore.getInt("lua_empty_slots", 1)
+  val luaRightColumns = preferenceStore.getInt("lua_right_columns", 4)
+  val luaAutoHideOnDrag = preferenceStore.getBoolean("lua_auto_hide_on_drag", true)
   val luaButtonHighContrastText = preferenceStore.getBoolean("lua_button_high_contrast_text", false)
   val luaButtonBoldText = preferenceStore.getBoolean("lua_button_bold_text", false)
   // New continuous settings preserve the old switches on first upgrade.
