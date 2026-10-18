@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="lua_minimal_soft_title">Minimal Soft — subtle Lua buttons</string>
-    <string name="lua_minimal_soft_description">Muted colors, subtle active speed and automatic fade after 3 seconds. Turn off to use your saved button colors.</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="lua_minimal_soft_title" tools:ignore="MissingTranslation">Minimal Soft — subtle Lua buttons</string>
+    <string name="lua_minimal_soft_description" tools:ignore="MissingTranslation">Muted colors, subtle active speed and automatic fade after 3 seconds. Turn off to use your saved button colors.</string>
 </resources>
