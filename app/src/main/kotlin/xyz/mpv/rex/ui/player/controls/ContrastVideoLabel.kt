@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.StrokeJoin
@@ -35,6 +36,8 @@ internal fun ContrastVideoLabel(
     outlineWidthDp: Float? = null,
     outlineColorOverride: Color? = null,
     shadowStyle: Shadow? = null,
+    glowColor: Color? = null,
+    glowSizePx: Float = 0f,
     textAlign: TextAlign? = null,
     maxLines: Int = 1,
     overflow: TextOverflow = TextOverflow.Clip,
@@ -46,7 +49,34 @@ internal fun ContrastVideoLabel(
     // A true glyph stroke, measured in physical pixels, not a blurred duplicate.
     val outlineWidth = outlineWidthPx?.coerceIn(0f, 6f)
         ?: with(LocalDensity.current) { widthDp.dp.toPx() }
+    val haloPx = glowSizePx.coerceIn(0f, 12f)
     Box(contentAlignment = Alignment.Center) {
+        // Render OUTSIDE the existing black text contour, not around the rectangular tile.
+        // The broad translucent stroke + blurred zero-offset shadow create a halo without
+        // sampling video frames, changing touch targets or overwriting the chosen font.
+        if (glowColor != null && haloPx > 0f && glowColor.alpha > 0f) {
+            Text(
+                text = text,
+                color = glowColor.copy(alpha = glowColor.alpha * .75f),
+                fontSize = fontSize,
+                fontWeight = fontWeight,
+                fontFamily = fontFamily,
+                textAlign = textAlign,
+                maxLines = maxLines,
+                overflow = overflow,
+                style = TextStyle(
+                    drawStyle = Stroke(
+                        width = outlineWidth * 2f + haloPx * 1.65f,
+                        join = StrokeJoin.Round,
+                    ),
+                    shadow = Shadow(
+                        color = glowColor.copy(alpha = glowColor.alpha * .85f),
+                        offset = Offset.Zero,
+                        blurRadius = haloPx * 2.2f,
+                    ),
+                ),
+            )
+        }
         if (outlineWidth > 0f) {
             Text(
                 text = text,
@@ -73,6 +103,10 @@ internal fun ContrastVideoLabel(
         )
     }
 }
+
+/** Only selected speed buttons receive a halo; saved sizes are bounded for readability. */
+internal fun luaActiveSpeedHaloPx(active: Boolean, enabled: Boolean, savedSizePx: Int): Float =
+    if (active && enabled) savedSizePx.coerceIn(0, 12).toFloat() else 0f
 
 /** Deliberately discrete real font faces rather than near-identical 5-point steps. */
 internal fun fontWeightForReadability(percent: Int): FontWeight = when (percent.coerceIn(0, 100)) {
