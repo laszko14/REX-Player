@@ -383,7 +383,7 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 
 ## 22. Auto Audio v47 — pierwszy test urządzenia 3×10 s i korekta komunikatów (18.10.2026)
 
-**Źródło:** cztery zrzuty ekranu użytkownika z testowej aplikacji ARM64 v47 `xyz.mpv.rex.debug` podczas odtwarzania strumienia; tryb **szczegółowy 3 × 10 s** (30 s materiału). Materiał źródłowy (wywiad/muzyka/szum/cisza) **nie został jeszcze jednoznacznie opisany** — nie wolno interpretować 100% jako potwierdzonej skuteczności VAD.
+**Źródło:** cztery zrzuty ekranu użytkownika z testowej aplikacji ARM64 v47 `xyz.mpv.rex.debug` podczas odtwarzania strumienia; tryb **szczegółowy 3 × 10 s** (30 s materiału). **Użytkownik potwierdził następnie**, że materiał to **wywiad na ulicy, wiele osób, mowa niemal nieprzerwanie, obecne również szum i hałas**. Wynik WebRTC VAD 100% jest zatem możliwy w tym materiale, ale sam nie potwierdza trafności odróżniania mowy od hałasu i muzyki.
 
 ### Faktycznie zaobserwowane pomiary
 
@@ -402,5 +402,5 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 
 ### Następny punkt decyzyjny — konieczna próbka kontrolna
 
-Ustalić od użytkownika, czy przez analizowane 30 s rzeczywiście była niemal bez przerwy mowa. Następnie uruchomić w tej samej testowej aplikacji **3 × 10 s na materiale bez mowy** (np. fragment instrumentalny lub cisza/szum tła) i porównać wynik WebRTC VAD. Jeśli mimo braku mowy ponownie jest ~100%, podejść do VAD metodyką Systematic Debugging (kontrola PCM, trybu modelu, mono downmix, rate/PTS, rzeczywistych przerw i negatywnych testów) **bez automatycznej korekty filtrów**. Scalenie PR #55 i produkcyjny podpisany APK v47 wymagają zielonego CI po obecnych zmianach oraz dalszego testu na urządzeniu.
+Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu ulicznego; nie powtarzać tego pytania. Następnie uruchomić w tej samej testowej aplikacji **3 × 10 s na materiale bez mowy** (np. fragment instrumentalny lub cisza/szum tła) i porównać wynik WebRTC VAD. Jeśli mimo braku mowy ponownie jest ~100%, podejść do VAD metodyką Systematic Debugging (kontrola PCM, trybu modelu, mono downmix, rate/PTS, rzeczywistych przerw i negatywnych testów) **bez automatycznej korekty filtrów**. Scalenie PR #55 i produkcyjny podpisany APK v47 wymagają zielonego CI po obecnych zmianach oraz dalszego testu na urządzeniu.
 
