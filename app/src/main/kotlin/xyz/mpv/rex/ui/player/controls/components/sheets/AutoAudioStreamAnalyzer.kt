@@ -55,6 +55,7 @@ internal object AutoAudioStreamAnalyzer {
       var nativeSource: AutoAudioPcmSource? = null
       var streamVad: AutoAudioStreamingVad? = null
       var vadSpeechFraction: Double? = null
+      var vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList()
 
       fun drainVadPackets() {
         if (nativeSource == null || streamVad == null) return
@@ -137,6 +138,7 @@ internal object AutoAudioStreamAnalyzer {
         }
         drainVadPackets()
         vadSpeechFraction = streamVad?.speechFraction()
+        vadWindows = streamVad?.windowDiagnostics().orEmpty()
       } finally {
         nativeSource?.close()
         streamVad?.close()
@@ -152,6 +154,7 @@ internal object AutoAudioStreamAnalyzer {
         val metrics = StreamAstatsParser.parse(file.readText(), windows)
         metrics.copy(
           vadSpeechFraction = vadSpeechFraction,
+          vadWindows = vadWindows,
           vadModel = if (vadSpeechFraction != null) "WebRTC VAD • oryginalny PCM mpv" else null,
           sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)",
         )
