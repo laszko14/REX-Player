@@ -51,6 +51,9 @@ internal data class AutoAudioMetrics(
   // Per-window diagnostics of the PCM16 actually submitted to WebRTC.
   // For streaming only until local-file reporting is similarly instrumented.
   val vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList(),
+  // Signals with insufficient audible frames are diagnostic-only; never plan
+  // spectral or speech-dependent filter changes on this result.
+  val silenceDominant: Boolean = false,
   val sourceDescription: String = "Lokalny PCM przed filtrami mpv",
 )
 
