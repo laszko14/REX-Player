@@ -170,8 +170,13 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 )
               } else {
                 Text(
-                  "VAD: niedostępny — analiza streamingu udostępnia statystyki, ale nie surowy PCM " +
-                    "do modelu WebRTC. Nie udajemy wykrycia mowy.",
+                  if (metrics.sourceDescription.startsWith("Streaming")) {
+                    "VAD: niedostępny dla streamingu — mpv udostępnia tylko statystyki, " +
+                      "nie surowy PCM dla WebRTC. Nie udajemy wykrycia mowy."
+                  } else {
+                    "VAD: niedostępny dla tej lokalnej próbki PCM; " +
+                      "nie wyliczono sztucznego wyniku rozpoznawania mowy."
+                  },
                   color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
                 )
               }
