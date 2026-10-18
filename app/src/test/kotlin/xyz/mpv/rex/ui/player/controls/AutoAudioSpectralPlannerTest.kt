@@ -160,6 +160,29 @@ class AutoAudioSpectralPlannerTest {
     assertEquals(null, metrics.verifiedSpeechProbability)
   }
 
+  @Test fun v47StreamingVadHundredPercentDoesNotAuthorizeSpeechFiltersOrClaimDifferentWindows() {
+    // First real ARM64 native PCM tap screenshot: 3 × 10 s, nearly identical
+    // windows. 100% is a fraction of WebRTC positive frames, not confidence.
+    val metrics = spectrum(
+      centroid = 1695.0, flatness = 0.04, rolloff = 2578.0,
+      floor = -24.5, dynamics = 9.0,
+    ).copy(vadSpeechFraction = 1.0, verifiedSpeechProbability = null)
+    val original = before.copy(
+      dialogue = 5, drcOn = true, drcLevel = 3, noise = 7,
+      trebleLevel = 1,
+    )
+    val plan = AutoAudioPlanner.plan(metrics, original)
+    assertTrue(plan.findings.any { it.contains("WebRTC VAD wykrył 100%") })
+    assertTrue(plan.findings.any { it.contains("Żaden z 3 fragmentów") })
+    assertFalse(plan.findings.any { it.contains("Fragmenty różnią się") })
+    assertEquals(2, plan.after.drcLevel)
+    assertEquals(5, plan.after.dialogue)
+    assertEquals(7, plan.after.noise)
+    assertEquals(1, plan.after.trebleLevel)
+    assertEquals(1, plan.changes.size)
+    assertEquals("DRC", plan.changes.single().name)
+  }
+
   @Test fun extremeDialogueAndDrcCanOfferGentlerDialogueWhenDynamicsNotLow() {
     val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 20.0)
     val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)
