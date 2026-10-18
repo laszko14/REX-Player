@@ -52,6 +52,31 @@ internal object AutoAudioStreamAnalyzer {
       val file = File.createTempFile("auto_audio_probe_", ".txt", context.cacheDir)
       try {
       val startTrack = runCatching { MPVLib.getPropertyString("aid") }.getOrNull()
+      var nativeSource: AutoAudioPcmSource? = null
+      var streamVad: AutoAudioStreamingVad? = null
+      var vadSpeechFraction: Double? = null
+
+      fun drainVadPackets() {
+        if (nativeSource == null || streamVad == null) return
+        try {
+          // Bounded polling: avoid unbounded JNI work when decoding 3x speed.
+          for (index in 0 until 96) {
+            val pcm = nativeSource?.poll() ?: break
+            streamVad?.accept(pcm)
+          }
+        } catch (_: Exception) {
+          nativeSource?.close()
+          nativeSource = null
+          streamVad?.close()
+          streamVad = null
+        } catch (_: LinkageError) {
+          nativeSource?.close()
+          nativeSource = null
+          streamVad?.close()
+          streamVad = null
+        }
+      }
+
       var attempted = false
       try {
         check(MPVLib.getPropertyString("path") == sourcePath) { "Zmieniono film przed analizą." }
@@ -77,12 +102,17 @@ internal object AutoAudioStreamAnalyzer {
         }
         val startAt = playbackPosition()
           ?: error("Brak czasu odtwarzania. Nie można wyznaczyć długości próbek streamingu.")
+        // The old native AAR has no PCM export and returns null here.
+        // Never treat astats metadata as evidence of detected speech.
+        nativeSource = AutoAudioNativePcmBridge.openOrNull()
+        streamVad = nativeSource?.let { AutoAudioStreamingVad(windows) }
         var previousPosition = startAt
         var lastElapsed = SystemClock.elapsedRealtime()
         val stopAt = lastElapsed + 90_000L
         while (true) {
           currentCoroutineContext().ensureActive()
           delay(150)
+          drainVadPackets()
           check(MPVLib.getPropertyString("path") == sourcePath) {
             "Zmieniono film podczas analizy."
           }
@@ -105,7 +135,11 @@ internal object AutoAudioStreamAnalyzer {
           lastElapsed = nowElapsed
           if (current - startAt >= length) break
         }
+        drainVadPackets()
+        vadSpeechFraction = streamVad?.speechFraction()
       } finally {
+        nativeSource?.close()
+        streamVad?.close()
         if (attempted) {
           // Closing the lavfi graph flushes the ametadata file to disk.
           runCatching { MPVLib.command("change-list", "af", "remove", PROBE) }
@@ -116,7 +150,11 @@ internal object AutoAudioStreamAnalyzer {
           "Brak pomiarów astats. Ten build FFmpeg może nie udostępniać ametadata."
         }
         val metrics = StreamAstatsParser.parse(file.readText(), windows)
-        metrics.copy(sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)")
+        metrics.copy(
+          vadSpeechFraction = vadSpeechFraction,
+          vadModel = if (vadSpeechFraction != null) "WebRTC VAD • oryginalny PCM mpv" else null,
+          sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)",
+        )
       } finally {
         file.delete()
       }

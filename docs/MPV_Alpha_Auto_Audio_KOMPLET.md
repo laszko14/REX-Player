@@ -243,3 +243,33 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 **Automatyczna walidacja (PR #49):** GitHub Actions https://github.com/laszko14/REX-Player/actions/runs/39151890672 — **success** dla kontroli źródeł i zadania `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug`. Podpisany APK nie powstał (zadanie podpisywania pominięte w PR). Zielone CI nie potwierdza działania bibliotek JNI na fizycznym telefonie ani skuteczności VAD.
 
 **Stan fizycznego urządzenia:** brak testu VAD v47. Wymagana najpierw próba na lokalnym PCM, a dla streamingu nadal brak natywnego PCM tapu. Nie wypuszczać oznaczonego jako „VAD streaming” APK.
+
+
+## 15. Auto Audio v47 — natywny PCM ze streamingu i integracja z WebRTC (weryfikacja w toku)
+
+**Nadrzędny cel:** wykrywanie mowy na bieżącym strumieniu (HTTP/HLS/DASH), tylko z dekodowanych ramek przed wszystkimi `af`, bez ponownego pobierania, bez zmiany prędkości i bez naruszania istniejących filtrów.
+
+### Zweryfikowany fork i repozytoria
+
+- Fork biblioteki natywnej utworzony i posiada uprawnienia zapisu: https://github.com/laszko14/mpvRex-libmpv.
+- PR natywny **#1**: https://github.com/laszko14/mpvRex-libmpv/pull/1 — osobna gałąź, jeszcze **nie scalona**.
+- W `mpv` wybrano miejsce **pomiędzy dekoderem aktualnego audio a łańcuchem filtrów** (kod `player/audio.c`), w odróżnieniu od nieprawidłowego przechwytywania wyjścia po DRC/Głos/Szum.
+- Dodano pasywny filtr bez zmiany audio i JNI z ograniczoną kolejką mono PCM16; po przepełnieniu przekazuje informację o brakach zamiast wymyślać próbki. Dla mpv przypięto dokładny revision `6a262d11f63733d37e3ee6d5fafcb1be1ef83952`, a patch ma kończyć build błędem, jeśli kod się rozjedzie.
+- **Weryfikacja techniczna:** poprawność 4 hunków patcha wobec przypiętej wersji została przeliczona i potwierdzona (wszystkie kotwice i linie pasują). Nie jest to jeszcze potwierdzenie kompilacji natywnej ani audio na urządzeniu.
+
+### Integracja po stronie MPV Alpha (PR na osobnej gałęzi)
+
+- Dodano `AutoAudioNativePcmBridge` jako **opcjonalne, refleksyjne API**. Na obecnej starszej paczce libmpv wejście jest niedostępne, a analiza metadanych v46 działa bez zmian.
+- Dodano `AutoAudioStreamingVad`: sesje 15 s albo 3×10 s, tylko prawdziwe porcje PCM / PTS, odbiór co 150 ms poza wątkiem audio, wykrywanie luk, cofnięć, zmian częstotliwości próbkowania oraz przepełnienia kolejki.
+- Wymagane ≥85% prawdziwych ramek VAD w każdym fragmencie oraz obecność blisko początku i końca każdej próbki. Niepełny wynik to **`null`**, nigdy procent „wykrytej mowy”.
+- Oryginalne statystyki FFmpeg i reguły v46 pozostają działające. Nowy `vadSpeechFraction` to tylko **odsetek ramek oznaczonych jako mowa przez WebRTC**, nie kalibrowana pewność; `verifiedSpeechProbability` zostaje niedostępne. Nie włączać automatycznie RNNoise/Dialogue Enhance/DRC na podstawie samej frakcji.
+- Testy JVM obejmują pełne okna 15s i 3×10s, brakujące fragmenty, brakujące PTS, cofnięcie czasu i utracone porcje PCM.
+
+### Warunki przed rzeczywistym APK v47
+
+1. Uruchomić CI natywnego forka i zweryfikować rzeczywistą kompilację ARM64 oraz wytworzenie spójnej pary `libmpv.so` i `libplayer.so`. **Fork może wymagać ręcznego włączenia GitHub Actions w zakładce Actions.** Sama poprawność patcha nie oznacza sukcesu native build.
+2. Wydać nowy, jasno oznaczony artefakt AAR z forka i **dopiero wtedy** podmienić zależność `mpvRex-libmpv:0.0.9` w MPV Alpha. Nie używać pojedynczego JNI z nowej wersji przy starym `libmpv.so`.
+3. Przejść testy aplikacji `assembleDebug/testDebugUnitTest/lintDebug/check_workflows` po zmianie zależności oraz test na fizycznym telefonie (mowa, muzyka, cisza, szum uliczny, 1.5×–3×, HLS). Sprawdzić PTS, regresje buforowania, wydajność CPU i obecność wszystkich oryginalnych Lua.
+4. Dopiero potem uruchomić podpisaną kompilację aktualizacyjną z **nowym numerem v47** i przeprowadzić testy odsłuchowe. Nie ogłaszać pełnego VAD w streamingu wcześniej.
+
+**Stan:** kod po stronie natywnej i aplikacyjnej jest w PR-ach do weryfikacji, brak potwierdzenia build native i brak wydanego APK. Historia v40–v46 pozostaje ważna; nie powtarzać starszych etapów.
