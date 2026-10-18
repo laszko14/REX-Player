@@ -112,7 +112,7 @@ internal fun LuaSoftDarkButtonList(prefs: PlayerPreferences, onEdit: (Int) -> Un
     }
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(9.dp)) {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             item {
                 LuaSoftCard(stringResource(R.string.lua_v2_layout)) {
                     LuaCountRow(stringResource(R.string.lua_v2_left_cols), columns, 1, 8, prefs.luaPanelColumns::set)
