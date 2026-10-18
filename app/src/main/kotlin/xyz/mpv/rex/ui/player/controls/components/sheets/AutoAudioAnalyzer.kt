@@ -10,7 +10,9 @@ import java.io.File
 import java.nio.ByteOrder
 import kotlin.math.log10
 import kotlin.math.sqrt
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -51,9 +53,10 @@ internal object AutoAudioAnalyzer {
         (durationSeconds * it).coerceIn(0.0, (durationSeconds - 10.0).coerceAtLeast(0.0)) to 10.0
       }
     }
+    val activeJob = currentCoroutineContext()[Job]
     val readings = spans.map { (start, length) ->
       currentCoroutineContext().ensureActive()
-      decodeSpan(context, uri, start, length)
+      decodeSpan(context, uri, start, length) { activeJob?.isActive != false }
     }
     val frames = readings.flatMap { it.frames }
     require(frames.size >= 30) { "Za mało dźwięku do wiarygodnej analizy." }
@@ -77,7 +80,7 @@ internal object AutoAudioAnalyzer {
   private data class Frame(val energy: Double, val db: Double, val zcr: Double, val seconds: Double)
   private data class Reading(val frames: List<Frame>, val channels: Int, val samples: Int, val clipped: Int, val peak: Double)
 
-  private fun decodeSpan(context: Context, uri: Uri, start: Double, length: Double): Reading {
+  private fun decodeSpan(context: Context, uri: Uri, start: Double, length: Double, isActive: () -> Boolean): Reading {
     val extractor = MediaExtractor()
     var decoder: MediaCodec? = null
     try {
@@ -112,7 +115,10 @@ internal object AutoAudioAnalyzer {
       var clipped = 0
       var peak = 0.0
       var attempts = 0
+      val deadlineNs = System.nanoTime() + 25_000_000_000L
       while (!outputEnded && attempts++ < 20000) {
+        if (!isActive()) throw CancellationException("Anulowano analizę audio.")
+        check(System.nanoTime() < deadlineNs) { "Analizator przekroczył limit 25 sekund dla próbki." }
         if (!inputEnded) {
           val index = decoder.dequeueInputBuffer(10_000)
           if (index >= 0) {
