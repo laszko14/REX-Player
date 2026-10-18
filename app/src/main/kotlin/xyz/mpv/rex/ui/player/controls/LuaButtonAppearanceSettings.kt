@@ -115,7 +115,7 @@ fun LuaButtonAppearanceSettings(prefs: PlayerPreferences, compact: Boolean = fal
         LuaOptionSlider(stringResource(R.string.audit_column_spacing), columnGap, 0, 24, " dp", compact = compact) { prefs.luaButtonColumnGap.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_row_spacing), rowGap, 0, 24, " dp", compact = compact) { prefs.luaButtonRowGap.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_right_offset), posX, -16, 240, " dp", compact = compact) { prefs.luaButtonPositionX.set(it) }
-        LuaOptionSlider(stringResource(R.string.audit_downward_offset), posY, 0, 240, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
+        LuaOptionSlider(stringResource(R.string.audit_downward_offset), posY, LUA_POSITION_Y_MIN_DP, LUA_POSITION_Y_MAX_DP, " dp", compact = compact) { prefs.luaButtonPositionY.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_background_transparency), transparent, 0, 100, "%", compact = compact) { prefs.luaButtonBackgroundTransparency.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_corner_radius), radius, 0, 24, " dp", compact = compact) { prefs.luaButtonCornerRadius.set(it) }
         LuaOptionSlider(stringResource(R.string.audit_border), border, 0, 100, "%", compact = compact) { prefs.luaButtonBorderOpacity.set(it) }
@@ -512,7 +512,7 @@ fun LuaButtonCompactQuickSettings(prefs: PlayerPreferences) {
         LuaOptionSlider(stringResource(R.string.audit_horizontal_spacing), columnGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonColumnGap::set)
         LuaOptionSlider(stringResource(R.string.audit_vertical_spacing), rowGap, 0, 24, " dp", compact = true, onChange = prefs.luaButtonRowGap::set)
         LuaOptionSlider(stringResource(R.string.audit_x_position), posX, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionX::set)
-        LuaOptionSlider(stringResource(R.string.audit_y_position), posY, 0, 240, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
+        LuaOptionSlider(stringResource(R.string.audit_y_position), posY, LUA_POSITION_Y_MIN_DP, LUA_POSITION_Y_MAX_DP, " dp", compact = true, onChange = prefs.luaButtonPositionY::set)
         LuaOptionSlider(stringResource(R.string.audit_background_transparency), alpha, 0, 100, "%", compact = true,
             onChange = prefs.luaButtonBackgroundTransparency::set)
         LuaFontReadabilitySettings(prefs, compact = true)
@@ -592,7 +592,7 @@ fun LuaButtonOrganizedAppearanceSettings(prefs: PlayerPreferences) {
         }
         LuaAppearanceSection(stringResource(R.string.audit_position_and_visibility)) {
             LuaOptionSlider(stringResource(R.string.audit_x_position), posX, 0, 240, " dp", true, prefs.luaButtonPositionX::set)
-            LuaOptionSlider(stringResource(R.string.audit_y_position), posY, 0, 240, " dp", true, prefs.luaButtonPositionY::set)
+            LuaOptionSlider(stringResource(R.string.audit_y_position), posY, LUA_POSITION_Y_MIN_DP, LUA_POSITION_Y_MAX_DP, " dp", true, prefs.luaButtonPositionY::set)
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.audit_always_visible_by_default), modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium)

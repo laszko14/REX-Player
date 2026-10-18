@@ -911,7 +911,7 @@ fun PlayerControls(
           enter = fadeIn(),
           exit = fadeOut(),
           modifier = Modifier
-            .offset(y = (luaPositionY.coerceIn(0, 240) + 20).dp)
+            .offset(y = (luaButtonVerticalPositionDp(luaPositionY) + 20).dp)
             .constrainAs(customLeftButtonsRef) {
               start.linkTo(parent.start, spacing.large)
               end.linkTo(parent.end, spacing.large)

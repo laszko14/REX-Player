@@ -11,6 +11,16 @@ import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 
 class LuaSlotLayoutTest {
+    @Test fun verticalSliderMovesButtonsAboveFormerLimitWithoutResettingSavedPosition() {
+        assertEquals(-120, luaButtonVerticalPositionDp(-120))
+        assertEquals(-60, luaButtonVerticalPositionDp(-60))
+        assertEquals(0, luaButtonVerticalPositionDp(0))
+        assertEquals(100, luaButtonVerticalPositionDp(100))
+        assertEquals(240, luaButtonVerticalPositionDp(240))
+        assertEquals(-120, luaButtonVerticalPositionDp(-999))
+        assertEquals(240, luaButtonVerticalPositionDp(999))
+    }
+
     @Test fun oldThirtySlotsRetainTheirPositions() {
         val original = List(30) { i ->
             if (i == 0 || i == 29) CustomButton(id = "$" + "i", title = "b", content = "code") else null

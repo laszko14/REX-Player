@@ -5,6 +5,14 @@ import xyz.mpv.rex.ui.preferences.CustomButton
 import xyz.mpv.rex.ui.preferences.CustomButtonSlots
 import kotlin.math.floor
 
+/** Allow the Lua overlay to move 120 dp above its former top limit. */
+internal const val LUA_POSITION_Y_MIN_DP = -120
+internal const val LUA_POSITION_Y_MAX_DP = 240
+
+/** The slider, player, and grid must agree on which stored values are valid. */
+internal fun luaButtonVerticalPositionDp(positionY: Int): Int =
+    positionY.coerceIn(LUA_POSITION_Y_MIN_DP, LUA_POSITION_Y_MAX_DP)
+
 // Keep the original 35 indexes (0..34) unchanged when old preferences are loaded.
 internal const val LUA_MAIN_SLOT_COUNT = 30
 internal const val LUA_EXTRA_SLOT_COUNT = 8
