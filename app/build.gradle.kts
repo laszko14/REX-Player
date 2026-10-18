@@ -235,7 +235,9 @@ dependencies {
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
   implementation(libs.mediainfo.lib)
-  implementation(libs.mpv.lib)
+  // ARM64-only AAR: contains a MATCHED libmpv.so/libplayer.so PCM tap pair.
+  // v47 release is fixed to the tag; APK versioning remains separate.
+  implementation("com.github.laszko14:mpvRex-libmpv:native-v47-arm64-r1@aar")
   // Real offline frame-based VAD; consumes original decoded PCM, never FFT metadata.
   // MIT-licensed Android wrapper around WebRTC VAD, arm64 JNI artifact.
   implementation("com.github.gkonovalov.android-vad:webrtc:2.0.10")
