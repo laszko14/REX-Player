@@ -32,6 +32,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -146,7 +148,7 @@ internal fun LuaSoftDarkButtonList(prefs: PlayerPreferences, onEdit: (Int) -> Un
                         onDragStart = { dragDy = 0f },
                         onDragEnd = {
                             val from = occupied.indexOf(index)
-                            val step = (dragDy / with(density) { 49.dp.toPx() }).roundToInt()
+                            val step = (dragDy / with(density) { 56.dp.toPx() }).roundToInt()
                             val to = (from + step).coerceIn(0, occupied.lastIndex)
                             if (to != from) {
                                 val latest = decodeLuaButtonSlots(prefs.customButtons.get())
@@ -223,7 +225,7 @@ internal fun LuaSoftDarkButtonList(prefs: PlayerPreferences, onEdit: (Int) -> Un
 
 @Composable
 private fun LuaSmallAction(glyph: String, help: String, onClick: () -> Unit) {
-    IconButton(onClick = onClick, modifier = Modifier.width(30.dp)) {
+    IconButton(onClick = onClick, modifier = Modifier.width(30.dp).semantics { contentDescription = help }) {
         Text(glyph, color = if (glyph == "▤") Color(0xFFFF727C) else LuaDarkMuted, fontSize = 17.sp)
     }
 }
