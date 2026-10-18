@@ -11,9 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MoreTime
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.FormatListBulleted
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,6 +56,7 @@ fun AudioTracksSheet(
   val audioPreferences = koinInject<AudioPreferences>()
   val audioChannels by audioPreferences.audioChannels.collectAsState()
   var showActiveFilters by remember { mutableStateOf(false) }
+  var showAutoAudio by remember { mutableStateOf(false) }
 
   GenericTracksSheet(
     tracks,
@@ -63,6 +66,9 @@ fun AudioTracksSheet(
         stringResource(R.string.player_sheets_add_ext_audio),
         onAddAudioTrack,
         actions = {
+          IconButton(onClick = { showAutoAudio = true }) {
+            Icon(Icons.Default.AutoAwesome, contentDescription = "Auto Audio — analizuj i dopasuj")
+          }
           IconButton(onClick = onOpenDelayPanel) {
             Icon(Icons.Default.MoreTime, null)
           }
@@ -126,11 +132,21 @@ fun AudioTracksSheet(
           }
         }
       }
+      Button(
+        onClick = { showAutoAudio = true },
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+      ) {
+        Icon(Icons.Default.AutoAwesome, null)
+        Text("  Auto Audio — Analizuj i dopasuj")
+      }
       AudioEffectsSection()
       }
     },
     modifier = modifier,
   )
+  if (showAutoAudio) {
+    AutoAudioDialog(onDismissRequest = { showAutoAudio = false })
+  }
   if (showActiveFilters) {
     ActiveAudioFiltersDialog(onDismissRequest = { showActiveFilters = false })
   }
