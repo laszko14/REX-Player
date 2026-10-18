@@ -36,23 +36,17 @@ import `is`.xyz.mpv.MPVLib
 
 /** Compact playback controls; Szum talks to the same named mpv filter as the user's Lua. */
 @Composable
-fun AudioEffectsSection(
-  showActiveFilters: Boolean,
-  onDismissActiveFilters: () -> Unit,
-  modifier: Modifier = Modifier,
-) {
+fun AudioEffectsSection(modifier: Modifier = Modifier) {
   val audioPreferences = koinInject<AudioPreferences>()
   val dialogueLevel by audioPreferences.dialogueEnhanceLevel.collectAsState()
   val drcEnabled by audioPreferences.drcEnabled.collectAsState()
   val drcStrength by audioPreferences.drcStrength.collectAsState()
   var noiseLevel by remember { mutableIntStateOf(RexSzumAudio.readLevel()) }
-  var filterChain by remember { mutableStateOf<String?>(null) }
 
   // Watch Lua changes while the audio sheet is open; do not persist a second noise level.
   LaunchedEffect(Unit) {
     while (true) {
       noiseLevel = RexSzumAudio.readLevel()
-      filterChain = runCatching { MPVLib.getPropertyString("af") }.getOrNull()
       delay(500)
     }
   }
@@ -104,37 +98,45 @@ fun AudioEffectsSection(
     }
   }
 
-  if (showActiveFilters) {
-    AlertDialog(
-      onDismissRequest = onDismissActiveFilters,
-      title = { Text("Aktywne filtry audio") },
-      text = {
-        Column(
-          modifier = Modifier.verticalScroll(rememberScrollState()),
-          verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-          val labels = describeActiveFilters(filterChain)
-          labels.forEach { name ->
-            Text("• " + name, style = MaterialTheme.typography.bodyMedium)
-          }
-          if (!filterChain.isNullOrBlank() && filterChain != "[]") {
-            Spacer(Modifier.height(4.dp))
-            Text(
-              "Pełny łańcuch mpv (af):",
-              style = MaterialTheme.typography.labelMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-              filterChain.orEmpty(),
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
-      },
-      confirmButton = { TextButton(onClick = onDismissActiveFilters) { Text("Zamknij") } },
-    )
+}
+
+@Composable
+fun ActiveAudioFiltersDialog(onDismissRequest: () -> Unit) {
+  var filterChain by remember { mutableStateOf<String?>(null) }
+  LaunchedEffect(Unit) {
+    while (true) {
+      filterChain = runCatching { MPVLib.getPropertyString("af") }.getOrNull()
+      delay(500)
+    }
   }
+  AlertDialog(
+    onDismissRequest = onDismissRequest,
+    title = { Text("Aktywne filtry audio") },
+    text = {
+      Column(
+        modifier = Modifier.verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+      ) {
+        describeActiveFilters(filterChain).forEach { name ->
+          Text("• " + name, style = MaterialTheme.typography.bodyMedium)
+        }
+        if (!filterChain.isNullOrBlank() && filterChain != "[]") {
+          Spacer(Modifier.height(4.dp))
+          Text(
+            "Pełny łańcuch mpv (af):",
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+          Text(
+            filterChain.orEmpty(),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+          )
+        }
+      }
+    },
+    confirmButton = { TextButton(onClick = onDismissRequest) { Text("Zamknij") } },
+  )
 }
 
 @Composable
