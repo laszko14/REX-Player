@@ -5,6 +5,7 @@ import com.konovalov.vad.webrtc.config.FrameSize
 import com.konovalov.vad.webrtc.config.Mode
 import com.konovalov.vad.webrtc.config.SampleRate
 import java.io.Closeable
+import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -36,6 +37,26 @@ internal data class AutoAudioVadWindowDiagnostics(
   val positiveFraction: Double get() =
     if (frames > 0) speechFrames.toDouble() / frames else 0.0
 }
+
+/** One format call for ALL diagnostic fields; never bind .format() to only
+ * the final concatenated string (a previous UI bug shifted percentages). */
+internal fun formatVadWindow(
+  index: Int,
+  window: AutoAudioVadWindowDiagnostics,
+  locale: Locale = Locale.getDefault(),
+): String = String.format(
+  locale,
+  "F%d: %d Hz → 16 kHz, %d ramek; VAD %.0f%% • RMS %.1f dBFS • " +
+    "szczyt %.1f dBFS • prawie cisza %.1f%% • blisko przesterowania %.1f%%",
+  index + 1,
+  window.inputRate,
+  window.frames,
+  window.positiveFraction * 100.0,
+  window.rmsDbfs,
+  window.peakDbfs,
+  window.nearSilenceFraction * 100.0,
+  window.nearFullScaleFraction * 100.0,
+)
 
 internal class WebRtcAutoAudioVadClassifier : AutoAudioVadClassifier {
   private val detector = VadWebRTC(
