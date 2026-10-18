@@ -31,6 +31,7 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -92,6 +93,19 @@ fun LuaButtonsInPlayerDialog(
             ) { Text(stringResource(R.string.audit_show_lua_settings), color = LuaDarkText) }
         }
         if (!isDragHidden && !manualMinimized) {
+            // The host app may be in light mode. Never inherit black Material3 labels
+            // inside this intentionally dark player overlay or its nested editor.
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    primary = LuaDarkAccent,
+                    onPrimary = androidx.compose.ui.graphics.Color.White,
+                    surface = androidx.compose.ui.graphics.Color(0xFF171D26),
+                    onSurface = LuaDarkText,
+                    onSurfaceVariant = LuaDarkMuted,
+                    surfaceVariant = androidx.compose.ui.graphics.Color(0xFF252D39),
+                    outline = androidx.compose.ui.graphics.Color(0xFF728099),
+                ),
+            ) {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth(if (landscape) .53f else .96f)
@@ -151,6 +165,7 @@ fun LuaButtonsInPlayerDialog(
                         LuaInPlayerCodeBrowser(prefs, Modifier.weight(1f))
                     }
                 }
+            }
             }
         }
     }
