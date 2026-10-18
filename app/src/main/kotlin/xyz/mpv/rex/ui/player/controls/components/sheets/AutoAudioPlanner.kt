@@ -100,70 +100,91 @@ internal object AutoAudioPlanner {
       findings += "To cechy całego dźwięku, nie rozpoznawanie wypowiadanych słów."
     }
 
-    // In quick mode retain conservative legacy heuristics; in detailed mode
-    // do not mislabel loudness changes as proven speech activity.
-    val probableVoice = metrics.spectralCentroidHz == null && metrics.voiceLikeRatio >= 0.28
-    val veryQuietFloor = metrics.noiseFloorDb <= -58.0
-    val highFloor = metrics.noiseFloorDb >= -31.0
-    val centroid = metrics.spectralCentroidHz
-    val flatness = metrics.spectralFlatness
-    val rolloff = metrics.spectralRolloffHz
-    if (centroid != null && flatness != null && rolloff != null) {
-      // Spectral evidence alone cannot tell voice from music. Recommend at most
-      // ONE small tonal change, always requiring user confirmation and A/B.
-      if (centroid > 3800.0 && rolloff > 8500.0 && flatness > 0.16) {
+    // Loudness and spectral brightness do NOT establish speech. Only a future
+    // independently verified VAD may authorize speech-specific filter decisions.
+    val speechConfirmed = metrics.verifiedSpeechProbability?.let { it >= 0.80 } == true
+    if (!speechConfirmed) {
+      findings += "Nie potwierdzono mowy: bez automatycznego DRC, Dialogue Enhance ani wzmacniania odszumiania."
+    }
+    val spectralWindows = metrics.segments.filter {
+      it.spectralCentroidHz != null && it.spectralFlatness != null &&
+        it.spectralRolloffHz != null && it.frameCount >= 15
+    }
+    if (metrics.segments.size >= 3 && spectralWindows.size == metrics.segments.size) {
+      val brightVotes = spectralWindows.count {
+        it.spectralCentroidHz!! > 3800.0 &&
+          it.spectralRolloffHz!! > 8500.0 && it.spectralFlatness!! > 0.16
+      }
+      val darkVotes = spectralWindows.count {
+        it.spectralCentroidHz!! < 750.0 &&
+          it.spectralRolloffHz!! < 3200.0 && it.spectralFlatness!! < 0.18
+      }
+      val noisyVotes = spectralWindows.count {
+        it.spectralFlatness!! >= 0.45 && it.noiseFloorDb >= -31.0 &&
+          it.dynamicRangeDb <= 12.0
+      }
+      findings += "Zgodność 3 fragmentów: jasne $brightVotes/3, ciemne $darkVotes/3, szumopodobne $noisyVotes/3."
+
+      // Conservative tonal suggestions, not diagnosis of sibilance or dialogue.
+      if (brightVotes >= 2 && darkVotes == 0) {
         when {
           before.voiceLevel in 3..4 -> {
             after = after.copy(voiceLevel = 1)
-            findings += "Trwały nadmiar wysokich częstotliwości: spróbuj łagodniejszego Głos 1."
+            findings += "Co najmniej 2 fragmenty są jasne: porównaj łagodniejszy Głos 1."
           }
-          before.trebleLevel == 0 && before.voiceLevel !in 5..7 -> {
+          brightVotes == 3 && before.trebleLevel == 0 &&
+            before.voiceLevel !in 5..7 -> {
             after = after.copy(trebleLevel = 1)
-            findings += "Jasne widmo: porównaj lekkie złagodzenie wysokich tonów."
+            findings += "Wszystkie 3 fragmenty są jasne: porównaj EQ wysokie 1."
           }
         }
-      } else if (centroid < 750.0 && rolloff < 3200.0 && flatness < 0.18) {
+      } else if (darkVotes == 3 && brightVotes == 0) {
         when {
+          before.voiceLevel in 6..7 -> {
+            after = after.copy(voiceLevel = 1)
+            findings += "Wszystkie 3 fragmenty są ciemne: porównaj łagodniejszy profil."
+          }
           before.voiceLevel == 0 && before.bassLevel == 0 -> {
             after = after.copy(voiceLevel = 2)
-            findings += "Przewaga niskich częstotliwości: porównaj profil Jasny, nie diagnozę mowy."
+            findings += "Wszystkie 3 fragmenty są ciemne: porównaj Głos 2 (Jasny)."
           }
-          before.bassLevel == 0 && before.voiceLevel == 1 -> {
+          before.voiceLevel == 1 && before.bassLevel == 0 -> {
             after = after.copy(bassLevel = 1)
-            findings += "Przewaga niskich częstotliwości: porównaj delikatne ograniczenie basu."
+            findings += "Wszystkie 3 fragmenty są ciemne: porównaj lekkie ograniczenie basu."
           }
         }
       }
-      if (flatness >= 0.45 && highFloor && metrics.dynamicRangeDb <= 12.0 && before.noise == 0) {
+
+      // Never infer "background noise during speech" from flatness alone.
+      if (speechConfirmed && noisyVotes == 3 && before.noise == 0) {
         after = after.copy(noise = 5)
-        findings += "Sygnał szumopodobny: próbnie zaproponowano najłagodniejszy RNNoise z Twojej skali (5/7)."
-      } else if (veryQuietFloor && before.noise != 0 && flatness < 0.18) {
+        findings += "Zaszumienie powtarza się w 3 fragmentach z potwierdzoną mową: wypróbuj Szum 5."
+      }
+      if (speechConfirmed && before.noise != 0 &&
+        spectralWindows.count { it.noiseFloorDb <= -58.0 } == 3) {
         after = after.copy(noise = 0)
-        findings += "Ciche, tonalne tło: warto porównać wyłączenie odszumiania."
+        findings += "Trzy bardzo ciche fragmenty: porównaj wyłączenie RNNoise."
+      }
+    } else {
+      findings += "Brak trzech kompletnych pomiarów widma: nie dobieram Głosu ani EQ na podstawie jednej sceny."
+    }
+
+    if (speechConfirmed && metrics.segments.size == 1) {
+      // Applicable only once a real verified VAD is connected.
+      if (metrics.noiseFloorDb <= -58.0 && before.noise != 0) {
+        after = after.copy(noise = 0)
+        findings += "Potwierdzona mowa i bardzo ciche tło: porównaj wyłączenie Szumu."
       }
     }
-
-    if (probableVoice && veryQuietFloor && before.noise != 0) {
-      after = after.copy(noise = 0)
-      findings += "Bardzo ciche tło: warto porównać odszumianie z jego wyłączeniem."
-    } else if (probableVoice && highFloor && before.noise == 0) {
-      // Preset number is not a linear strength scale. Level 4 is mix=0.65.
-      after = after.copy(noise = 4)
-      findings += "Podwyższone tło: proponowana próbna redukcja szumu."
-    }
-
-    if (metrics.channelCount == 2 && !before.voiceLuaActive && probableVoice &&
-      metrics.rmsDb < -24.0 && metrics.noiseFloorDb < -42.0 && before.dialogue == 0) {
+    if (speechConfirmed && metrics.channelCount == 2 && !before.voiceLuaActive &&
+      metrics.rmsDb < -24.0 && metrics.noiseFloorDb < -42.0 &&
+      before.dialogue == 0) {
       after = after.copy(dialogue = 1)
-      findings += "Cichy sygnał stereo: można odsłuchać łagodny Dialogue Enhance."
+      findings += "Potwierdzona mowa stereo: porównaj łagodny Dialogue Enhance."
     }
-
-    if (probableVoice && metrics.dynamicRangeDb >= 27.0 && !before.drcOn) {
+    if (speechConfirmed && metrics.dynamicRangeDb >= 27.0 && !before.drcOn) {
       after = after.copy(drcOn = true, drcLevel = 1)
-      findings += "Duże różnice dynamiki: łagodny DRC może ułatwić ciche dialogi."
-    } else if (before.drcOn && metrics.dynamicRangeDb <= 8.0) {
-      after = after.copy(drcOn = false)
-      findings += "Niewielka dynamika: DRC może być zbędny."
+      findings += "Potwierdzona mowa i wysoka dynamika: wypróbuj DRC 1."
     }
 
     if (metrics.peak >= 0.985 && before.eqOn && before.eqBoost > 0) {
