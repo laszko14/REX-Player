@@ -24,13 +24,31 @@ object RexSzumAudio {
     return if (chain != null && !chain.contains("rex_szum")) 0 else level
   }
 
-  fun setLevel(level: Int) {
+  /**
+   * Use the SAME Lua bridge as the existing custom buttons to expand the RNNoise model
+   * from the current mpv configuration directory. The ~~ path cannot be reliably
+   * passed unexpanded to lavfi as a native Android property value.
+   */
+  fun luaCommandForLevel(level: Int): String {
     val selected = level.coerceIn(0, 7)
-    // The exact same filter label as the Lua button prevents a duplicate instance.
-    runCatching { MPVLib.command("change-list", "af", "remove", FILTER_NAME) }
-    specificationForLevel(selected)?.let { spec ->
-      runCatching { MPVLib.command("change-list", "af", "append", spec) }
-    }
-    runCatching { MPVLib.setPropertyInt(LEVEL_PROPERTY, selected) }
+    val mix = if (selected == 0) null else mixes[selected - 1]
+    return buildString {
+      append("local label = 'rex_szum'\\n")
+      append("local key = 'user-data/rex-audio/poziom-szumu'\\n")
+      append("mp.commandv('af', 'remove', '@rex_szum')\\n")
+      if (mix != null) {
+        append("local model = mp.command_native({'expand-path','~~/script-opts/std.rnnn'})\\n")
+        append("local ok = type(model) == 'string' and model ~= '' and pcall(mp.commandv, 'af', 'add', \"@rex_szum:lavfi=[arnndn=m='\" .. model .. \"':mix=$mix]\")\\n")
+        append("mp.set_property_number(key, ok and $selected or 0)\\n")
+      } else {
+        append("mp.set_property_number(key, 0)\\n")
+      }
+    }.replace("\\\\n", "\\n")
+  }
+
+  fun setLevel(level: Int) {
+    // Do not add a second filter. The Lua action removes and replaces @rex_szum
+    // exactly as the existing button does and updates the same user-data key.
+    runCatching { MPVLib.command("script-message", "mpv_alpha_eval", luaCommandForLevel(level)) }
   }
 }
