@@ -79,6 +79,46 @@ class StreamAstatsParserTest {
   }
 
   @Test(expected = IllegalArgumentException::class)
+  fun partialWindowCannotBePresentedAsFullTenSecondSample() {
+    // v44 accepted 55% of a requested window. A 6s fragment is not 10s.
+    val raw = syntheticStats(6)
+    StreamAstatsParser.parse(raw, listOf(0.0 to 10.0))
+  }
+
+  @Test(expected = IllegalArgumentException::class)
+  fun midWindowPtsGapCannotCountAsContinuousAudio() {
+    val raw = buildString {
+      for (frame in 0 until 15 * 50) {
+        if (frame in 250 until 500) continue // Missing 5 seconds in the middle.
+        append("frame:").append(frame).append(" pts_time:").append(frame / 50.0).append('\n')
+        append("lavfi.astats.Overall.Peak_level=-2\n")
+        append("lavfi.astats.Overall.RMS_level=-24\n")
+      }
+    }
+    StreamAstatsParser.parse(raw, listOf(0.0 to 15.0))
+  }
+
+  @Test(expected = IllegalArgumentException::class)
+  fun nonMonotonicPtsRejectsStreamDiscontinuity() {
+    val forward = syntheticStats(15)
+    val restarted = syntheticStats(15)
+    StreamAstatsParser.parse(forward + restarted, listOf(0.0 to 15.0))
+  }
+
+  @Test(expected = IllegalArgumentException::class)
+  fun sampleMissingBeginningCannotBeAcceptedByLateFrames() {
+    val raw = buildString {
+      for (frame in 50 until 15 * 50) {
+        append("frame:").append(frame).append(" pts_time:").append(frame / 50.0).append('\n')
+        append("lavfi.astats.Overall.Peak_level=-2\n")
+        append("lavfi.astats.Overall.RMS_level=-24\n")
+      }
+    }
+    // Start first sample at 1 sec, then a missing part of requested 10-second span.
+    StreamAstatsParser.parse(raw, listOf(0.0 to 15.0))
+  }
+
+  @Test(expected = IllegalArgumentException::class)
   fun missingMetadataCannotPretendToHaveAnalysedAudio() {
     StreamAstatsParser.parse("frame:1 pts_time:0", listOf(0.0 to 15.0))
   }
