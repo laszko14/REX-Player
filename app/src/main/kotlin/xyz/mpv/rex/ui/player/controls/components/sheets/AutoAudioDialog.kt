@@ -133,7 +133,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 )
                 AnalysisModeCard(
                   title = "Dokładna analiza",
-                  description = "3 × 10 sekund z różnych części filmu",
+                  description = "3 × 10 sekund; streaming: trzy odcinki bez przewijania",
                   selected = mode == AutoAudioAnalyzer.Mode.DETAILED,
                   enabled = !busy,
                   onClick = { mode = AutoAudioAnalyzer.Mode.DETAILED },
@@ -143,7 +143,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               if (busy) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                   CircularProgressIndicator(color = premiumBlue)
-                  Text("Trwa dekodowanie i badanie źródłowego PCM. Film pozostaje odtwarzany.")
+                  Text("Pomiar PCM przed filtrami. Film pozostaje odtwarzany normalnie.")
                 }
               }
               Text("Analiza jest lokalna. Nie zmienia filtrów i nie wysyła dźwięku do sieci.",
@@ -157,10 +157,11 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Poziom RMS", "%.1f dBFS".format(metrics.rmsDb), Modifier.weight(1f))
                 MetricCard("Tło (szacunek)", "%.1f dBFS".format(metrics.noiseFloorDb), Modifier.weight(1f))
                 MetricCard("Dynamika", "%.1f dB".format(metrics.dynamicRangeDb), Modifier.weight(1f))
-                MetricCard("Kanały", metrics.channelCount.toString(), Modifier.weight(1f))
+                MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
+              Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
               Text(
-                "Wykrywanie mowy jest orientacyjne (energia i przejścia przez zero), nie jest rozpoznawaniem słów. " +
+                "Wykrywanie mowy jest orientacyjne (energia i jej zmiany), nie jest rozpoznawaniem słów. " +
                   "Wynik nie jest obiektywną oceną jakości.",
                 color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
               )
@@ -233,7 +234,11 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   busy = true
                   analysisJob = scope.launch {
                     try {
-                      val result = AutoAudioAnalyzer.analyze(context, mediaPath, position, duration, mode)
+                      val result = if (AutoAudioStreamAnalyzer.supports(mediaPath)) {
+                        AutoAudioStreamAnalyzer.analyze(context, mediaPath, mode)
+                      } else {
+                        AutoAudioAnalyzer.analyze(context, mediaPath, position, duration, mode)
+                      }
                       if (validSource()) {
                         proposal = AutoAudioPlanner.plan(result, initial)
                         report = result
