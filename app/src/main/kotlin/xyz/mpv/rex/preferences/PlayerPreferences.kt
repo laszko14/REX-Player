@@ -71,6 +71,8 @@ class PlayerPreferences(
   // Do not resize the three-finger speed panel when editing Lua appearance.
   val luaButtonScalePercent = preferenceStore.getInt("lua_button_scale_percent", threeFingerSpeedPanelSize.get())
   val threeFingerSpeedPanelTransparency = preferenceStore.getInt("three_finger_speed_panel_transparency_pct", 20)
+  // Lua v2 background alpha is independent; seed from prior saved shared value.
+  val luaButtonBackgroundTransparency = preferenceStore.getInt("lua_button_bg_transparency_pct", threeFingerSpeedPanelTransparency.get())
   val threeFingerSpeedPanelGap = preferenceStore.getInt("three_finger_speed_panel_gap_dp", 2)
   val threeFingerSpeedPresets = preferenceStore.getString("three_finger_speed_presets", "1.5,2,2.5,3,3.5,4,4.5,5,5.5")
   val threeFingerSpeedSeekBack = preferenceStore.getInt("three_finger_speed_seek_back", 10)
