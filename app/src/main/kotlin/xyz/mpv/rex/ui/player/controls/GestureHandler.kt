@@ -502,8 +502,10 @@ fun GestureHandler(
           // swipes, taps and two-finger gestures still follow the existing handlers.
           val inMiniProgressHoldZone = miniProgressHoldEnabled &&
             miniProgressHit(
-              startPosition.y,
-              size.height.toFloat(),
+              // This recognizer is AFTER 16.dp vertical padding; the mini bar
+              // observer is BEFORE it. Convert to the common full-window frame.
+              startPosition.y + 16.dp.toPx(),
+              size.height.toFloat() + 32.dp.toPx(),
               (miniProgressBottomInset + miniProgressMarginDp.coerceIn(0, 30).dp).toPx(),
               24.dp.toPx(),
             )
