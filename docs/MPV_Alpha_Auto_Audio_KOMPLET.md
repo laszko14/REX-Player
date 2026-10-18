@@ -217,7 +217,7 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 
 ## 14. Auto Audio v47 — rozwój prawdziwego VAD na rzeczywistych próbkach PCM (etap 1)
 
-**Stan wpisu:** gałąź robocza v47; przy scalaniu zweryfikuj wyniki CI. Ostatnia wersja potwierdzona odsłuchem/rekomendacją pozostaje v46. Nie traktować v47 jako ukończonego VAD dla streamingu.
+**Stan wpisu:** PR #49 (etap fundamentu v47) zweryfikowany automatycznie w GitHub Actions, ale VAD na telefonie i streaming nadal niezweryfikowane. Ostatnia wersja sprawdzona na streamingu pozostaje v46. Nie traktować v47 jako ukończonego VAD dla streamingu.
 
 ### Zdiagnozowana blokada streamingu
 
@@ -240,4 +240,6 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 3. Dopiero po przygotowaniu natywnego tapu: **streaming HTTP/HLS/DASH bez drugiego pobierania**, zgodność PTS, wybrana ścieżka audio, zachowanie 1,5×–3×, brak trzasków/zacięć, bezpieczeństwo pamięci, CPU/bateria.
 4. W osobnym kroku dodać konserwatywne zasady decyzji zależnych od potwierdzonej mowy i zderzyć wyniki z szumem ulicznym. WebRTC VAD może mylić niektóre hałasy i muzykę z mową; nie używać samego udziału ramek jako procentu pewności.
 
-**Stan fizycznego urządzenia:** brak testu VAD na v47 w chwili rozpoczęcia prac. Nie wygenerowano nowej wersji APK do czasu zielonego CI i kontroli gałęzi.
+**Automatyczna walidacja (PR #49):** GitHub Actions https://github.com/laszko14/REX-Player/actions/runs/39151890672 — **success** dla kontroli źródeł i zadania `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug`. Podpisany APK nie powstał (zadanie podpisywania pominięte w PR). Zielone CI nie potwierdza działania bibliotek JNI na fizycznym telefonie ani skuteczności VAD.
+
+**Stan fizycznego urządzenia:** brak testu VAD v47. Wymagana najpierw próba na lokalnym PCM, a dla streamingu nadal brak natywnego PCM tapu. Nie wypuszczać oznaczonego jako „VAD streaming” APK.
