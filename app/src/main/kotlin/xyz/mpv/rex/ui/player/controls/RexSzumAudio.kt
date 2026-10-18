@@ -33,17 +33,17 @@ object RexSzumAudio {
     val selected = level.coerceIn(0, 7)
     val mix = if (selected == 0) null else mixes[selected - 1]
     return buildString {
-      append("local label = 'rex_szum'\\n")
-      append("local key = 'user-data/rex-audio/poziom-szumu'\\n")
-      append("mp.commandv('af', 'remove', '@rex_szum')\\n")
+      append("local label = 'rex_szum'\n")
+      append("local key = 'user-data/rex-audio/poziom-szumu'\n")
+      append("mp.commandv('af', 'remove', '@rex_szum')\n")
       if (mix != null) {
-        append("local model = mp.command_native({'expand-path','~~/script-opts/std.rnnn'})\\n")
-        append("local ok = type(model) == 'string' and model ~= '' and pcall(mp.commandv, 'af', 'add', \"@rex_szum:lavfi=[arnndn=m='\" .. model .. \"':mix=$mix]\")\\n")
-        append("mp.set_property_number(key, ok and $selected or 0)\\n")
+        append("local model = mp.command_native({'expand-path','~~/script-opts/std.rnnn'})\n")
+        append("local ok = type(model) == 'string' and model ~= '' and pcall(mp.commandv, 'af', 'add', \"@rex_szum:lavfi=[arnndn=m='\" .. model .. \"':mix=$mix]\")\n")
+        append("mp.set_property_number(key, ok and $selected or 0)\n")
       } else {
-        append("mp.set_property_number(key, 0)\\n")
+        append("mp.set_property_number(key, 0)\n")
       }
-    }.replace("\\\\n", "\\n")
+    }.replace("\\\n", "\n")
   }
 
   fun setLevel(level: Int) {
