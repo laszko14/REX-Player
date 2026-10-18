@@ -169,7 +169,7 @@ internal object AutoAudioPlanner {
       findings += "Brak trzech kompletnych pomiarów widma: nie dobieram Głosu ani EQ na podstawie jednej sceny."
     }
 
-    if (speechConfirmed && metrics.segments.size == 1) {
+    if (speechConfirmed && metrics.segments.size <= 1) {
       // Applicable only once a real verified VAD is connected.
       if (metrics.noiseFloorDb <= -58.0 && before.noise != 0) {
         after = after.copy(noise = 0)
