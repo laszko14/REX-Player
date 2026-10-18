@@ -160,6 +160,14 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
+              if (metrics.silenceDominant) {
+                Text(
+                  "W próbce dominuje cisza. Nie proponujemy żadnych zmian filtrów. " +
+                    "Poniższy pomiar WebRTC (jeśli dostępny) służy wyłącznie " +
+                    "do sprawdzenia fałszywych wykryć mowy na ciszy.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              }
               if (metrics.vadSpeechFraction != null) {
                 Text(
                   "Diagnostyczny VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek oznaczonych jako mowa. "
@@ -185,7 +193,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 Text("Kontrola wejścia VAD (oryginalny PCM → 16 kHz mono)",
                   fontWeight = FontWeight.Bold)
                 Text(
-                  "Instrumental bez słów może dawać wysokie wyniki WebRTC. " +
+                  "Muzyka instrumentalna, szum i cisza mogą ujawniać błędy WebRTC. " +
                     "RMS i szczyt poniżej dotyczą PCM16 przekazanego modelowi, " +
                     "a nie dźwięku po filtrach.",
                   color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
@@ -244,7 +252,11 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 }
               }
               Text(
-                if (metrics.vadSpeechFraction != null) {
+                if (metrics.silenceDominant) {
+                  "Cisza: brak podstaw do poprawy dialogów. " +
+                    "Ewentualne pozytywne ramki VAD w tym materiale są tylko " +
+                    "diagnostyką klasyfikatora, nie potwierdzeniem prawdziwej mowy."
+                } else if (metrics.vadSpeechFraction != null) {
                   "Mowa: WebRTC VAD wykrył aktywność w oryginalnym PCM, ale " +
                     "trafności rozpoznawania dialogów nie zweryfikowano jeszcze " +
                     "na próbkach kontrolnych (mowa / muzyka / cisza). " +
