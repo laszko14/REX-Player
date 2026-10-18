@@ -1,5 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
-<resources>
+<!-- These new strings are translated to Polish, with an intentional English fallback for other locales.
+     check_polish.py independently checks completeness and formatting for the Polish locale. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="audit_hud_alpha">HUD Alpha</string>
     <string name="audit_back">Back</string>
     <string name="audit_enable_hud_alpha">Enable HUD Alpha</string>
@@ -379,9 +381,12 @@
     <string name="audit_default_uses_resolution_preference">Default (uses resolution preference)</string>
     <string name="audit_none_direct_connection">None (direct connection)</string>
     <string name="audit_default">Default</string>
-    <string name="audit_installing_yt_dlp_into_companion_add_on">Installing yt-dlp into companion add-on…\n</string>
-    <string name="audit_updating_yt_dlp_to_nightly_channel">Updating yt-dlp to nightly channel…\n</string>
-    <string name="audit_checking_for_yt_dlp_updates">Checking for yt-dlp updates…\n</string>
+    <string name="audit_installing_yt_dlp_into_companion_add_on">Installing yt-dlp into companion add-on…
+</string>
+    <string name="audit_updating_yt_dlp_to_nightly_channel">Updating yt-dlp to nightly channel…
+</string>
+    <string name="audit_checking_for_yt_dlp_updates">Checking for yt-dlp updates…
+</string>
     <string name="audit_jellyfin_server">Jellyfin server</string>
     <string name="audit_server_url_e_g_https_jellyfin_example_com">Server URL (e.g. https://jellyfin.example.com)</string>
     <string name="audit_username">Username</string>
