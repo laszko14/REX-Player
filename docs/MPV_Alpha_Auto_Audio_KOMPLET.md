@@ -404,3 +404,37 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 
 Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu ulicznego; nie powtarzać tego pytania. Następnie uruchomić w tej samej testowej aplikacji **3 × 10 s na materiale bez mowy** (np. fragment instrumentalny lub cisza/szum tła) i porównać wynik WebRTC VAD. Jeśli mimo braku mowy ponownie jest ~100%, podejść do VAD metodyką Systematic Debugging (kontrola PCM, trybu modelu, mono downmix, rate/PTS, rzeczywistych przerw i negatywnych testów) **bez automatycznej korekty filtrów**. Scalenie PR #55 i produkcyjny podpisany APK v47 wymagają zielonego CI po obecnych zmianach oraz dalszego testu na urządzeniu.
 
+
+
+## 23. Auto Audio v47 — test kontrolny instrumentalu: 99% WebRTC VAD i diagnostyka PCM (19.10.2026)
+
+### Wynik fizycznego testu użytkownika
+
+- Diagnostyczne APK ARM64 `xyz.mpv.rex.debug` na Nothing Phone (1); bieżący streaming, **dokładne 3 × 10 s**. Materiał to **muzyka instrumentalna bez słów / dialogów** (negatywna kontrola VAD).
+- Odczyt: **99% ramek WebRTC VAD oznaczono jako mowę**, mimo braku dialogów. RMS źródła **−13,0 dBFS**, szacowane tło **−29,9 dBFS**, dynamika **19,4 dB**, centroid **1496 Hz**, flatness **0,03**, rolloff **2692 Hz**.
+- Osobne okna: F1 centroid 1507 Hz / tło −30,4 dBFS / dynamika 19,8 dB; F2 1469 Hz / −28,9 dBFS / 18,3 dB; F3 1496 Hz / −30,7 dBFS / 19,9 dB.
+- Aktywne EQ, DRC 3/3, Dialogue Enhance 5/5, Szum Lua OFF. Propozycja Dialogue Enhance **5→4** wynikała wyłącznie z ostrożnej reguły nadmiernego przetwarzania, **nie** ze zweryfikowanego wykrycia mowy.
+- Kontrola dodatnia z poprzedniego testu: wywiad uliczny z niemal stałą mową i hałasem uzyskał **100%**. Zestawienie 100% / 99% dowodzi, że taki wynik VAD **nie rozróżnia wiarygodnie tych dwóch materiałów**. Nie wolno traktować tego procentu jako prawdopodobieństwa obecności dialogu.
+
+### Przegląd implementacji (Systematic Debugging, bez zgadywania progów)
+
+1. `AutoAudioVadPcm.kt` odbiera *faktyczne* mono PCM16, resampluje do **16 kHz**, zbiera **320 próbek na 20 ms** i wywołuje klasyfikator WebRTC; nie podaje statystyk FFT jako PCM. Użyte `Mode.AGGRESSIVE`, `speechDurationMs=0`, `silenceDurationMs=0` — analiza źródła `gkonovalov/android-vad` v2.0.10 wykazała, że zero wyłącza podtrzymywanie, dając surowe binarne decyzje modelu. **Nie zidentyfikowano dotąd błędu wymiaru ramek ani stałego wyniku true w wrapperze**.
+2. JNI `mpvRex-libmpv/app/src/main/jni/vad_tap.cpp` dostaje dekodowany sygnał przed `af`, wykonuje downmix, ogranicza kolejkę, raportuje droppedChunks; Kotlin odrzuca nieciągłe PTS i niepełne okna. Przy ponad dwóch kanałach JNI wciąż **zakłada kanał o indeksie 2 jako center**; poprawność dla niestandardowych układów trzeba zbadać osobno, bez nieuzasadnionych zmian natywnych.
+3. WebRTC VAD (lekki model GMM) może klasyfikować tonalne instrumenty jako mowę; 99% przy muzyce wymaga jednak niezależnego sprawdzenia wejścia PCM i próbek na różnych materiałach. **Przyczyna źródłowa wciąż NIE jest potwierdzona**: ograniczenia modelu vs. amplituda/downmix/format/źródło.
+4. Niczego nie „naprawiono” podbijaniem losowych progów czy zmianą agresywności VAD. Wyniki pozostają **diagnostyczne**; `verifiedSpeechProbability=null`, a sterowanie filtrami zależne od mowy jest zablokowane.
+
+### Minimalna zmiana diagnostyczna w tym samym PR #55
+
+- `AutoAudioVadPcm` liczy **z samych 320-próbkowych ramek PCM16 wysłanych do WebRTC**: RMS i szczyt w dBFS, udział próbek bliskich ciszy (|PCM|≤32), udział bliskich pełnej skali (|PCM|≥32604), liczbę ramek i liczbę pozytywnych klasyfikacji. Nie zapisuje nagrania ani nie otwiera żadnego połączenia.
+- `AutoAudioStreamingVad.windowDiagnostics()` zwraca osobne pomiary F1/F2/F3 **tylko gdy wszystkie okna spełniają wcześniejsze wymagania kompletności i PTS**. Przy zgubionych pakietach / niekompletnej analizie nie generuje diagnostyki pozornie poprawnej.
+- W panelu Auto Audio dodano sekcję **„Kontrola wejścia VAD”**, gdzie widać źródłową częstotliwość próbkowania, frakcję pozytywnych ramek każdego fragmentu i parametry PCM przekazanego modelowi. Doprecyzowano tekst „diagnostyczny VAD” i komunikat o braku kompletnego wyniku streamingu.
+- Testy jednostkowe obejmują resampling **44,1 kHz → 16 kHz**, poprawne RMS/peak dla sygnału stałego, ciszę mimo sztucznego pozytywnego wyniku klasyfikatora, pełną skalę, trzy niezależne okna i brak wyniku przy zgubionym pakiecie. To **testy toru PCM z fałszywym klasyfikatorem**, nie certyfikacja rozpoznawania muzyki przez rzeczywisty WebRTC.
+- Nie zmieniano natywnego AAR, trybów 15 s / 3×10 s, filtrów Lua, RNNoise, EQ, prędkości 1,5–3×, A/B, streamingu, podpisu ani numeru APK. Nie wydano produkcyjnego v47.
+
+### Dalsza walidacja — wymagane przed scaleniem / produkcyjną aktualizacją
+
+1. Sprawdzić nowy commit i wyniki GitHub Actions: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `check_workflows` (stan CI notować **po zakończeniu**, nie przewidywać).
+2. Powtórzyć **3 × 10 s** na **tym samym instrumentalu i wywiadzie**, a także na ciszy, jednostajnym szumie oraz materiale mieszanym. Porównać *F1/F2/F3* i źródłowe **sample rate / PCM RMS / peak / near-silence / near-full-scale**, sprawdzić, czy wartości odpowiadają rzeczywistemu typowi materiału. Test obejmuje realny streaming i prędkości 1,5×–3×.
+3. Jeśli sygnał PCM jest poprawny, przetestować **drugi niezależny klasyfikator** / detekcję muzyki na tych samych pięciu kontrolach **bez zmiany filtrów**; dopiero po pomiarze fałszywych wykryć i przeoczeń rozważać reguły sterowania.
+4. Nie scalać PR #55 ani nie wydawać podpisanego v47 wyłącznie na podstawie testów jednostkowych i diagnostyki.
+
