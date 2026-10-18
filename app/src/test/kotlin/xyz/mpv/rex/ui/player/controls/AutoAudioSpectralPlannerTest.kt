@@ -37,23 +37,57 @@ class AutoAudioSpectralPlannerTest {
     assertTrue(AutoAudioLuaFilters.voiceGraphs.getValue(7).contains("lowpass=f=6500"))
   }
 
-  @Test fun brightSpectralSignalProposesOnlyGentleTrebleCorrection() {
+  @Test fun brightSpectrumNeverTurnsOnTrebleBoost() {
     val plan = AutoAudioPlanner.plan(
       spectrum(centroid = 5000.0, flatness = 0.25, rolloff = 12000.0),
       before,
     )
-    assertEquals(1, plan.after.trebleLevel)
-    assertEquals(1, plan.after.voiceLevel)
-    assertTrue(plan.changes.any { it.name == "EQ wysokie (Lua)" })
+    assertEquals(0, plan.after.trebleLevel)
+    assertEquals(before, plan.after)
+    assertTrue(plan.changes.isEmpty())
   }
 
-  @Test fun darkSpectralSignalMayProposeVoiceTwoWhenNoVoiceEqIsActive() {
+  @Test fun twoBrightScenesMayOfferTurningOffExistingTrebleBoost() {
+    val bright = spectrum(5000.0, 0.25, 12000.0)
+    val neutral = bright.segments.first().copy(
+      spectralCentroidHz = 1800.0, spectralFlatness = 0.12,
+      spectralRolloffHz = 5200.0,
+    )
+    val metrics = bright.copy(segments = listOf(bright.segments[0], neutral, bright.segments[2]))
+    val plan = AutoAudioPlanner.plan(metrics, before.copy(trebleLevel = 2))
+    assertEquals(0, plan.after.trebleLevel)
+    assertTrue(plan.changes.any { it.name == "EQ wysokie (Lua)" && it.after == "OFF" })
+  }
+
+  @Test fun brightSpectrumOffersLessAggressiveVoiceOnlyWhenBoostIsAbsent() {
+    val plan = AutoAudioPlanner.plan(
+      spectrum(5000.0, 0.25, 12000.0),
+      before.copy(voiceLevel = 4, trebleLevel = 0),
+    )
+    assertEquals(1, plan.after.voiceLevel)
+    assertEquals(0, plan.after.trebleLevel)
+    assertEquals(1, plan.changes.size)
+  }
+
+  @Test fun whenBothAreActiveCorrectOnlyOneFilterAtATime() {
+    val plan = AutoAudioPlanner.plan(
+      spectrum(5000.0, 0.25, 12000.0),
+      before.copy(voiceLevel = 4, trebleLevel = 1),
+    )
+    assertEquals(4, plan.after.voiceLevel)
+    assertEquals(0, plan.after.trebleLevel)
+    assertEquals(1, plan.changes.size)
+  }
+
+  @Test fun darkSpectrumNeverStartsAHighFrequencyBoostWithoutSpeechConfirmation() {
     val plan = AutoAudioPlanner.plan(
       spectrum(centroid = 470.0, flatness = 0.07, rolloff = 2700.0),
       before.copy(voiceLevel = 0, bassLevel = 0),
     )
-    assertEquals(2, plan.after.voiceLevel)
+    assertEquals(0, plan.after.voiceLevel)
+    assertEquals(0, plan.after.trebleLevel)
     assertEquals(0, plan.after.bassLevel)
+    assertTrue(plan.changes.isEmpty())
   }
 
   @Test fun spectralModeDoesNotFakeSpeechRecognitionOrEnableDrc() {
