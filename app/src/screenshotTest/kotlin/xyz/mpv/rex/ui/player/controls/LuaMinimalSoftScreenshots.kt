@@ -69,6 +69,33 @@ private fun MinimalSoftPreview(bright: Boolean, touched: Boolean) {
     }
 }
 
+/** Compare active glyph halo over both backdrops without a background tile. */
+@Composable
+private fun LuaActiveHaloPreview(bright: Boolean) {
+    Box(
+        Modifier.fillMaxSize().background(if (bright) Color(0xFFC8B39D) else Color(0xFF18202C)),
+    ) {
+        LuaMinimalSoftTile(
+            text = "2x", active = true, fontSize = 22.sp,
+            modifier = Modifier.padding(30.dp).width(110.dp).height(52.dp),
+            v2 = true, activeBackgroundOpacity = 0f, activeBackgroundEnabled = false,
+            userOutlinePx = 2.5f, userOutlineColor = Color.Black,
+            activeForeground = Color.White,
+            activeGlowColor = Color(0xFFFF2929), activeGlowSizePx = 5f,
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "35 Lua active halo - light background", widthDp = 180, heightDp = 120)
+@Composable
+fun LuaActiveHaloBrightPreview() = LuaActiveHaloPreview(bright = true)
+
+@PreviewTest
+@Preview(name = "36 Lua active halo - dark background", widthDp = 180, heightDp = 120)
+@Composable
+fun LuaActiveHaloDarkPreview() = LuaActiveHaloPreview(bright = false)
+
 @PreviewTest
 @Preview(name = "31 Minimal Soft - jasne tło, spoczynek", widthDp = 850, heightDp = 420)
 @Composable
