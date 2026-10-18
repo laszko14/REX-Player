@@ -505,3 +505,48 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 - Kolejne kontrole: **cisza, jednostajny szum, mieszanka mowy i muzyki**, najlepiej na tym samym bieżącym strumieniu przed filtrami, z rezultatami F1/F2/F3. Zachować testy HTTP/HLS/DASH i 1,5×–3×.
 - Przy wiarygodnym sygnale PCM ocenić **niezależny model klasyfikacji mowa/muzyka/cisza** (np. speech detector odporniejszy na muzykę, rozważenie Silero, po zweryfikowaniu dostępności modelu, zasobów ARM64 i licencji). Model porównawczy ma działać tylko diagnostycznie na dokładnie tych samych oknach, bez drugiego pobierania filmu, bez ingerencji w audio i bez wpływu na filtry.
 - Dopiero faktyczny zestaw kontroli pozytywnych i negatywnych oraz odsłuch A/B może uzasadnić zmianę polityki doboru filtrów.
+
+
+## 26. Auto Audio v47 — test filmu sci-fi i ciszy, zachowanie diagnostyki VAD (19.10.2026)
+
+### Stan przed zmianą
+
+- [GitHub Actions #39176301252](https://github.com/laszko14/REX-Player/actions/runs/39176301252) na commicie `8ed9306f70d04b202f879086ebcc680c449f4940`: **completed / success**. Testowano istniejący wariant ARM64 `.debug`; nie został wydany podpisany v47 produkcyjny. PR #55 pozostawał otwarty.
+- Przed zmianą `StreamAstatsParser.parse` wykonywał `require(active.size >= 20) { "W próbce dominuje cisza. Nie zmieniono filtrów." }` **po** próbie pobrania natywnego VAD, przez co przerwanie parsera **ukrywało** procent z WebRTC nawet przy pełnym PCM. Brak procentu na zrzucie oznacza **niezaobserwowany VAD**, nie potwierdzone 0%.
+
+### Test sci-fi „Tears of Steel” — materiał mieszany (nowe zdjęcia użytkownika)
+
+- Materiał: streaming filmu sci-fi z dialogami, muzyką i efektami; **3 × 10 s**, **30 s łącznie**. Nie ma dokładnych oznaczeń czasu, które pozwalałyby przypisać każdy fragment wyłącznie do dialogu, muzyki lub efektu.
+- Statystyki sygnału przed filtrami: **RMS −16,5 dBFS**, tło **−25,1 dBFS**, dynamika **11,5 dB**, centroid **1849 Hz**, flatness **0,06**, rolloff **3338 Hz**.
+- WebRTC VAD: **95%** pozytywnych ramek łącznie, osobno **F1 88%**, **F2 99%**, **F3 100%**. Źródło **44100 Hz → 16000 Hz**, trzy pełne zestawy **500 ramek**.
+- Diagnostyka rzeczywistego PCM do WebRTC:
+  
+  | Fragment | WebRTC mowa | PCM RMS | PCM peak | Prawie cisza | Próbki bliskie pełnej skali |
+  |---|---:|---:|---:|---:|---:|
+  | F1 | 88% | −20,0 dBFS | −1,7 dBFS | 2,5% | 0,0% |
+  | F2 | 99% | −22,3 dBFS | −4,1 dBFS | 1,3% | 0,0% |
+  | F3 | 100% | −16,2 dBFS | −1,4 dBFS | 0,9% | 0,0% |
+
+- Różnice widma trzech fragmentów: F1 centroid **1900 Hz**, flatness **0,07**, rolloff **3381 Hz**, tło **−31,1 dBFS**, dynamika **13,8 dB**; F2 **2510 Hz**, **0,10**, **7020 Hz**, **−24,7 dBFS**, **6,5 dB**; F3 **609 Hz**, **0,02**, **818 Hz**, **−22,2 dBFS**, **14,3 dB**.
+- W planie `jasne 0/3, ciemne 1/3, szumopodobne 0/3` oraz **brak propozycji zmian**. Stan z ekranu: EQ, DRC **2/3**, Dialogue Enhance, Szum Lua OFF. Przy takim pomiarze nie można z procentu VAD wywieść jakości dialogu. Oznaczenie F2/F3 jako „mowa” w 99–100% nie dowodzi, że akurat w tych przedziałach wypowiadano słowa.
+
+### Test ciszy — wynik z urządzenia
+
+- Materiał: 60-sekundowy strumień MP3 cyfrowej ciszy z rzeczywistą ścieżką audio. Uruchomiono **dokładną analizę 3 × 10 s**. Ekran pokazuje dosłowny komunikat **„W próbce dominuje cisza. Nie zmieniono filtrów.”**
+- **Potwierdzone:** zabezpieczenie przed nieuzasadnioną propozycją korekt zadziałało, nie ma zaproponowanych zmian filtrów.
+- **Niepotwierdzone:** czy WebRTC oznaczył 0%, 100% lub inną część ramek jako mowę. Komunikat wyjątku z parsowania metadanych odcinał dostęp do już policzonej diagnostyki; nie wolno utożsamiać ciszy w `astats` z klasyfikacją WebRTC.
+- Kluczowe dla projektu: nie można ocenić czułości i fałszywych alarmów detektora na prawdziwej ciszy bez ujawnienia **oryginalnych** wyników jego ramek.
+
+### Zmiana diagnostyczna na tej samej gałęzi PR #55
+
+1. `AutoAudioMetrics`: dodano flagę `silenceDominant=false` (wartość domyślna zachowuje poprzednią logikę dla innych źródeł).
+2. `StreamAstatsParser`: po **niezmienionych** kontrolach kompletności trzech okien i PTS, gdy mniej niż 20 ramek metadanych ma RMS ponad −55 dBFS, zwraca pełny raport z `silenceDominant=true` i dynamiką 0, zamiast wyjątku. Diagnostyka VAD nadal jest **nieobecna** bez kompletnych, nieprzerwanych danych z natywnego PCM (nie ustawia się sztucznego 0%).
+3. `AutoAudioPlanner`: wczesne, twarde zabezpieczenie dla `silenceDominant` — `after=before`, pusta lista zmian nawet przy **100% fałszywie dodatnich ramek WebRTC** albo niepełnym VAD.
+4. `AutoAudioDialog`: nowy czytelny opis ciszy i wyraźne rozróżnienie niezależnego wyniku WebRTC od faktycznego dialogu. Można wyświetlić trzy okna diagnostyki PCM oraz procent ramek VAD, jeśli są kompletne.
+5. Testy regresji: poprawnie kompletny 34-sekundowy streaming ciszy (`-inf` RMS i peak), odrzucenie ciszy przy brakujących PTS, oraz niezmienność filtrów z pełnym fałszywym VAD 100% i z VAD niedostępnym. Żadne wcześniejsze reguły streamingu lub odtwarzania nie zostały celowo rozluźnione.
+
+### Dalszy etap
+
+- Uruchomić i potwierdzić nowe `assembleDebug`, `testDebugUnitTest`, `lintDebug` oraz kontrolę workflow. Dopóki CI nie jest zielony, **nie** dostarczać poprawionej aplikacji diagnostycznej do testu.
+- Ponowić **dokładną analizę tej samej minuty cyfrowej ciszy** na nowym APK; odczytać prawdziwy VAD F1/F2/F3 albo brak kompletnych danych PCM, a nie wymyślać 0%.
+- Następnie na **identycznych oknach** porównać WebRTC z drugim niezależnym modelem odróżniającym mowę od muzyki, nadal tylko diagnostycznie. Natywny AAR, normalne filtry i mechanizmy A/B pozostają bez zmian.
