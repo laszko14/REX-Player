@@ -2,6 +2,7 @@ package xyz.mpv.rex.ui.player.controls.components.sheets
 
 import xyz.mpv.rex.preferences.AudioPreferences
 import xyz.mpv.rex.ui.player.controls.RexSzumAudio
+import `is`.xyz.mpv.MPVLib
 
 /** Preserve exact user settings for A/B and cancel. Never replace the whole mpv af list. */
 internal data class AutoAudioState(
@@ -11,16 +12,29 @@ internal data class AutoAudioState(
   val drcLevel: Int,
   val eqOn: Boolean,
   val eqBoost: Int,
+  val originalNoiseLevel: Int = noise,
+  val originalNoiseMix: String? = null,
+  val voiceLuaActive: Boolean = false,
 ) {
   companion object {
-    fun capture(prefs: AudioPreferences) = AutoAudioState(
-      noise = RexSzumAudio.readLevel(),
+    fun capture(prefs: AudioPreferences): AutoAudioState {
+      val currentChain = MPVLib.getPropertyString("af").orEmpty()
+      val level = RexSzumAudio.readLevel()
+      val mix = Regex("""rex_szum[\s\S]{0,350}?mix=([0-9]+(?:\.[0-9]+)?)""")
+        .find(currentChain)?.groupValues?.getOrNull(1)
+        ?.toDoubleOrNull()?.takeIf { it in 0.0..1.0 }?.toString()
+      return AutoAudioState(
+      noise = level,
       dialogue = prefs.dialogueEnhanceLevel.get().coerceIn(0, 5),
       drcOn = prefs.drcEnabled.get(),
       drcLevel = prefs.drcStrength.get().coerceIn(1, 3),
       eqOn = prefs.rexEqEnabled.get(),
       eqBoost = prefs.rexEqBoost.get().coerceIn(0, 10),
+      originalNoiseLevel = level,
+      originalNoiseMix = mix,
+      voiceLuaActive = currentChain.contains("rex_glos"),
     )
+    }
   }
 
   fun apply(prefs: AudioPreferences) {
@@ -31,7 +45,17 @@ internal data class AutoAudioState(
     if (prefs.rexEqBoost.get() != eqBoost) prefs.rexEqBoost.set(eqBoost)
     if (prefs.rexEqEnabled.get() != eqOn) prefs.rexEqEnabled.set(eqOn)
     // One RNNoise filter: same Lua bridge and user-data key as the user's own button.
-    if (RexSzumAudio.readLevel() != noise) RexSzumAudio.setLevel(noise)
+    if (RexSzumAudio.readLevel() != noise) {
+      if (noise > 0 && noise == originalNoiseLevel && originalNoiseMix != null) {
+        // Restore exact previously active RNNoise mix, including the user's FF shortcut
+        // whose level 5 uses 0.75 instead of the separate Sz button's 0.20.
+        val code = RexSzumAudio.luaCommandForLevel(noise)
+          .replace(Regex("""mix=[0-9.]+"""), "mix=" + originalNoiseMix)
+        MPVLib.command("script-message", "mpv_alpha_eval", code)
+      } else {
+        RexSzumAudio.setLevel(noise)
+      }
+    }
   }
 }
 
@@ -74,7 +98,7 @@ internal object AutoAudioPlanner {
       findings += "Podwyższone tło: proponowana próbna redukcja szumu."
     }
 
-    if (metrics.channelCount == 2 && probableVoice &&
+    if (metrics.channelCount == 2 && !before.voiceLuaActive && probableVoice &&
       metrics.rmsDb < -24.0 && metrics.noiseFloorDb < -42.0 && before.dialogue == 0) {
       after = after.copy(dialogue = 1)
       findings += "Cichy sygnał stereo: można odsłuchać łagodny Dialogue Enhance."
