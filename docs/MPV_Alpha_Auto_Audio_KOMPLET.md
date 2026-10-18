@@ -273,3 +273,12 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 4. Dopiero potem uruchomić podpisaną kompilację aktualizacyjną z **nowym numerem v47** i przeprowadzić testy odsłuchowe. Nie ogłaszać pełnego VAD w streamingu wcześniej.
 
 **Stan:** kod po stronie natywnej i aplikacyjnej jest w PR-ach do weryfikacji, brak potwierdzenia build native i brak wydanego APK. Historia v40–v46 pozostaje ważna; nie powtarzać starszych etapów.
+
+
+## 16. Status v47 po uruchomieniu GitHub Actions w forku (18.10.2026)
+
+- **Aplikacja MPV Alpha:** PR #50 https://github.com/laszko14/REX-Player/pull/50 został scalony do `master`. CI https://github.com/laszko14/REX-Player/actions/runs/39155752598: `success` — kontrola źródeł, `assembleDebug`, `testDebugUnitTest` i `lintDebug`. Wprowadzono kompatybilny z dotychczasową biblioteką odbiornik opcjonalnych prawdziwych danych PCM z mpv, reguły kompletności i diagnostyczny WebRTC VAD.
+- **Biblioteka natywna:** fork https://github.com/laszko14/mpvRex-libmpv, PR #1 https://github.com/laszko14/mpvRex-libmpv/pull/1. Po włączeniu GitHub Actions i dodaniu ręcznego uruchamiania startowały dwa przebiegi kompilacji czterech ABI: https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157890994 i https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157889511. **Przy zapisywaniu tego wpisu zadania natywne wciąż były w trakcie** (Download deps); sukcesu native NIE potwierdzono.
+- **Warunek wdrożenia:** nie podmieniono jeszcze `com.github.sfsakhawat999:mpvRex-libmpv:0.0.9` na AAR z forka. Wymagana zgodna, przetestowana para `libmpv.so`/`libplayer.so`, publikacja osobno nazwanej paczki `com.github.laszko14`, a następnie ponowny CI i testy streamingu HLS/HTTP/DASH.
+- **Brak gotowego APK v47**: nie uruchamiano podpisanej aktualizacji. Unikalny numer v47 ma być użyty dopiero dla pierwszej faktycznej kompilacji nowego podpisanego APK; bez podwójnego wydania tej samej wersji.
+- **Następna czynność:** przeczytaj wynik CI w PR natywnym #1. Przy błędzie zastosuj Systematic Debugging na logach, popraw przyczynę, zweryfikuj nowe CI, dopiero potem scal PR natywny i opublikuj AAR. Nie deklaruj pełnego VAD streamingu na podstawie samych testów JVM czy lokalnego PCM.
