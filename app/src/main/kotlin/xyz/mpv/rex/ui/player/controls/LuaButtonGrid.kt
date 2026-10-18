@@ -84,7 +84,7 @@ fun LuaButtonGrid(
     val readyById = remember(buttons) { buttons.associateBy { it.id } }
     val columns by preferences.luaPanelColumns.collectAsState()
     val scale by preferences.luaButtonScalePercent.collectAsState()
-    val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+    val transparency by preferences.luaButtonBackgroundTransparency.collectAsState()
     val rowGap by preferences.luaButtonRowGap.collectAsState()
     val columnGap by preferences.luaButtonColumnGap.collectAsState()
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
