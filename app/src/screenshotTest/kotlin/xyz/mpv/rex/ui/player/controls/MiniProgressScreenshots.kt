@@ -39,7 +39,7 @@ fun MiniProgressLandscapeScreenshot() {
     MiniProgressSettingsPanel(
       preferences = prefs,
       onDismiss = {},
-      modifier = Modifier.align(Alignment.CenterEnd).padding(14.dp).width(495.dp).heightIn(max = 535.dp),
+      modifier = Modifier.align(Alignment.CenterEnd).padding(14.dp).width(370.dp).heightIn(max = 535.dp),
     )
   }
 }
