@@ -307,3 +307,23 @@ Nie wolno opisywać powyższych punktów jako już ukończonych.
 2. Sprawdzić obecność symbolu `mpv_rex_set_pcm_sink`, zgodną parę `libmpv.so`/`libplayer.so` oraz artefakt AAR. Nie uznawać samego sukcesu Meson za gotowy tor VAD.
 3. Po zielonym CI dokończyć przegląd kodu natywnego, scalić PR #1 i opublikować **nową osobną wersję** biblioteki.
 4. Dopiero po weryfikacji artefaktów zintegrować AAR w MPV Alpha, wykonać testy aplikacji i rzeczywisty odsłuch na streamingu. **Nie ogłaszać ani nie wydawać APK v47 przed potwierdzeniem realnego VAD.**
+
+
+## 18. Auto Audio v47 — potwierdzony build natywny dla czterech ABI (18.10.2026)
+
+**Wynik CI:** uruchomienie forka [39159621224](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39159621224) dla commita [dabdf9d](https://github.com/laszko14/mpvRex-libmpv/commit/dabdf9d3c7088f1d61b42713ac64be23a3726b0d) zakończyło się `success`. Wszystkie cztery zadania (`arm64`, `armv7l`, `x86`, `x86_64`) mają status `completed/success`, w tym `Build the release artifacts` i `upload-artifact`. To potwierdza rozwiązanie wcześniejszej blokady konfiguracji Vulkan (sekcja 17) w tym przebiegu. Natomiast obydwa starsze uruchomienia [39157889511](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157889511) i [39157890994](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39157890994) zakończyły się błędem w czterech architekturach; logi wskazywały błąd wymaganej wersji Vulkan.
+
+### Artefakty i weryfikacja rzeczywistego AAR
+
+- GitHub Actions udostępnia cztery nieprzeterminowane artefakty `mpv-lib-arm64`, `mpv-lib-armv7l`, `mpv-lib-x86`, `mpv-lib-x86_64`. **To odrębne AAR dla poszczególnych architektur, nie zweryfikowany wspólny AAR ze wszystkimi ABI.**
+- Pobrano rzeczywisty ZIP artefaktu `mpv-lib-arm64` (artifact ID `12148578659`), otwarto `app-release.aar` i sprawdzono zawartość. Obecne są `jni/arm64-v8a/libmpv.so`, `jni/arm64-v8a/libplayer.so` oraz `classes.jar`; nie potwierdzono ABI innych niż ARM64 w tej paczce.
+- W `libmpv.so` narzędzie `readelf --dyn-syms` potwierdziło **GLOBAL** eksport `mpv_rex_set_pcm_sink`. W `libplayer.so` ten symbol występuje jako referencja `UND` do parowanej biblioteki mpv; eksportowane są `Java_is_xyz_mpv_MPVLib_vadTapStart`, `vadTapStop` i `vadTapPoll`.
+- `javap` na `classes.jar` potwierdził metody `MPVLib.vadTapStart()/vadTapStop()/vadTapPoll()` oraz konstruktor `VadPcmChunk(short[], int, double, int)`; zgodny z deskryptorem JNI `([SIDI)V`.
+- Jest to **statyczna kontrola symboli i pakietu**, nie potwierdzenie wykonania JNI ani rzeczywistej analizy strumienia na Androidzie.
+
+### Decyzja o dalszym wdrożeniu
+
+- **Nie scalać natywnego PR #1 wyłącznie na podstawie zielonego CI**, dopóki nie zostanie domknięty przegląd i strategia dystrybucji wspólnej biblioteki AAR dla deklarowanych ABI. W razie osobnej dystrybucji ABI przypisać właściwy wariant na podstawie architektury, nie mieszać `libplayer.so` i `libmpv.so` z różnych buildów.
+- Do następnej weryfikacji: pozostałe ABI na poziomie symboli (nie wykonano), sprawdzanie kompletu `libmpv.so/libplayer.so` i publikacja nowej wersji `com.github.laszko14` bez zastępowania oryginalnej paczki.
+- Po scaleniu i prawidłowej dystrybucji natywnej dopiero podmienić zależność aplikacji i uruchomić `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `check_workflows`; następnie sprawdzić VAD na streamingu HTTP/HLS/DASH, 1,5×–3×, PTS oraz brak regresji.
+- **Podpisany MPV Alpha v47 APK i działający VAD streamingu nadal nie zostały zweryfikowane ani wydane**. Nie należy utożsamiać sukcesu natywnego CI z tym wynikiem.
