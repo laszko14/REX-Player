@@ -2,17 +2,7 @@ name: MPV Alpha - podglady interfejsu (PNG)
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [master]
-    paths:
-      - ".github/workflows/ui-screenshot-previews.yml"
-      - "app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/**"
-      - "app/src/main/kotlin/xyz/mpv/rex/ui/preferences/**"
-      - "app/src/main/res/values*/**"
-      - "app/src/screenshotTest/**"
-      - "app/build.gradle.kts"
-      - "gradle/libs.versions.toml"
-      - "gradle.properties"
+  # PNG previews are intentionally opt-in; no automatic runs on PR or APK builds.
 
 permissions:
   contents: read
@@ -66,5 +56,5 @@ jobs:
           name: MPV-Alpha-interfejs-podglady-PNG
           path: app/src/screenshotTestDebug/reference/**/*.png
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 3
           compression-level: 0

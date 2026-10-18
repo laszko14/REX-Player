@@ -1,4 +1,4 @@
-name: MPV Alpha - kontrola kodu i jeden APK
+name: MPV Alpha - kontrola i podpisany APK na zadanie
 
 on:
   pull_request:
@@ -66,8 +66,9 @@ jobs:
   android:
     name: Android - build, testy, lint
     needs: sources
-    # Full Android tests and Lint run on pushes/PRs, not on manual signed APK builds.
-    if: github.event_name != 'workflow_dispatch'
+    # Full compile, unit tests and Lint only on PRs. Signed master builds run once,
+    # without a simultaneous redundant unsigned Android build.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 70
     steps:
@@ -116,15 +117,6 @@ jobs:
             app/build/reports/lint-results-debug.xml
             app/build/reports/lint-results-debug.txt
           if-no-files-found: ignore
-          retention-days: 7
-
-      - name: Zachowaj APK testowy (nie instaluj jako aktualizacji)
-        if: github.event_name != 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: MPV-Alpha-CI-debug-nie-do-aktualizacji
-          path: app/build/outputs/apk/debug/*arm64-v8a*.apk
-          if-no-files-found: error
           retention-days: 7
 
   signed_apk:
