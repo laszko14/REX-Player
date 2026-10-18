@@ -21,6 +21,18 @@ dependencyResolutionManagement {
     mavenLocal()
     mavenCentral()
     maven(url = "https://mpvrex.github.io/mpvRex-libmpv")
+    // MPV Alpha v47: immutable ARM64-only libmpv AAR published as a GitHub
+    // Release asset from the successful native master CI. No JitPack rebuild,
+    // and no extra streaming connection at playback time.
+    ivy {
+      url = uri("https://github.com/laszko14/mpvRex-libmpv/releases/download")
+      patternLayout {
+        artifact("[revision]/[artifact]-[revision].[ext]")
+      }
+      metadataSources { artifact() }
+      content { includeGroup("com.github.laszko14") }
+    }
+
     maven(url = "https://www.jitpack.io") {
       content {
         // Only use JitPack for specific dependencies to avoid unnecessary checks
