@@ -58,6 +58,7 @@ internal fun LuaMinimalSoftTile(
     shape: Shape = RoundedCornerShape(7.dp),
     v2: Boolean = false,
     normalBackgroundColor: Color = Color(0xFF1F2A33),
+    activeBackgroundColor: Color = Color(0xFF1F2A33),
     foreground: Color = LuaSoftText,
     activeForeground: Color = LuaSoftActiveText,
     normalBackgroundOpacity: Float = 0f,
@@ -81,11 +82,11 @@ internal fun LuaMinimalSoftTile(
             Color.White.copy(alpha = borderOpacity.coerceIn(0, 100) / 100f * .35f), shape)
             else Modifier).then(
             if (active) Modifier.background(
-                if (v2) normalBackgroundColor.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f))
+                if (v2) activeBackgroundColor.copy(alpha = activeBackgroundColor.alpha * activeBackgroundOpacity.coerceIn(0f, 1f))
                 else LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f)),
                 shape,
             ) else if (v2) Modifier.background(
-                normalBackgroundColor.copy(alpha = normalBackgroundOpacity.coerceIn(0f, 1f)), shape,
+                normalBackgroundColor.copy(alpha = normalBackgroundColor.alpha * normalBackgroundOpacity.coerceIn(0f, 1f)), shape,
             ) else Modifier,
         ),
         contentAlignment = Alignment.Center,
