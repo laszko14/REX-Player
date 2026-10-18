@@ -225,6 +225,25 @@ class AutoAudioSpectralPlannerTest {
     assertFalse(plan.findings.any { it.contains("Fragmenty różnią się") })
   }
 
+  @Test fun diagnosticSilenceCannotChangeFiltersEvenWithHundredPercentFalseVad() {
+    val existing = before.copy(dialogue = 5, drcOn = true, drcLevel = 3,
+      voiceLevel = 4, trebleLevel = 2, noise = 7)
+    val silent = spectrum(5500.0, 0.45, 12000.0)
+      .copy(rmsDb = -100.0, silenceDominant = true, vadSpeechFraction = 1.0,
+        verifiedSpeechProbability = null)
+    val result = AutoAudioPlanner.plan(silent, existing)
+    assertEquals(existing, result.after)
+    assertTrue(result.changes.isEmpty())
+    assertTrue(result.findings.any { it.contains("dominuje cisza") })
+    assertTrue(result.findings.any { it.contains("100%") && it.contains("diagnostyka") })
+
+    val unknownVad = AutoAudioPlanner.plan(silent.copy(vadSpeechFraction = null), existing)
+    assertEquals(existing, unknownVad.after)
+    assertTrue(unknownVad.changes.isEmpty())
+    assertTrue(unknownVad.findings.any { it.contains("brak pełnych danych") })
+    assertFalse(unknownVad.findings.any { it.contains("0%") })
+  }
+
   @Test fun extremeDialogueAndDrcCanOfferGentlerDialogueWhenDynamicsNotLow() {
     val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 20.0)
     val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)
