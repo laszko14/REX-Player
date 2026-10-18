@@ -2234,9 +2234,12 @@ internal fun PersistentPlayerBackButton(
   Box(
     modifier = modifier
       .size(48.dp)
-      .clip(RoundedCornerShape(14.dp))
-      .background(Color.Black.copy(alpha = 0.64f))
-      .clickable(onClick = onBackPress),
+      // Keep the full hit target invisible: no shape, fill, border or touch ripple.
+      .clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = onBackPress,
+      ),
     contentAlignment = Alignment.Center,
   ) {
     // Glyph-shaped 1dp shadow keeps the white arrow legible on bright scenes.
