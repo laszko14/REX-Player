@@ -133,6 +133,7 @@ data class CustomButton(
     val textColor: Int? = null,
     val activeBackgroundColor: Int? = null,
     val activeTextColor: Int? = null,
+    val icon: String? = null,
 )
 
 @Serializable
@@ -666,6 +667,7 @@ fun ButtonSlotCard(
                                 textColor         = button?.textColor,
                                 activeBackgroundColor = button?.activeBackgroundColor,
                                 activeTextColor   = button?.activeTextColor,
+                                 icon = button?.icon,
                             )
                         )
                         expanded = false
@@ -733,6 +735,7 @@ fun ButtonSlotCard(
                         textColor         = button?.textColor,
                         activeBackgroundColor = button?.activeBackgroundColor,
                         activeTextColor   = button?.activeTextColor,
+                                 icon = button?.icon,
                     )
                 )
             }
@@ -1234,6 +1237,7 @@ private fun buildXmlExport(slots: List<CustomButton?>): String {
             button.textColor?.let { sb.appendLine("    <textColor>$it</textColor>") }
             button.activeBackgroundColor?.let { sb.appendLine("    <activeBackgroundColor>$it</activeBackgroundColor>") }
             button.activeTextColor?.let { sb.appendLine("    <activeTextColor>$it</activeTextColor>") }
+            button.icon?.let { sb.appendLine("    <icon>${it.replace("&", "&amp;").replace("<", "&lt;")}</icon>") }
             sb.appendLine("    <content><![CDATA[${button.content}]]></content>")
             sb.appendLine("    <longPressContent><![CDATA[${button.longPressContent}]]></longPressContent>")
             sb.appendLine("    <onStartup><![CDATA[${button.onStartup}]]></onStartup>")
@@ -1285,6 +1289,7 @@ private fun parseXmlImport(xmlContent: String): List<CustomButton?> {
             textColor = optionalField("textColor")?.toIntOrNull(),
             activeBackgroundColor = optionalField("activeBackgroundColor")?.toIntOrNull(),
             activeTextColor = optionalField("activeTextColor")?.toIntOrNull(),
+            icon = optionalField("icon"),
         )
     }
     
