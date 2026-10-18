@@ -16,6 +16,44 @@ class StreamAstatsParserTest {
     }
   }
 
+  @Test fun completeSilentStreamProducesDiagnosticOnlyReport() {
+    // A 34-second stream with a real, silent audio track must preserve the
+    // independent native VAD result instead of aborting astats parsing.
+    val silent = buildString {
+      for (frame in 0 until 34 * 50) {
+        append("frame:").append(frame).append(" pts_time:")
+          .append(frame / 50.0).append('\\n')
+        append("lavfi.astats.Overall.Peak_level=-inf\\n")
+        append("lavfi.astats.Overall.RMS_level=-inf\\n")
+      }
+    }
+    val report = StreamAstatsParser.parse(
+      silent, listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0),
+    )
+    assertTrue(report.silenceDominant)
+    assertEquals(30.0, report.seconds, 0.001)
+    assertEquals(-100.0, report.rmsDb, 0.001)
+    assertEquals(0.0, report.dynamicRangeDb, 0.001)
+    assertEquals(null, report.spectralCentroidHz)
+    assertEquals(null, report.vadSpeechFraction) // Not faked from astats silence.
+    assertEquals(3, report.segments.size)
+    assertTrue(report.segments.all { it.spectralCentroidHz == null })
+  }
+
+  @Test(expected = IllegalArgumentException::class)
+  fun silentStreamWithMissingPtsIsStillRejected() {
+    val raw = buildString {
+      for (frame in 0 until 34 * 50) {
+        if (frame in 200..350) continue
+        append("frame:").append(frame).append(" pts_time:")
+          .append(frame / 50.0).append('\\n')
+        append("lavfi.astats.Overall.Peak_level=-inf\\n")
+        append("lavfi.astats.Overall.RMS_level=-inf\\n")
+      }
+    }
+    StreamAstatsParser.parse(raw, listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0))
+  }
+
   @Test fun detailedModeReadsRealSpectralMetadata() {
     val audio = buildString {
       for (frame in 0 until 36 * 50) {
