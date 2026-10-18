@@ -187,17 +187,18 @@ internal object StreamAstatsParser {
     flush()
     require(samples.size >= 60) { "Zbyt mało danych metadanych PCM (astats)." }
     val baseline = samples.first().time
-    val selected = ArrayList<Sample>()
-    for ((from, until) in windows) {
-      val subset = samples.filter {
+    val byWindow = windows.map { (from, until) ->
+      samples.filter {
         val relative = it.time - baseline
         relative >= from && relative < until
+      }.also { subset ->
+        require(subset.size >= 15 &&
+          subset.last().time - subset.first().time >= (until - from) * 0.55) {
+          "Strumień nie dostarczył pełnych próbek audio — analiza nie jest wiarygodna."
+        }
       }
-      require(subset.size >= 15 && subset.last().time - subset.first().time >= (until - from) * 0.55) {
-        "Strumień nie dostarczył pełnych próbek audio — analiza nie jest wiarygodna."
-      }
-      selected += subset
     }
+    val selected = byWindow.flatten()
     val rmsDb = selected.map { it.rms }.sorted()
     val active = rmsDb.filter { it > -55.0 }
     require(active.size >= 20) { "W próbce dominuje cisza. Nie zmieniono filtrów." }
@@ -211,12 +212,27 @@ internal object StreamAstatsParser {
     val maxDb = selected.maxOf { it.peak }
     // Only count spectral frames with an audible signal. Silence has meaningless
     // centroid/flatness and must not skew the recommendation.
-    val audible = selected.filter { it.rms >= -48.0 }
-    fun spectralMedian(extract: (Sample) -> Double?): Double? {
-      val values = audible.mapNotNull(extract).sorted()
-      return if (values.size >= 20 && values.size >= audible.size * 0.6) {
+    fun spectralMedian(data: List<Sample>, extract: (Sample) -> Double?): Double? {
+      val audibleFrames = data.filter { it.rms >= -48.0 }
+      val values = audibleFrames.mapNotNull(extract).sorted()
+      return if (values.size >= 20 && values.size >= audibleFrames.size * 0.6) {
         values[values.size / 2]
       } else null
+    }
+    val perWindow = byWindow.map { frames ->
+      val dB = frames.map { it.rms }.sorted()
+      val activeDB = dB.filter { it > -55.0 }
+      AutoAudioSegmentMetrics(
+        rmsDb = 10 * log10(frames.map { 10.0.pow(it.rms / 10.0) }.average().coerceAtLeast(1e-14)),
+        noiseFloorDb = quantile(dB, 0.18),
+        dynamicRangeDb = if (activeDB.size > 10) {
+          (quantile(activeDB, 0.90) - quantile(activeDB, 0.20)).coerceAtLeast(0.0)
+        } else 0.0,
+        spectralCentroidHz = spectralMedian(frames) { it.centroid },
+        spectralFlatness = spectralMedian(frames) { it.flatness },
+        spectralRolloffHz = spectralMedian(frames) { it.rolloff },
+        frameCount = frames.size,
+      )
     }
     return AutoAudioMetrics(
       seconds = windows.sumOf { it.second - it.first },
@@ -227,9 +243,10 @@ internal object StreamAstatsParser {
       voiceLikeRatio = voiceHint,
       channelCount = 0, // Ametadata 'Overall' does not identify source channel layout.
       clipRatio = selected.count { it.peak > -0.1 }.toDouble() / selected.size,
-      spectralCentroidHz = spectralMedian { it.centroid },
-      spectralFlatness = spectralMedian { it.flatness },
-      spectralRolloffHz = spectralMedian { it.rolloff },
+      spectralCentroidHz = spectralMedian(selected) { it.centroid },
+      spectralFlatness = spectralMedian(selected) { it.flatness },
+      spectralRolloffHz = spectralMedian(selected) { it.rolloff },
+      segments = perWindow,
       sourceDescription = "Streaming • PCM przed filtrami",
     )
   }
