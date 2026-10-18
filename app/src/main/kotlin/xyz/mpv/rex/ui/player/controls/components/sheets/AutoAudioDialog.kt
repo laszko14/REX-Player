@@ -31,6 +31,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +69,16 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
   var proposal by remember { mutableStateOf<AutoAudioPlan?>(null) }
   var originalPath by remember { mutableStateOf<String?>(null) }
   var playingProposed by remember { mutableStateOf(false) }
+  var confirmed by remember { mutableStateOf(false) }
+  val latestPreview by rememberUpdatedState(Triple(confirmed, playingProposed, proposal))
+
+  // Revert a preview even if the dialog disappears because the player/activity is recreated.
+  DisposableEffect(Unit) {
+    onDispose {
+      val (isConfirmed, isPreviewing, latestPlan) = latestPreview
+      if (!isConfirmed && isPreviewing) latestPlan?.before?.apply(preferences)
+    }
+  }
 
   fun resetPreview() {
     val plan = proposal
@@ -245,6 +257,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                     issue = "Zmieniono film — uruchom nową analizę."
                   } else {
                     proposal!!.after.apply(preferences)
+                    confirmed = true
                     playingProposed = false
                     onDismissRequest()
                   }
