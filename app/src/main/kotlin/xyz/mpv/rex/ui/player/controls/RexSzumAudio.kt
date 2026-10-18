@@ -13,7 +13,7 @@ object RexSzumAudio {
 
   fun specificationForLevel(level: Int): String? {
     if (level !in 1..7) return null
-    return "$" + "{FILTER_NAME}:lavfi=[arnndn=m='~~/script-opts/std.rnnn':mix=$" + "{mixes[level - 1]}]"
+    return "${FILTER_NAME}:lavfi=[arnndn=m='~~/script-opts/std.rnnn':mix=${mixes[level - 1]}]"
   }
 
   fun readLevel(): Int {
