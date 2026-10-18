@@ -96,6 +96,10 @@ fun LuaButtonGrid(
     val userOutlineEnabled by preferences.luaButtonTextOutlineEnabled.collectAsState()
     val userOutlineHalfPx by preferences.luaButtonTextOutlineHalfPx.collectAsState()
     val userOutlineArgb by preferences.luaButtonTextOutlineColor.collectAsState()
+    val speedGlowEnabled by preferences.luaActiveSpeedGlowEnabled.collectAsState()
+    val speedGlowArgb by preferences.luaActiveSpeedGlowColor.collectAsState()
+    val speedGlowSize by preferences.luaActiveSpeedGlowSizePx.collectAsState()
+    val activeBackgroundEnabled by preferences.luaActiveSpeedBackgroundEnabled.collectAsState()
     val selectedFontFamily = luaFontFamily(fontId)
     val userOutline = if (userOutlineEnabled) userOutlineHalfPx.coerceIn(0, 12) / 2f else null
     val positionY by preferences.luaButtonPositionY.collectAsState()
@@ -148,7 +152,8 @@ fun LuaButtonGrid(
         else -> RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     } else RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     val alpha = (1f - transparency.coerceIn(0, 100) / 100f) * .86f
-    val activeOpacity = 1f - activeTransparency.coerceIn(0, 100) / 100f
+    val activeOpacity = (if (activeBackgroundEnabled) 1f else 0f) *
+        (1f - activeTransparency.coerceIn(0, 100) / 100f)
 
     fun isVisible(index: Int): Boolean {
         val saved = savedSlots.getOrNull(index) ?: return false
@@ -228,6 +233,7 @@ fun LuaButtonGrid(
             val raw = if (label.endsWith("x", true) || label.endsWith("×"))
                 label.dropLast(1).replace(',', '.').toFloatOrNull() else null
             val active = raw != null && abs(playbackSpeed - raw) < .015f
+            val haloPx = luaActiveSpeedHaloPx(active, speedGlowEnabled, speedGlowSize)
             val bg = if (active) button.activeBackgroundColor ?: activeColor
                      else button.backgroundColor ?: buttonColor
             val fg = if (active) button.activeTextColor ?: activeTextColor
@@ -312,6 +318,9 @@ fun LuaButtonGrid(
                     fontFamily = selectedFontFamily,
                     userOutlinePx = userOutline,
                     userOutlineColor = Color(userOutlineArgb),
+                    activeBackgroundEnabled = activeBackgroundEnabled,
+                    activeGlowColor = if (haloPx > 0f) Color(speedGlowArgb) else null,
+                    activeGlowSizePx = haloPx,
                 )
             } else {
                 Box(contentAlignment = Alignment.Center, modifier = drawingModifier) {
@@ -324,6 +333,8 @@ fun LuaButtonGrid(
                         outlineWidthPx = userOutline,
                         outlineColorOverride = if (userOutline != null) Color(userOutlineArgb) else null,
                         outlined = userOutline != null || outlinePercent > 0,
+                        glowColor = if (haloPx > 0f) Color(speedGlowArgb) else null,
+                        glowSizePx = haloPx,
                         outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
