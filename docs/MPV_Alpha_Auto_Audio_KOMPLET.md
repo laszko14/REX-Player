@@ -466,3 +466,42 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 1. Sprawdzić status CI po zmianie oraz komplet `assembleDebug/testDebugUnitTest/lintDebug/check_workflows`. Zamieścić wynik w dokumentacji, gdy będzie potwierdzony.
 2. Z nowego **diagnostycznego** APK powtórzyć ten sam wywiad i **instrumental bez słów**. Odczytać już prawidłowe PCM RMS/peak/near-silence/near-full-scale **osobno w F1/F2/F3** i zobaczyć, czy oba materiały mają fizycznie rozsądne dane.
 3. Potem cisza/szum/mieszany materiał, dopiero na koniec ocena ograniczeń WebRTC i ewentualna niezależna klasyfikacja mowy/muzyki; bez automatycznych zmian filtrów.
+
+
+## 25. Auto Audio v47 — prawidłowe pomiary PCM na instrumentalu, 97% fałszywego VAD (19.10.2026)
+
+### Potwierdzony status kodu i kompilacji przed nowym testem
+
+- Bazowy diagnostyczny build z poprawką formatowania, [GitHub Actions #39173959680](https://github.com/laszko14/REX-Player/actions/runs/39173959680), commit `821c7277fcd5961fb27429a28c9f7d83949ce113`, zakończył się **completed/success**. W jobach zielone były sprawdzanie workflow/Python/Lua, `assembleDebug`, `testDebugUnitTest`, `lintDebug` i publikacja oddzielnego diagnostycznego APK ARM64 `.debug`. Zadanie produkcyjnego podpisanego APK zostało pominięte (skipped).
+- **PR aplikacji #55** pozostaje otwarty; nie scalamy go na podstawie samego zielonego CI. Dotychczasowa natywna biblioteka `native-v47-arm64-r1` bez zmian.
+
+### Faktyczne wyniki nowej kontroli negatywnej
+
+- Materiał: **muzyka instrumentalna bez słów**, ten sam typ kontrolny co wcześniej, odtwarzany jako streaming na telefonie. Ponownie analizowano **3 × 10 s**, po poprawieniu wyświetlania danych wejścia WebRTC.
+- Zbiorczy pomiar FFmpeg/astats (oryginalny sygnał przed filtrami): **RMS −12,8 dBFS**, orientacyjne tło **−29,3 dBFS**, dynamika **19,2 dB**, centroid **1509 Hz**, flatness **0,03**, rolloff **2713 Hz**. `channelCount=0` oznacza nieznany rozkład kanałów w pomiarze astats; **nie** należy interpretować jako faktycznego braku kanałów.
+- **WebRTC: 97% pozytywnych ramek łącznie, mimo braku wypowiedzi.** Poszczególne 10-sekundowe okna mają pełne 500 ramek po 20 ms, konwersja źródłowego **44100 Hz → 16000 Hz**:
+  
+  | Okno | WebRTC „mowa” | RMS PCM do VAD | Szczyt PCM | Próbki niemal ciche | Próbki blisko pełnej skali |
+  |---|---:|---:|---:|---:|---:|
+  | F1 | **95%** | **−13,0 dBFS** | −0,4 dBFS | 1,6% | 0,0% |
+  | F2 | **97%** | **−13,2 dBFS** | −0,3 dBFS | 1,5% | 0,0% |
+  | F3 | **99%** | **−12,9 dBFS** | −0,3 dBFS | 1,5% | 0,0% |
+
+- Metryki widmowe niezależnych od VAD fragmentów: **F1** centroid 1500 Hz, flatness 0,04, rolloff 2735 Hz, tło −29,5 dBFS, dynamika 19,2 dB; **F2** 1509 Hz / 0,03 / 2606 Hz / −29,3 dBFS / 19,0 dB; **F3** 1526 Hz / 0,03 / 2778 Hz / −29,3 dBFS / 19,3 dB. Wszystkie trzy bardzo zbliżone, a **0/3** progów jasnego/ciemnego/szumopodobnego widma oznacza tylko brak przekroczeń progów.
+- Aktywne na zrzutach: istniejące EQ, **DRC 2/3**, Dialogue Enhance 5/5, **Szum Lua OFF**. Panel słusznie nie proponował zmiany: DRC nie jest już na poziomie 3/3, a sam wysoki procent VAD **nie** daje zgody na uruchomienie filtrów rozpoznających mowę.
+
+### Wnioski zgodne z Systematic Debugging
+
+1. **Poprawka błędu prezentacji z sekcji 24 została zweryfikowana na urządzeniu**: wartości liczbowe RMS, szczytu i udziałów procentowych są teraz czytelne, kompletne i należą do właściwych pól.
+2. Wejściowy PCM do WebRTC ma **fizycznie możliwe poziomy**, znikomą liczbę próbek bliskich ciszy, brak próbek bliskich pełnej skali, właściwą liczbę ramek i stałą liczbę próbek mimo resamplingu 44,1→16 kHz. To mocny argument przeciwko **prostemu** błędowi formatu/ramki lub stałej ciszy, ale samo nie potwierdza wierności sygnału (np. porządku kanałów, aliasingu czy ograniczeń modelu).
+3. WebRTC GMM na tym materiale ewidentnie jest **niewiarygodnym detektorem dialogów**: instrumental bez mowy dał kolejny nieakceptowalnie wysoki wynik **97%** (wcześniej 99%). Wywiad uliczny dawał 100%. Frakcja pozytywnych ramek nie jest kalibrowaną pewnością.
+4. Brak wniosków o rzeczywistej jakości dźwięku po filtrach i brak dowodów, że odszumianie byłoby potrzebne. **`verifiedSpeechProbability=null` i blokada decyzji zależnych od VAD muszą pozostać.**
+5. Jest jeszcze niespójność opisu w UI: komunikat przy pustej liście propozycji twierdził `Gdy trzy fragmenty się różnią...`, mimo trzech podobnych segmentów. Poprawiono go na neutralny komunikat o braku przesłanek (bez twierdzenia o rozbieżności okien).
+6. Dodano test `instrumentalWithNinetySevenPercentFalseVadMustNotTriggerSpeechChanges` odwzorowujący metryki 3×10 s oraz istniejący stan DRC 2/3. Musi potwierdzić brak nowych propozycji, niezmieniony stan filtrów i opis „żaden z trzech fragmentów” zamiast fałszywej różnicy.
+
+### Następny kierunek, bez niezweryfikowanej automatyzacji
+
+- Najpierw sprawdzić nowy CI po dwóch poprawkach w tym PR (UI i test instrumentalu). Produkcyjnego APK ani nowej wersji AAR nie wydawać.
+- Kolejne kontrole: **cisza, jednostajny szum, mieszanka mowy i muzyki**, najlepiej na tym samym bieżącym strumieniu przed filtrami, z rezultatami F1/F2/F3. Zachować testy HTTP/HLS/DASH i 1,5×–3×.
+- Przy wiarygodnym sygnale PCM ocenić **niezależny model klasyfikacji mowa/muzyka/cisza** (np. speech detector odporniejszy na muzykę, rozważenie Silero, po zweryfikowaniu dostępności modelu, zasobów ARM64 i licencji). Model porównawczy ma działać tylko diagnostycznie na dokładnie tych samych oknach, bez drugiego pobierania filmu, bez ingerencji w audio i bez wpływu na filtry.
+- Dopiero faktyczny zestaw kontroli pozytywnych i negatywnych oraz odsłuch A/B może uzasadnić zmianę polityki doboru filtrów.
