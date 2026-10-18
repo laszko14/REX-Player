@@ -891,7 +891,8 @@ fun GestureHandler(
           var bw = 0f
           var bh = 0f
 
-          awaitFirstDown(requireUnconsumed = false)
+          val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
 
           do {
@@ -899,6 +900,7 @@ fun GestureHandler(
             val pressed = event.changes.filter { it.pressed }
 
             if (pressed.size == 2) {
+              if (prevDist == 0f && !gestureOwnership.claim(HoldGestureOwner.PINCH)) continue
               val p1 = pressed[0].position
               val p2 = pressed[1].position
               val dx = p2.x - p1.x
@@ -956,6 +958,7 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+          gestureOwnership.release(HoldGestureOwner.PINCH)
         }
       }
       // Single-finger pan (only when Pan & Zoom enabled and zoomed in)
@@ -964,6 +967,7 @@ fun GestureHandler(
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
           var panning = false
           var prevX = down.position.x
@@ -1015,7 +1019,7 @@ fun GestureHandler(
                 if (!stateReady) {
                   // One-time JNI reads for the whole gesture.
                   zoom = MPVLib.getPropertyDouble("video-zoom")?.toFloat() ?: 0f
-                  if (zoom <= 0f) { continue }
+                  if (zoom <= 0f || !gestureOwnership.claim(HoldGestureOwner.PAN)) { continue }
                   localPanX = MPVLib.getPropertyDouble("video-pan-x")?.toFloat() ?: 0f
                   localPanY = MPVLib.getPropertyDouble("video-pan-y")?.toFloat() ?: 0f
                   val sw = size.width.toFloat()
@@ -1043,6 +1047,7 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+          gestureOwnership.release(HoldGestureOwner.PAN)
         }
       }
       .pointerInput(horizontalSwipeToSeek, swipeToSubtitleSeek, areControlsLocked, gesturePreferences, isVerticalGestureActive) {
@@ -1050,6 +1055,7 @@ fun GestureHandler(
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
+          gestureOwnership.begin(down.id.value, down.uptimeMillis)
           // A horizontal swipe that starts on a subtitle (this is exactly the subtitle-seek zone,
           // the top/bottom 25%) must keep working, so only step aside once the touch has actually
           // become a vertical subtitle drag/pinch (checked again inside the loop below).
@@ -1087,7 +1093,7 @@ fun GestureHandler(
 
                   // Only activate if this is clearly a horizontal gesture
                   // and not conflicting with other gestures
-                  if (gestureType == null && 
+                  if (gestureType == null && gestureOwnership.canStartSeek() &&
                       abs(deltaX) > 30f && 
                       // Flat enough to be a swipe: within 69° of horizontal (tan(70°) ≈ 2.75). The
                       // steeper 70°..110° cone around vertical is left to the subtitle drag engine.
@@ -1098,9 +1104,10 @@ fun GestureHandler(
                       panelShown == Panels.None) { // Only when no panels are shown
                     
                     val hasActiveSubtitle = (MPVLib.getPropertyInt("sid") ?: 0) != 0
-                    if (swipeToSubtitleSeek && inExclusionZone && hasActiveSubtitle) {
+                    if (swipeToSubtitleSeek && inExclusionZone && hasActiveSubtitle &&
+                        gestureOwnership.claim(HoldGestureOwner.SUBTITLE_SEEK)) {
                       gestureType = "subtitle_seek"
-                    } else if (horizontalSwipeToSeek) {
+                    } else if (horizontalSwipeToSeek && gestureOwnership.claim(HoldGestureOwner.HORIZONTAL_SEEK)) {
                       gestureType = "horizontal_seek"
                       hasStartedSeeking = true
                       viewModel.setGestureSeeking(true)
@@ -1185,6 +1192,9 @@ fun GestureHandler(
               break
             }
           } while (event.changes.any { it.pressed })
+
+          gestureOwnership.release(HoldGestureOwner.HORIZONTAL_SEEK)
+          gestureOwnership.release(HoldGestureOwner.SUBTITLE_SEEK)
 
           // Apply the final seek when gesture ends
           if (hasStartedSeeking) {
