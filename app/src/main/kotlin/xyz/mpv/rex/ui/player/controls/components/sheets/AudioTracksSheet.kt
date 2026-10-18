@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreTime
 import androidx.compose.material.icons.filled.Equalizer
+import androidx.compose.material.icons.filled.FormatListBulleted
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -22,6 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -50,6 +53,7 @@ fun AudioTracksSheet(
 ) {
   val audioPreferences = koinInject<AudioPreferences>()
   val audioChannels by audioPreferences.audioChannels.collectAsState()
+  var showActiveFilters by remember { mutableStateOf(false) }
 
   GenericTracksSheet(
     tracks,
@@ -65,6 +69,9 @@ fun AudioTracksSheet(
           IconButton(onClick = onOpenEqualizer) {
             Icon(Icons.Default.Equalizer, contentDescription = stringResource(R.string.audit_audio_equalizer))
           }
+          IconButton(onClick = { showActiveFilters = true }) {
+            Icon(Icons.Default.FormatListBulleted, contentDescription = "Aktywne filtry audio")
+          }
         },
       )
     },
@@ -76,6 +83,7 @@ fun AudioTracksSheet(
       )
     },
     footer = {
+      Column {
       androidx.compose.material3.Surface(
         modifier = Modifier
           .fillMaxWidth()
@@ -118,9 +126,14 @@ fun AudioTracksSheet(
           }
         }
       }
+      AudioEffectsSection()
+      }
     },
     modifier = modifier,
   )
+  if (showActiveFilters) {
+    ActiveAudioFiltersDialog(onDismissRequest = { showActiveFilters = false })
+  }
 }
 
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
