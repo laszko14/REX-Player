@@ -116,7 +116,7 @@ internal object AutoAudioStreamAnalyzer {
           "Brak pomiarów astats. Ten build FFmpeg może nie udostępniać ametadata."
         }
         val metrics = StreamAstatsParser.parse(file.readText(), windows)
-        metrics.copy(sourceDescription = "Streaming • PCM przed filtrami audio (bez ponownego pobierania)")
+        metrics.copy(sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)")
       } finally {
         file.delete()
       }
