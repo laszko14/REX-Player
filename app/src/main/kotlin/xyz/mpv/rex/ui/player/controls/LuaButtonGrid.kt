@@ -1,6 +1,8 @@
 package xyz.mpv.rex.ui.player.controls
 
 import xyz.mpv.rex.R
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -22,6 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -45,6 +48,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import xyz.mpv.rex.preferences.PlayerPreferences
@@ -96,6 +100,21 @@ fun LuaButtonGrid(
     val textColor by preferences.luaButtonTextColor.collectAsState()
     val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
     val globalAlwaysVisible by preferences.luaButtonAlwaysVisible.collectAsState()
+    val minimalSoft by preferences.luaButtonMinimalSoft.collectAsState()
+    var softTouchSequence by remember { mutableIntStateOf(0) }
+    var softTouched by remember { mutableStateOf(false) }
+    LaunchedEffect(minimalSoft, softTouchSequence) {
+        softTouched = minimalSoft && softTouchSequence > 0
+        if (softTouched) {
+            delay(LUA_SOFT_TOUCH_DURATION_MS)
+            softTouched = false
+        }
+    }
+    val softNormalOpacity by animateFloatAsState(
+        targetValue = if (softTouched) LUA_SOFT_TOUCH_ALPHA else LUA_SOFT_IDLE_ALPHA,
+        animationSpec = tween(durationMillis = 240),
+        label = "luaSoftTouchFade",
+    )
 
     val colCount = columns.coerceIn(1, 8)
     val factor = scale.coerceIn(70, 150) / 100f
@@ -191,46 +210,81 @@ fun LuaButtonGrid(
                      else button.backgroundColor ?: buttonColor
             val fg = if (active) button.activeTextColor ?: activeTextColor
                      else button.textColor ?: textColor
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = boundModifier
-                    .graphicsLayer { this.alpha = if (isDragging) .25f else 1f }
-                    .background(Color(bg).copy(alpha = if (active) activeOpacity else alpha), shape)
-                    .border(
+            // The geometry and pointer target are identical in both skins.
+            // Only the visual layer fades: even a fully invisible tile is clickable.
+            val interactionModifier = if (editMode) Modifier.pointerInput(index) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = {
+                        draggedIndex = index
+                        dragDistance = Offset.Zero
+                        onDragStateChange(true)
+                    },
+                    onDragEnd = { finishDrag(false) },
+                    onDragCancel = { finishDrag(true) },
+                    onDrag = { change, amount ->
+                        change.consume()
+                        dragDistance += amount
+                    },
+                )
+            } else Modifier.combinedClickable(
+                onClick = {
+                    if (minimalSoft) softTouchSequence++
+                    onButtonClick(button.id)
+                },
+                onLongClick = {
+                    if (minimalSoft) softTouchSequence++
+                    onButtonLongClick(button.id)
+                },
+            )
+            val drawingModifier = boundModifier
+                .graphicsLayer {
+                    this.alpha = when {
+                        isDragging -> .25f
+                        !minimalSoft || editMode -> 1f
+                        else -> luaSoftEffectiveAlpha(
+                            if (active) LUA_SOFT_ACTIVE_ALPHA else softNormalOpacity,
+                            transparency,
+                        )
+                    }
+                }
+                .then(if (minimalSoft) {
+                    if (isDragging || dropTarget == index) {
+                        Modifier.border(2.dp, Color(0xFF80D8FF), shape)
+                    } else Modifier
+                } else {
+                    Modifier.background(
+                        Color(bg).copy(alpha = if (active) activeOpacity else alpha), shape,
+                    ).border(
                         if (isDragging || dropTarget == index) 2.dp else 1.dp,
                         if (isDragging || dropTarget == index) Color(0xFF80D8FF)
                         else Color.White.copy(alpha = if (active) .65f * activeOpacity
                             else borderOpacity.coerceIn(0, 100) / 100f),
                         shape,
                     )
-                    .then(if (editMode) Modifier.pointerInput(index) {
-                        detectDragGesturesAfterLongPress(
-                            onDragStart = {
-                                draggedIndex = index
-                                dragDistance = Offset.Zero
-                                onDragStateChange(true)
-                            },
-                            onDragEnd = { finishDrag(false) },
-                            onDragCancel = { finishDrag(true) },
-                            onDrag = { change, amount ->
-                                change.consume()
-                                dragDistance += amount
-                            },
-                        )
-                    } else Modifier.combinedClickable(
-                        onClick = { onButtonClick(button.id) },
-                        onLongClick = { onButtonLongClick(button.id) },
-                    )),
-            ) {
-                ContrastVideoLabel(
-                    text = label, color = Color(fg),
-                    textAlign = TextAlign.Center,
+                })
+                .then(interactionModifier)
+
+            if (minimalSoft) {
+                LuaMinimalSoftTile(
+                    text = label,
+                    active = active,
                     fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
-                    fontWeight = fontWeightForReadability(fontWeightPercent),
-                    outlined = outlinePercent > 0,
-                    outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
-                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    activeBackgroundOpacity = LUA_SOFT_ACTIVE_BACKGROUND_ALPHA * activeOpacity,
+                    modifier = drawingModifier,
+                    shape = shape,
                 )
+            } else {
+                Box(contentAlignment = Alignment.Center, modifier = drawingModifier) {
+                    ContrastVideoLabel(
+                        text = label, color = Color(fg),
+                        textAlign = TextAlign.Center,
+                        fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
+                        fontWeight = fontWeightForReadability(fontWeightPercent),
+                        outlined = outlinePercent > 0,
+                        outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }
