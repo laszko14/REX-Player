@@ -6,7 +6,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -16,8 +18,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 
 /**
- * Minimal Soft is a presentation-only skin. Original per-button ARGB colors, font
- * preferences and geometry remain stored and can be restored by turning it off.
+ * The old Minimal Soft and individual overrides are not migrated or overwritten.
+ * v2 changes the drawing only; button dimensions and pointer handlers live in LuaButtonGrid.
  */
 internal val LuaSoftText = Color(0xFFC9D1D9)
 internal val LuaSoftActiveText = Color(0xFF9EB6C8)
@@ -26,19 +28,25 @@ internal val LuaSoftActiveBackground = Color(0xFF26333D)
 internal const val LUA_SOFT_IDLE_ALPHA = .55f
 internal const val LUA_SOFT_TOUCH_ALPHA = .85f
 internal const val LUA_SOFT_ACTIVE_ALPHA = .90f
-internal const val LUA_SOFT_ACTIVE_BACKGROUND_ALPHA = .30f // 70% transparent
+internal const val LUA_SOFT_ACTIVE_BACKGROUND_ALPHA = .30f
+internal const val LUA_SOFT_V2_IDLE_ALPHA = .68f
+internal const val LUA_SOFT_V2_TOUCH_ALPHA = .85f
+internal const val LUA_SOFT_V2_ACTIVE_ALPHA = .95f
+internal const val LUA_SOFT_V2_ACTIVE_BACKGROUND_ALPHA = .50f
 internal const val LUA_SOFT_TOUCH_DURATION_MS = 3000L
 
-/**
- * Keep the previously shipped 20% background transparency as the neutral setting,
- * so enabling this skin immediately yields the requested 55/85/90% visibility.
- * The existing slider still fades all Lua buttons and remains fully touch-transparent
- * only visually (pointer targets never change).
- */
+/** Transparency has historically defaulted to 20%; preserve the setting on upgrade. */
 internal fun luaSoftEffectiveAlpha(softAlpha: Float, savedTransparency: Int): Float =
     (softAlpha * (100 - savedTransparency.coerceIn(0, 100)) / 80f).coerceIn(0f, 1f)
 
-/** Shared by the real Lua grid and synthetic screenshot previews. */
+/** Four inexpensive, fixed contrast profiles: no frame sampling or GL readback. */
+internal fun luaSoftContrastShadowAlpha(profile: Int): Float = when (profile.coerceIn(0, 3)) {
+    0 -> 0f
+    1 -> .20f
+    2 -> .24f
+    else -> .28f
+}
+
 @Composable
 internal fun LuaMinimalSoftTile(
     text: String,
@@ -47,26 +55,49 @@ internal fun LuaMinimalSoftTile(
     activeBackgroundOpacity: Float,
     modifier: Modifier = Modifier,
     shape: Shape = RoundedCornerShape(7.dp),
+    v2: Boolean = false,
+    normalBackgroundColor: Color = Color(0xFF1F2A33),
+    foreground: Color = LuaSoftText,
+    activeForeground: Color = LuaSoftActiveText,
+    normalBackgroundOpacity: Float = 0f,
+    borderOpacity: Int = 20,
+    fontWeight: FontWeight = FontWeight.Medium,
+    contrastProfile: Int = 1,
+    textShadow: Boolean = true,
 ) {
-    // ContrastVideoLabel doubles this radius into a stroke diameter.
-    // Use a 1-physical-pixel stroke on any screen density.
-    val outlineRadiusDp = with(LocalDensity.current) { .5f / density }
+    val density = LocalDensity.current
+    // ContrastVideoLabel uses a stroke of twice the radius: exactly 1 physical px.
+    val outlineRadiusDp = with(density) { .5f / this.density }
+    val shadow = if (v2 && textShadow && contrastProfile > 0) {
+        Shadow(
+            color = Color.Black.copy(alpha = luaSoftContrastShadowAlpha(contrastProfile)),
+            offset = Offset(0f, with(density) { .5f.dp.toPx() }),
+            blurRadius = with(density) { 1.dp.toPx() },
+        )
+    } else null
     Box(
         modifier = modifier.then(
             if (active) Modifier.background(
-                LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f)), shape
+                if (v2) normalBackgroundColor.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f))
+                else LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f)),
+                shape,
+            ) else if (v2) Modifier.background(
+                normalBackgroundColor.copy(alpha = normalBackgroundOpacity.coerceIn(0f, 1f)), shape,
             ) else Modifier,
         ),
         contentAlignment = Alignment.Center,
     ) {
         ContrastVideoLabel(
             text = text,
-            color = if (active) LuaSoftActiveText else LuaSoftText,
+            color = if (!v2) { if (active) LuaSoftActiveText else LuaSoftText }
+                    else if (active) activeForeground else foreground,
             textAlign = TextAlign.Center,
             fontSize = fontSize,
-            fontWeight = FontWeight.Medium,
-            outlined = true,
-            outlineWidthDp = outlineRadiusDp,
+            fontWeight = fontWeight,
+            outlined = !v2 || contrastProfile > 0,
+            outlineWidthDp = if (v2 && contrastProfile == 0) 0f else outlineRadiusDp,
+            outlineColorOverride = if (v2) Color(0xFF1E2630) else null,
+            shadowStyle = shadow,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
