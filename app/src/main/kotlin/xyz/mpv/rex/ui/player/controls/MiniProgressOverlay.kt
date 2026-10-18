@@ -150,7 +150,7 @@ internal fun MiniProgressBar(
       modifier = Modifier
         .align(Alignment.BottomCenter)
         .fillMaxWidth()
-        .padding(horizontal = 18.dp, bottom = margin.coerceIn(0, 30).dp + navigationBarBottom)
+        .padding(start = 18.dp, end = 18.dp, bottom = margin.coerceIn(0, 30).dp + navigationBarBottom)
         .height(lineHeight),
     ) {
       val midY = size.height / 2f
