@@ -15,6 +15,9 @@ internal data class AutoAudioState(
   val originalNoiseLevel: Int = noise,
   val originalNoiseMix: String? = null,
   val voiceLuaActive: Boolean = false,
+  val voiceLevel: Int = 0,
+  val trebleLevel: Int = 0,
+  val bassLevel: Int = 0,
 ) {
   companion object {
     fun capture(prefs: AudioPreferences): AutoAudioState {
@@ -33,6 +36,9 @@ internal data class AutoAudioState(
       originalNoiseLevel = level,
       originalNoiseMix = mix,
       voiceLuaActive = currentChain.contains("rex_glos"),
+      voiceLevel = AutoAudioLuaFilters.voiceLevel(),
+      trebleLevel = AutoAudioLuaFilters.trebleLevel(),
+      bassLevel = AutoAudioLuaFilters.bassLevel(),
     )
     }
   }
@@ -56,6 +62,9 @@ internal data class AutoAudioState(
         RexSzumAudio.setLevel(noise)
       }
     }
+    if (AutoAudioLuaFilters.voiceLevel() != voiceLevel) AutoAudioLuaFilters.setVoice(voiceLevel)
+    if (AutoAudioLuaFilters.trebleLevel() != trebleLevel) AutoAudioLuaFilters.setTreble(trebleLevel)
+    if (AutoAudioLuaFilters.bassLevel() != bassLevel) AutoAudioLuaFilters.setBass(bassLevel)
   }
 }
 
@@ -83,11 +92,56 @@ internal object AutoAudioPlanner {
     val findings = mutableListOf<String>()
     findings += "Poziom tła (orientacyjnie): ${metrics.noiseFloorDb.toInt()} dBFS"
     findings += "Dynamika aktywnych fragmentów: ${metrics.dynamicRangeDb.toInt()} dB"
-    findings += "Udział fragmentów przypominających mowę: ${(metrics.voiceLikeRatio * 100).toInt()}% (heurystyka)"
+    if (metrics.spectralCentroidHz == null) {
+      findings += "Brak danych o widmie. Zmiany filtrów Głos/EQ wymagają analizy dokładnej."
+    } else {
+      findings += "Jasność widma: ${metrics.spectralCentroidHz.toInt()} Hz (mediana)"
+      findings += "Płaskość widma: %.2f (tonalność / szumopodobność)".format(metrics.spectralFlatness ?: 0.0)
+      findings += "To cechy całego dźwięku, nie rozpoznawanie wypowiadanych słów."
+    }
 
-    val probableVoice = metrics.voiceLikeRatio >= 0.28
+    // In quick mode retain conservative legacy heuristics; in detailed mode
+    // do not mislabel loudness changes as proven speech activity.
+    val probableVoice = metrics.spectralCentroidHz == null && metrics.voiceLikeRatio >= 0.28
     val veryQuietFloor = metrics.noiseFloorDb <= -58.0
     val highFloor = metrics.noiseFloorDb >= -31.0
+    val centroid = metrics.spectralCentroidHz
+    val flatness = metrics.spectralFlatness
+    val rolloff = metrics.spectralRolloffHz
+    if (centroid != null && flatness != null && rolloff != null) {
+      // Spectral evidence alone cannot tell voice from music. Recommend at most
+      // ONE small tonal change, always requiring user confirmation and A/B.
+      if (centroid > 3800.0 && rolloff > 8500.0 && flatness > 0.16) {
+        when {
+          before.voiceLevel in 3..4 -> {
+            after = after.copy(voiceLevel = 1)
+            findings += "Trwały nadmiar wysokich częstotliwości: spróbuj łagodniejszego Głos 1."
+          }
+          before.trebleLevel == 0 && before.voiceLevel !in 5..7 -> {
+            after = after.copy(trebleLevel = 1)
+            findings += "Jasne widmo: porównaj lekkie złagodzenie wysokich tonów."
+          }
+        }
+      } else if (centroid < 750.0 && rolloff < 3200.0 && flatness < 0.18) {
+        when {
+          before.voiceLevel == 0 && before.bassLevel == 0 -> {
+            after = after.copy(voiceLevel = 2)
+            findings += "Przewaga niskich częstotliwości: porównaj profil Jasny, nie diagnozę mowy."
+          }
+          before.bassLevel == 0 && before.voiceLevel == 1 -> {
+            after = after.copy(bassLevel = 1)
+            findings += "Przewaga niskich częstotliwości: porównaj delikatne ograniczenie basu."
+          }
+        }
+      }
+      if (flatness >= 0.45 && highFloor && metrics.dynamicRangeDb <= 12.0 && before.noise == 0) {
+        after = after.copy(noise = 5)
+        findings += "Sygnał szumopodobny: próbnie zaproponowano najłagodniejszy RNNoise z Twojej skali (5/7)."
+      } else if (veryQuietFloor && before.noise != 0 && flatness < 0.18) {
+        after = after.copy(noise = 0)
+        findings += "Ciche, tonalne tło: warto porównać wyłączenie odszumiania."
+      }
+    }
 
     if (probableVoice && veryQuietFloor && before.noise != 0) {
       after = after.copy(noise = 0)
@@ -118,6 +172,18 @@ internal object AutoAudioPlanner {
     }
 
     val diffs = buildList {
+      if (before.voiceLevel != after.voiceLevel) add(AutoAudioChange(
+        "Głos (Lua)", level(before.voiceLevel), level(after.voiceLevel),
+        "Zmiana profilu tonalnego na podstawie widma, nie wykrywania słów. Porównaj A/B.",
+      ))
+      if (before.trebleLevel != after.trebleLevel) add(AutoAudioChange(
+        "EQ wysokie (Lua)", level(before.trebleLevel), level(after.trebleLevel),
+        "Łagodne obniżenie nadmiaru wysokich częstotliwości. Porównaj A/B.",
+      ))
+      if (before.bassLevel != after.bassLevel) add(AutoAudioChange(
+        "EQ niskie (Lua)", level(before.bassLevel), level(after.bassLevel),
+        "Łagodne obniżenie dominującego basu. Porównaj A/B.",
+      ))
       if (before.noise != after.noise) add(AutoAudioChange(
         "Szum (Lua)", level(before.noise), level(after.noise),
         if (after.noise == 0) "Słabe tło; RNNoise może usuwać detale mowy." else "Podwyższony poziom tła; umiarkowany udział sygnału po RNNoise.",

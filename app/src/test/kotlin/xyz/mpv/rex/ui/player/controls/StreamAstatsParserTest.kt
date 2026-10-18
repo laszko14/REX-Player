@@ -16,6 +16,25 @@ class StreamAstatsParserTest {
     }
   }
 
+  @Test fun detailedModeReadsRealSpectralMetadata() {
+    val audio = buildString {
+      for (frame in 0 until 36 * 50) {
+        append("frame:").append(frame).append(" pts_time:").append(frame / 50.0).append('\n')
+        append("lavfi.aspectralstats.1.centroid=4200\n")
+        append("lavfi.aspectralstats.1.flatness=0.32\n")
+        append("lavfi.aspectralstats.1.rolloff=11000\n")
+        append("lavfi.astats.Overall.Peak_level=-2\n")
+        append("lavfi.astats.Overall.RMS_level=-22\n")
+      }
+    }
+    val metrics = StreamAstatsParser.parse(
+      audio, listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0),
+    )
+    assertEquals(4200.0, metrics.spectralCentroidHz ?: 0.0, 0.001)
+    assertEquals(0.32, metrics.spectralFlatness ?: 0.0, 0.001)
+    assertEquals(11000.0, metrics.spectralRolloffHz ?: 0.0, 0.001)
+  }
+
   @Test fun quickModeReadsOnlyFifteenSeconds() {
     val report = StreamAstatsParser.parse(syntheticStats(36), listOf(0.0 to 15.0))
     assertEquals(15.0, report.seconds, 0.001)

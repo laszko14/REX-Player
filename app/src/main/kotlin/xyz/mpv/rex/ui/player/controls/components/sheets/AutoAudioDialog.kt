@@ -160,9 +160,25 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
+              if (metrics.spectralCentroidHz != null) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                  MetricCard(
+                    "Jasność widma", "%.0f Hz".format(metrics.spectralCentroidHz),
+                    Modifier.weight(1f),
+                  )
+                  MetricCard(
+                    "Płaskość widma", "%.2f".format(metrics.spectralFlatness ?: 0.0),
+                    Modifier.weight(1f),
+                  )
+                  MetricCard(
+                    "Rolloff", "%.0f Hz".format(metrics.spectralRolloffHz ?: 0.0),
+                    Modifier.weight(1f),
+                  )
+                }
+              }
               Text(
-                "Wykrywanie mowy jest orientacyjne (energia i jej zmiany), nie jest rozpoznawaniem słów. " +
-                  "Wynik nie jest obiektywną oceną jakości.",
+                "Pomiar obejmuje sygnał przed filtrami. Jasność i płaskość widma nie rozpoznają " +
+                  "mowy ani jakości dialogów; o skuteczności zmiany rozstrzyga odsłuch A/B.",
                 color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
               )
               Text("Wnioski", color = premiumBlue, fontWeight = FontWeight.Bold)
@@ -183,9 +199,12 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   }
                 }
               }
-              Text("Filtry Lua Głos/EQ wysokie: bez zmian do czasu pełnego mapowania ich komend. " +
-                "Pozostałe filtry użytkownika nie są kasowane.",
-                color = mutedAudioText, style = MaterialTheme.typography.bodySmall)
+              Text(
+                "Głos 1–7, EQ wysokie/niskie 0–4 działają przez Twoje skrypty. " +
+                  "Propozycje na podstawie widma są ostrożnymi wskazówkami, nie rozpoznawaniem dialogu. " +
+                  "Żaden inny filtr użytkownika nie jest usuwany.",
+                color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+              )
               HorizontalDivider(color = Color(0xFF3B526D))
               Text("Odsłuch A/B • bieżący fragment filmu", fontWeight = FontWeight.Bold)
               Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

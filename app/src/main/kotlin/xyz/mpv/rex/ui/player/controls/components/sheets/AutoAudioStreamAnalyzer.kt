@@ -60,7 +60,13 @@ internal object AutoAudioStreamAnalyzer {
         }
         // Prepend, NEVER 'set' or 'clr': custom Lua voice, RNNoise, treble, bass and
         // any unknown filters remain installed and playing as before.
-        val graph = "astats=metadata=1:reset=1:measure_perchannel=none:" +
+        // Detailed scan adds real FFT-based descriptors of unfiltered PCM.
+        // The light 15-second scan keeps the v41 signal path unchanged.
+        val spectral = if (mode == AutoAudioAnalyzer.Mode.DETAILED) {
+          "aspectralstats=measure=centroid+flatness+rolloff,"
+        } else ""
+        val graph = spectral +
+          "astats=metadata=1:reset=1:measure_perchannel=none:" +
           "measure_overall=RMS_level+Peak_level," +
           "ametadata=mode=print:file=" + file.absolutePath
         val spec = PROBE + ":lavfi=[" + graph + "]"
@@ -126,7 +132,14 @@ internal object AutoAudioStreamAnalyzer {
 }
 
 internal object StreamAstatsParser {
-  private data class Sample(val time: Double, val rms: Double, val peak: Double)
+  private data class Sample(
+    val time: Double,
+    val rms: Double,
+    val peak: Double,
+    val centroid: Double?,
+    val flatness: Double?,
+    val rolloff: Double?,
+  )
   private val timePattern = Regex("""\bpts_time:\s*([-+0-9.eE]+)""")
 
   fun parse(raw: String, windows: List<Pair<Double, Double>>): AutoAudioMetrics {
@@ -134,12 +147,20 @@ internal object StreamAstatsParser {
     var frameTime: Double? = null
     var rms: Double? = null
     var peak: Double? = null
+    var centroid: Double? = null
+    var flatness: Double? = null
+    var rolloff: Double? = null
     fun flush() {
       val t = frameTime
       val r = rms
       val p = peak
       if (t != null && r != null && p != null && t.isFinite()) {
-        samples += Sample(t, r.coerceIn(-100.0, 6.0), p.coerceIn(-100.0, 6.0))
+        samples += Sample(
+          t, r.coerceIn(-100.0, 6.0), p.coerceIn(-100.0, 6.0),
+          centroid?.takeIf { it in 0.0..24000.0 },
+          flatness?.takeIf { it in 0.0..1.0 },
+          rolloff?.takeIf { it in 0.0..24000.0 },
+        )
       }
     }
     for (line in raw.lineSequence()) {
@@ -148,6 +169,15 @@ internal object StreamAstatsParser {
         frameTime = timePattern.find(line)?.groupValues?.get(1)?.toDoubleOrNull()
         rms = null
         peak = null
+        centroid = null
+        flatness = null
+        rolloff = null
+      } else if (line.startsWith("lavfi.aspectralstats.1.centroid=")) {
+        centroid = line.substringAfter('=').toDoubleOrNull()
+      } else if (line.startsWith("lavfi.aspectralstats.1.flatness=")) {
+        flatness = line.substringAfter('=').toDoubleOrNull()
+      } else if (line.startsWith("lavfi.aspectralstats.1.rolloff=")) {
+        rolloff = line.substringAfter('=').toDoubleOrNull()
       } else if (line.startsWith("lavfi.astats.Overall.RMS_level=")) {
         rms = parseDecibels(line.substringAfter('='))
       } else if (line.startsWith("lavfi.astats.Overall.Peak_level=")) {
@@ -179,6 +209,15 @@ internal object StreamAstatsParser {
       (activeFraction * 0.55).coerceAtMost(0.45)
     } else 0.0
     val maxDb = selected.maxOf { it.peak }
+    // Only count spectral frames with an audible signal. Silence has meaningless
+    // centroid/flatness and must not skew the recommendation.
+    val audible = selected.filter { it.rms >= -48.0 }
+    fun spectralMedian(extract: (Sample) -> Double?): Double? {
+      val values = audible.mapNotNull(extract).sorted()
+      return if (values.size >= 20 && values.size >= audible.size * 0.6) {
+        values[values.size / 2]
+      } else null
+    }
     return AutoAudioMetrics(
       seconds = windows.sumOf { it.second - it.first },
       rmsDb = 20.0 * log10(sqrt(selected.map { 10.0.pow(it.rms / 10.0) }.average()).coerceAtLeast(1e-7)),
@@ -188,6 +227,9 @@ internal object StreamAstatsParser {
       voiceLikeRatio = voiceHint,
       channelCount = 0, // Ametadata 'Overall' does not identify source channel layout.
       clipRatio = selected.count { it.peak > -0.1 }.toDouble() / selected.size,
+      spectralCentroidHz = spectralMedian { it.centroid },
+      spectralFlatness = spectralMedian { it.flatness },
+      spectralRolloffHz = spectralMedian { it.rolloff },
       sourceDescription = "Streaming • PCM przed filtrami",
     )
   }
