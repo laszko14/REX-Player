@@ -66,4 +66,29 @@ class AutoAudioStreamingVadTest {
       assertNull(vad.speechFraction())
     }
   }
+
+  @Test fun allThreeWindowsExposeIndependentSignalAndSpeechVotes() {
+    val windows = listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0)
+    AutoAudioStreamingVad(windows) { EverySecondFrameVad() }.use { vad ->
+      repeat(1700) { vad.accept(packet(it)) }
+      val diagnostics = vad.windowDiagnostics()!!
+      assertEquals(3, diagnostics.size)
+      diagnostics.forEach { d ->
+        assertEquals(8000, d.inputRate)
+        assertEquals(500, d.frames)
+        assertEquals(250, d.speechFrames)
+        assertEquals(0.5, d.positiveFraction, 0.00001)
+        assertEquals(0.0, d.nearFullScaleFraction, 0.00001)
+        assertEquals(0.0, d.nearSilenceFraction, 0.00001)
+      }
+    }
+  }
+
+  @Test fun droppedPcmNeverProducesAnyApparentlyValidWindowDiagnostics() {
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(750) { vad.accept(packet(it, if (it == 30) 1 else 0)) }
+      assertNull(vad.windowDiagnostics())
+    }
+  }
+
 }
