@@ -32,8 +32,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
+import androidx.compose.material.Slider
+import androidx.compose.material.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -196,8 +196,10 @@ internal fun MiniProgressSettingsDialog(
       MiniProgressSettingsPanel(
         preferences = preferences,
         onDismiss = onDismiss,
-        modifier = Modifier.width((maxWidth - 4.dp).coerceAtMost(520.dp))
-          .heightIn(max = (maxHeight - 4.dp).coerceAtLeast(160.dp)),
+        modifier = Modifier.width(
+            if (maxWidth >= 700.dp) (maxWidth * 0.38f).coerceIn(350.dp, 520.dp)
+            else (maxWidth - 4.dp).coerceAtMost(520.dp),
+          ).heightIn(max = (maxHeight - 4.dp).coerceAtLeast(160.dp)),
       )
     }
   }
@@ -228,7 +230,7 @@ internal fun MiniProgressSettingsPanel(
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
           Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth().padding(start = 9.dp, top = 12.dp, end = 20.dp, bottom = 9.dp),
+            modifier = Modifier.fillMaxWidth().padding(start = 7.dp, top = 5.dp, end = 12.dp, bottom = 4.dp),
           ) {
             IconButton(onClick = onDismiss) {
               Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zamknij ustawienia", tint = miniTextMuted)
@@ -254,7 +256,7 @@ internal fun MiniProgressSettingsPanel(
             }
             MiniDivider()
             Row(
-              modifier = Modifier.fillMaxWidth().height(64.dp).clickable { showColors = true }.padding(horizontal = 10.dp),
+              modifier = Modifier.fillMaxWidth().height(54.dp).clickable { showColors = true }.padding(horizontal = 10.dp),
               verticalAlignment = Alignment.CenterVertically,
             ) {
               Text("Kolor", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
@@ -281,7 +283,7 @@ internal fun MiniProgressSettingsPanel(
               onCheckedChange = preferences.miniProgressVisibleOnPause::set,
             )
           }
-          Spacer(Modifier.height(12.dp))
+          Spacer(Modifier.height(6.dp))
     }
   }
   if (showColors) {
@@ -306,7 +308,7 @@ private fun MiniSwitchRow(
   onCheckedChange: (Boolean) -> Unit,
 ) {
   Row(
-    modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 15.dp),
+    modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 7.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Column(Modifier.weight(1f)) {
@@ -336,7 +338,7 @@ private fun MiniSliderRow(
   unit: String,
   onChange: (Int) -> Unit,
 ) {
-  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 12.dp)) {
+  Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 4.dp)) {
     Text(title, fontSize = 17.sp, fontWeight = FontWeight.Medium)
     Row(verticalAlignment = Alignment.CenterVertically) {
       Slider(
@@ -347,7 +349,7 @@ private fun MiniSliderRow(
           if (rounded != current) onChange(rounded)
         },
         valueRange = minimum.toFloat()..maximum.toFloat(),
-        steps = (maximum - minimum - 1).coerceAtLeast(0),
+        steps = 0, // Continuous visual track, rounded Material thumb; values snap to whole units above.
         colors = SliderDefaults.colors(
           thumbColor = miniBlue,
           activeTrackColor = miniBlue,
