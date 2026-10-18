@@ -370,3 +370,12 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 - Testowa aplikacja ma osobny `applicationIdSuffix=".debug"`; nie zastępuje podpisanego produkcyjnego `xyz.mpv.rex`, nie podmienia istniejących danych/ustawień i nie rezerwuje numeru wydania `v47`.
 - To artefakt diagnostyczny do przyszłego testu urządzenia i streamingu, **nie instalacyjna aktualizacja właściwego MPV Alpha**. Nie twierdzić, że WebRTC VAD przeszedł test na telefonie, dopóki użytkownik nie prześle wyników.
 
+
+
+## 21. Auto Audio v47 — release ARM64 opublikowany i start testów integracyjnych (18.10.2026)
+
+- Natywny build po scaleniu PR #1, [run 39164435452](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39164435452), zakończył się **success** na `master` (`076cd06f86dd7647dde38bd006c5bfdd3354ea39`) dla ARM64.
+- Odrębny workflow [Publish verified MPV Alpha ARM64 library #39165343330](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39165343330) również zakończył się **success**. W jego logice sprawdzane są `libmpv.so`, `libplayer.so`, `classes.jar`, pojedyncze ABI oraz eksporty `mpv_rex_set_pcm_sink` i `vadTapStart/Stop/Poll`.
+- Faktycznie opublikowano [GitHub Release native-v47-arm64-r1](https://github.com/laszko14/mpvRex-libmpv/releases/tag/native-v47-arm64-r1). Asset: `mpvRex-libmpv-native-v47-arm64-r1.aar`, rozmiar **25 165 798 B**; GitHub API zgłasza SHA-256 **`4e8b8e2a7cafebf6bd6656f22bb396421d8e6a82670dbe6224c18a7ea3103c8f`**. Towarzyszący `.aar.sha256` został również opublikowany. Są to dane faktycznie istniejącego wydania, a nie przewidywany artefakt.
+- W przygotowanej gałęzi aplikacji `feature/v47-arm64-native-vad-integration` wskazano ten niezmiennie nazwany AAR przez Gradle Ivy. Następnym krokiem jest sprawdzenie rozwiązywania nowej zależności, kompilacji `assembleDebug`, `testDebugUnitTest`, `lintDebug`, testów workflow oraz udostępnienia diagnostycznego APK z `.debug`. **Nie scalać zmian aplikacji, zanim CI będzie zielone.**
+- AAR i zakończenie natywnego CI **nie potwierdzają rozpoznania mowy podczas odtwarzania HTTP/HLS/DASH**. Wymagane są testy na Nothing Phone (1), szczególnie 1,5×–3×, próby 15 s i 3×10 s, ciągłość PTS, status droppedChunks, jakość rozróżniania dialogów/szumu/muzyki oraz brak ingerencji w filtry i odtwarzanie. Produkcyjny podpisany APK v47 nadal **nie jest wydany**.
