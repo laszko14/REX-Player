@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- English fallback for unfinished locales; Polish is fully translated in values-pl. -->
+    <string name="lua_v2_title" tools:ignore="MissingTranslation">Lua button settings</string>
+    <string name="lua_v2_appearance" tools:ignore="MissingTranslation">Appearance</string>
+    <string name="lua_v2_buttons" tools:ignore="MissingTranslation">Buttons</string>
+    <string name="lua_v2_size" tools:ignore="MissingTranslation">Size and appearance</string>
+    <string name="lua_v2_colors" tools:ignore="MissingTranslation">Colors and style</string>
+    <string name="lua_v2_typography" tools:ignore="MissingTranslation">Typography and icons</string>
+    <string name="lua_v2_button_size" tools:ignore="MissingTranslation">Button size</string>
+    <string name="lua_v2_corner" tools:ignore="MissingTranslation">Corner rounding</string>
+    <string name="lua_v2_background_opacity" tools:ignore="MissingTranslation">Background transparency</string>
+    <string name="lua_v2_shape" tools:ignore="MissingTranslation">Button shape</string>
+    <string name="lua_v2_circle" tools:ignore="MissingTranslation">Circle</string>
+    <string name="lua_v2_square" tools:ignore="MissingTranslation">Square</string>
+    <string name="lua_v2_rounded" tools:ignore="MissingTranslation">Rounded</string>
+    <string name="lua_v2_minimal" tools:ignore="MissingTranslation">Minimal</string>
+    <string name="lua_v2_bg_color" tools:ignore="MissingTranslation">Background color</string>
+    <string name="lua_v2_text_color" tools:ignore="MissingTranslation">Icon / text color</string>
+    <string name="lua_v2_border" tools:ignore="MissingTranslation">Border</string>
+    <string name="lua_v2_font_size" tools:ignore="MissingTranslation">Text size</string>
+    <string name="lua_v2_font_weight" tools:ignore="MissingTranslation">Text weight</string>
+    <string name="lua_v2_shadow" tools:ignore="MissingTranslation">Text shadow</string>
+    <string name="lua_v2_contrast" tools:ignore="MissingTranslation">Video contrast</string>
+    <string name="lua_v2_off" tools:ignore="MissingTranslation">Off</string>
+    <string name="lua_v2_light" tools:ignore="MissingTranslation">Light</string>
+    <string name="lua_v2_medium" tools:ignore="MissingTranslation">Medium</string>
+    <string name="lua_v2_strong" tools:ignore="MissingTranslation">Strong</string>
+    <string name="lua_v2_icons" tools:ignore="MissingTranslation">Icons</string>
+    <string name="lua_v2_default" tools:ignore="MissingTranslation">Default</string>
+    <string name="lua_v2_modern" tools:ignore="MissingTranslation">Modern</string>
+    <string name="lua_v2_simple" tools:ignore="MissingTranslation">Minimal</string>
+    <string name="lua_v2_hex" tools:ignore="MissingTranslation">HEX color (#RRGGBB or #AARRGGBB)</string>
+    <string name="lua_v2_apply" tools:ignore="MissingTranslation">Apply</string>
+    <string name="lua_v2_cancel" tools:ignore="MissingTranslation">Cancel</string>
+    <string name="lua_v2_advanced" tools:ignore="MissingTranslation">Additional settings (v29)</string>
+    <string name="lua_v2_soft_v2" tools:ignore="MissingTranslation">Minimal Soft v2</string>
+    <string name="lua_v2_soft_v29" tools:ignore="MissingTranslation">Allow reverting to v29</string>
+    <string name="lua_v2_layout" tools:ignore="MissingTranslation">Layout and management</string>
+    <string name="lua_v2_left_cols" tools:ignore="MissingTranslation">Columns (left side)</string>
+    <string name="lua_v2_right_cols" tools:ignore="MissingTranslation">Columns (right side)</string>
+    <string name="lua_v2_empty_slots" tools:ignore="MissingTranslation">Show empty slots</string>
+    <string name="lua_v2_never" tools:ignore="MissingTranslation">Never</string>
+    <string name="lua_v2_edit" tools:ignore="MissingTranslation">Editing</string>
+    <string name="lua_v2_always" tools:ignore="MissingTranslation">Always</string>
+    <string name="lua_v2_auto_hide" tools:ignore="MissingTranslation">Auto-hide panel while dragging</string>
+    <string name="lua_v2_list" tools:ignore="MissingTranslation">Button list</string>
+    <string name="lua_v2_add" tools:ignore="MissingTranslation"> + Add button</string>
+    <string name="lua_v2_no_space" tools:ignore="MissingTranslation">All 38 visible slots are occupied.</string>
+    <string name="lua_v2_copy" tools:ignore="MissingTranslation">Duplicate</string>
+    <string name="lua_v2_remove" tools:ignore="MissingTranslation">Delete</string>
+    <string name="lua_v2_edit_btn" tools:ignore="MissingTranslation">Edit</string>
+    <string name="lua_v2_move" tools:ignore="MissingTranslation">Move to other side</string>
+    <string name="lua_v2_archives" tools:ignore="MissingTranslation">Archived buttons</string>
+    <string name="lua_v2_drag" tools:ignore="MissingTranslation">Drag to reorder</string>
+    <string name="lua_v2_legacy" tools:ignore="MissingTranslation">Classic appearance (before Minimal Soft)</string>
+    <string name="lua_v2_icon" tools:ignore="MissingTranslation">Icon (optional, up to 3 characters)</string>
+</resources>
