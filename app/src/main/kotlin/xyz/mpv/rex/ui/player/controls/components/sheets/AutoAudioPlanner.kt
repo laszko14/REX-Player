@@ -20,7 +20,7 @@ internal data class AutoAudioState(
     fun capture(prefs: AudioPreferences): AutoAudioState {
       val currentChain = MPVLib.getPropertyString("af").orEmpty()
       val level = RexSzumAudio.readLevel()
-      val mix = Regex("""rex_szum[^\\]]{0,350}mix=([0-9]+(?:\\.[0-9]+)?)""")
+      val mix = Regex("""rex_szum[\s\S]{0,350}?mix=([0-9]+(?:\.[0-9]+)?)""")
         .find(currentChain)?.groupValues?.getOrNull(1)
         ?.toDoubleOrNull()?.takeIf { it in 0.0..1.0 }?.toString()
       return AutoAudioState(
