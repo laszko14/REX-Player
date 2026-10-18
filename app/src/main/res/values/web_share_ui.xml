@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<!-- These new strings are translated to Polish, with an intentional English fallback for other locales.
+     check_polish.py independently checks completeness and formatting for the Polish locale. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
     <string name="web_share_ui_page_title">REX Player Web Share</string>
     <string name="web_share_ui_badge">REX Player Share</string>
     <string name="web_share_ui_heading">Shared Files</string>
