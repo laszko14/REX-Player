@@ -80,6 +80,8 @@ internal fun LuaSoftDarkButtonList(prefs: PlayerPreferences, onEdit: (Int) -> Un
     val autoHide by prefs.luaAutoHideOnDrag.collectAsState()
     val density = LocalDensity.current
     val context = LocalContext.current
+    // Read locale-aware resources in composition, not via LocalContext.getString().
+    val noSpaceMessage = stringResource(R.string.lua_v2_no_space)
     val occupied = remember(slots) {
         ((0 until LUA_MAIN_SLOT_COUNT).toList() + (LUA_EXTRA_START until LUA_SLOT_COUNT).toList())
             .filter { slots[it] != null }
@@ -91,7 +93,7 @@ internal fun LuaSoftDarkButtonList(prefs: PlayerPreferences, onEdit: (Int) -> Un
         prefs.customButtons.set(Json.encodeToString(CustomButtonSlots(next)))
     }
     fun noSpace() {
-        Toast.makeText(context, context.getString(R.string.lua_v2_no_space), Toast.LENGTH_LONG).show()
+        Toast.makeText(context, noSpaceMessage, Toast.LENGTH_LONG).show()
     }
     fun duplicate(index: Int) {
         val current = decodeLuaButtonSlots(prefs.customButtons.get())
