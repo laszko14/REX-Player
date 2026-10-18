@@ -21,6 +21,13 @@ class AutoAudioSpectralPlannerTest {
     spectralCentroidHz = centroid,
     spectralFlatness = flatness,
     spectralRolloffHz = rolloff,
+    segments = List(3) {
+      AutoAudioSegmentMetrics(
+        rmsDb = -22.0, noiseFloorDb = floor, dynamicRangeDb = dynamics,
+        spectralCentroidHz = centroid, spectralFlatness = flatness,
+        spectralRolloffHz = rolloff, frameCount = 100,
+      )
+    },
   )
 
   @Test fun profileDefinitionsMirrorAllSevenUserLuaProfiles() {
@@ -56,16 +63,41 @@ class AutoAudioSpectralPlannerTest {
       before,
     )
     assertFalse(plan.after.drcOn)
-    assertTrue(plan.findings.any { it.contains("nie rozpoznawanie") })
+    assertTrue(plan.findings.any { it.contains("Nie potwierdzono mowy") })
   }
 
-  @Test fun spectralNoiseCandidateIsWeakLevelFiveNotMaxLevel() {
+  @Test fun noisySpectrumAloneDoesNotEnableRnnoiseWithoutVerifiedSpeech() {
     val plan = AutoAudioPlanner.plan(
       spectrum(centroid = 3000.0, flatness = 0.65, rolloff = 7500.0,
         floor = -26.0, dynamics = 8.0),
       before.copy(noise = 0),
     )
-    assertEquals(5, plan.after.noise)
+    assertEquals(0, plan.after.noise)
+  }
+
+  @Test fun aSingleBrightSceneCannotChangeTheVoiceEq() {
+    val bright = AutoAudioSegmentMetrics(
+      rmsDb = -21.0, noiseFloorDb = -42.0, dynamicRangeDb = 12.0,
+      spectralCentroidHz = 5000.0, spectralFlatness = 0.35,
+      spectralRolloffHz = 11000.0, frameCount = 100,
+    )
+    val neutral = bright.copy(
+      spectralCentroidHz = 1700.0, spectralFlatness = 0.10,
+      spectralRolloffHz = 4700.0,
+    )
+    val metrics = spectrum(5000.0, 0.35, 11000.0)
+      .copy(segments = listOf(bright, neutral, neutral))
+    val plan = AutoAudioPlanner.plan(metrics, before)
+    assertEquals(before.trebleLevel, plan.after.trebleLevel)
+    assertEquals(before.voiceLevel, plan.after.voiceLevel)
+  }
+
+  @Test fun incompleteSpectralMeasurementsDoNotCauseGuessing() {
+    val metrics = spectrum(5000.0, 0.35, 11000.0)
+    val plan = AutoAudioPlanner.plan(
+      metrics.copy(segments = listOf(metrics.segments.first())), before,
+    )
+    assertEquals(before, plan.after)
   }
 
   @Test fun unsupportedOrInconclusiveSpectralDataChangesNothing() {
