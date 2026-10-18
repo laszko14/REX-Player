@@ -126,15 +126,19 @@ internal fun LuaSoftPalette(title: String, selected: Int, onSelect: (Int) -> Uni
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Text(title, color = LuaDarkText, modifier = Modifier.weight(.41f), fontSize = 12.sp)
-        Row(modifier = Modifier.weight(.59f).horizontalScroll(rememberScrollState()),
+        Row(modifier = Modifier.weight(.59f),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            colors.forEach { swatch ->
+            Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                colors.forEach { swatch ->
                 Box(
                     modifier = Modifier.size(26.dp).background(Color(swatch), CircleShape)
                         .then(if (selected == swatch) Modifier.border(2.dp, LuaDarkAccent, CircleShape) else Modifier)
                         .clickable { onSelect(swatch) },
                 )
+                }
             }
             Box(
                 modifier = Modifier.size(26.dp).background(Color(0xFF303846), CircleShape)
@@ -214,7 +218,7 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         LuaSoftCard(stringResource(R.string.lua_v3_style)) {
             LuaSoftSegment(
-                listOf(stringResource(R.string.lua_v2_soft_v2), stringResource(R.string.lua_v3_v29),
+                listOf(stringResource(R.string.lua_v3_mode_v2), stringResource(R.string.lua_v3_mode_v29),
                     stringResource(R.string.lua_v3_classic)),
                 activeStyle,
             ) { index ->
