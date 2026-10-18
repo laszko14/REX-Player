@@ -5,11 +5,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -198,6 +200,11 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
     val shape by prefs.luaSoftShape.collectAsState()
     val border by prefs.luaButtonBorderOpacity.collectAsState()
     val font by prefs.luaButtonFontSize.collectAsState()
+    val fontId by prefs.luaButtonTypeface.collectAsState()
+    val outlineEnabled by prefs.luaButtonTextOutlineEnabled.collectAsState()
+    val outlineHalfPx by prefs.luaButtonTextOutlineHalfPx.collectAsState()
+    val outlineArgb by prefs.luaButtonTextOutlineColor.collectAsState()
+    var fontPickerOpen by remember { mutableStateOf(false) }
     val weight by prefs.luaButtonFontWeightPercent.collectAsState()
     val shadow by prefs.luaSoftTextShadow.collectAsState()
     val contrast by prefs.luaSoftContrast.collectAsState()
@@ -230,6 +237,61 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
             }
             if (activeStyle != 0) Text(stringResource(R.string.lua_v3_disabled_tip),
                 color = LuaDarkMuted, fontSize = 11.sp, lineHeight = 15.sp)
+        }
+        LuaSoftCard("Czcionka i kontur tekstu") {
+            TextButton(onClick = { fontPickerOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                Text("Czcionka: " + (luaTypefaces.getOrNull(fontId)?.name ?: "Domyślna") + " ▾",
+                    color = LuaDarkText, fontSize = 13.sp)
+            }
+            Text("1x 1.25x 2.5x Gł Sz", fontFamily = luaFontFamily(fontId),
+                color = LuaDarkText, fontSize = 15.sp, maxLines = 1)
+            LuaSoftSwitch("Kontur tekstu", outlineEnabled,
+                prefs.luaButtonTextOutlineEnabled::set)
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("Grubość konturu", modifier = Modifier.weight(.45f),
+                    color = LuaDarkText, fontSize = 12.sp, maxLines = 2)
+                Slider(
+                    value = outlineHalfPx.coerceIn(0, 12).toFloat(),
+                    onValueChange = { prefs.luaButtonTextOutlineHalfPx.set(it.roundToInt()) },
+                    valueRange = 0f..12f, steps = 11,
+                    modifier = Modifier.weight(.55f),
+                    colors = SliderDefaults.colors(thumbColor = LuaDarkAccent, activeTrackColor = LuaDarkAccent),
+                )
+                Text("${outlineHalfPx.coerceIn(0, 12) / 2f} px",
+                    modifier = Modifier.width(50.dp), color = LuaDarkText,
+                    fontSize = 12.sp, textAlign = TextAlign.End)
+            }
+            LuaSoftPalette("Kolor konturu", outlineArgb,
+                prefs.luaButtonTextOutlineColor::set,
+                listOf(0xFF000000.toInt(), 0xFF1B2630.toInt(),
+                    0xFF4E5765.toInt(), 0xFFFFFFFF.toInt(),
+                    0xFF142A60.toInt()))
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(Color(0xFFB6BDC4), RoundedCornerShape(8.dp))
+                    .padding(12.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                ContrastVideoLabel(
+                    text = "1x 1.25x 2.5x Gł Sz",
+                    color = Color.White, fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    fontFamily = luaFontFamily(fontId),
+                    outlined = outlineEnabled,
+                    outlineWidthPx = if (outlineEnabled) outlineHalfPx.coerceIn(0, 12) / 2f else 0f,
+                    outlineColorOverride = Color(outlineArgb),
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TextButton(onClick = {
+                prefs.luaButtonTypeface.set(0)
+                prefs.luaButtonTextOutlineEnabled.set(false)
+                prefs.luaButtonTextOutlineHalfPx.set(4)
+                prefs.luaButtonTextOutlineColor.set(0xFF000000.toInt())
+            }) {
+                Text("Przywróć ustawienia domyślne czcionki i konturu",
+                    color = LuaDarkText, fontSize = 12.sp, maxLines = 2)
+            }
         }
         LuaSoftCard(stringResource(R.string.lua_v2_size)) {
             LuaSoftSlider(stringResource(R.string.lua_v2_button_size), scale, 70, 150, "%",
@@ -318,6 +380,9 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                             fontWeight = fontWeightForReadability(weight),
                             contrastProfile = contrast,
                             textShadow = shadow,
+                            fontFamily = luaFontFamily(fontId),
+                            userOutlinePx = if (outlineEnabled) outlineHalfPx.coerceIn(0, 12) / 2f else null,
+                            userOutlineColor = Color(outlineArgb),
                         )
                     }
                 }
@@ -338,7 +403,7 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     " dp", prefs.luaButtonColumnGap::set)
                 LuaSoftSlider(stringResource(R.string.audit_vertical_spacing), rowGap, 0, 24,
                     " dp", prefs.luaButtonRowGap::set)
-                LuaSoftSlider(stringResource(R.string.audit_x_position), positionX, 0, 240,
+                LuaSoftSlider(stringResource(R.string.audit_x_position), positionX, -16, 240,
                     " dp", prefs.luaButtonPositionX::set)
                 LuaSoftSlider(stringResource(R.string.audit_y_position), positionY, 0, 240,
                     " dp", prefs.luaButtonPositionY::set)
@@ -352,5 +417,46 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     alwaysVisible, prefs.luaButtonAlwaysVisible::set)
             }
         }
+    }
+    if (fontPickerOpen) {
+        AlertDialog(
+            onDismissRequest = { fontPickerOpen = false },
+            containerColor = Color(0xFF171D26),
+            titleContentColor = LuaDarkText,
+            textContentColor = LuaDarkText,
+            title = { Text("Wybierz czcionkę", color = LuaDarkText) },
+            text = {
+                Column(
+                    modifier = Modifier.heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    luaTypefaces.forEachIndexed { index, choice ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                                .background(
+                                    if (index == fontId) Color(0xFF304469) else Color(0xFF232B37),
+                                    RoundedCornerShape(8.dp),
+                                )
+                                .clickable {
+                                    prefs.luaButtonTypeface.set(index)
+                                    fontPickerOpen = false
+                                }
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                        ) {
+                            Text(choice.name, color = LuaDarkText,
+                                fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                            Text("1x 1.25x 2.5x Gł Sz", color = LuaDarkText,
+                                fontFamily = choice.family, fontSize = 15.sp,
+                                maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { fontPickerOpen = false }) {
+                    Text("Zamknij", color = LuaDarkText)
+                }
+            },
+        )
     }
 }

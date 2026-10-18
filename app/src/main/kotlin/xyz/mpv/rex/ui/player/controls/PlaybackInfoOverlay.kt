@@ -73,6 +73,7 @@ internal fun PlaybackInfoOverlay(
   val paddingDp by preferences.hudPaddingDp.collectAsState()
   val backgroundOpacity by preferences.hudBackgroundOpacity.collectAsState()
   val fontWeightPercent by preferences.hudFontWeightPercent.collectAsState()
+  val luaFontId by preferences.luaButtonTypeface.collectAsState()
   val outlinePercent by preferences.hudOutlinePercent.collectAsState()
   val radiusDp by preferences.hudCornerRadiusDp.collectAsState()
   val storedX by preferences.hudPositionX.collectAsState()
@@ -201,6 +202,7 @@ internal fun PlaybackInfoOverlay(
       gap = gap,
       factor = factor,
       outlineWidthDp = outlineWidthDpForReadability(outlinePercent) * factor,
+      fontFamily = luaFontFamily(luaFontId),
       ),
       modifier = panelModifier,
       maxWidth = maxWidth,

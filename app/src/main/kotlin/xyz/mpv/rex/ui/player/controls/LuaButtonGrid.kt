@@ -92,6 +92,12 @@ fun LuaButtonGrid(
     val fontSize by preferences.luaButtonFontSize.collectAsState()
     val fontWeightPercent by preferences.luaButtonFontWeightPercent.collectAsState()
     val outlinePercent by preferences.luaButtonOutlinePercent.collectAsState()
+    val fontId by preferences.luaButtonTypeface.collectAsState()
+    val userOutlineEnabled by preferences.luaButtonTextOutlineEnabled.collectAsState()
+    val userOutlineHalfPx by preferences.luaButtonTextOutlineHalfPx.collectAsState()
+    val userOutlineArgb by preferences.luaButtonTextOutlineColor.collectAsState()
+    val selectedFontFamily = luaFontFamily(fontId)
+    val userOutline = if (userOutlineEnabled) userOutlineHalfPx.coerceIn(0, 12) / 2f else null
     val positionY by preferences.luaButtonPositionY.collectAsState()
     val cornerRadius by preferences.luaButtonCornerRadius.collectAsState()
     val borderOpacity by preferences.luaButtonBorderOpacity.collectAsState()
@@ -303,6 +309,9 @@ fun LuaButtonGrid(
                     fontWeight = if (softV2) fontWeightForReadability(fontWeightPercent) else androidx.compose.ui.text.font.FontWeight.Medium,
                     contrastProfile = softContrast,
                     textShadow = softShadow,
+                    fontFamily = selectedFontFamily,
+                    userOutlinePx = userOutline,
+                    userOutlineColor = Color(userOutlineArgb),
                 )
             } else {
                 Box(contentAlignment = Alignment.Center, modifier = drawingModifier) {
@@ -311,7 +320,10 @@ fun LuaButtonGrid(
                         textAlign = TextAlign.Center,
                         fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
                         fontWeight = fontWeightForReadability(fontWeightPercent),
-                        outlined = outlinePercent > 0,
+                        fontFamily = selectedFontFamily,
+                        outlineWidthPx = userOutline,
+                        outlineColorOverride = if (userOutline != null) Color(userOutlineArgb) else null,
+                        outlined = userOutline != null || outlinePercent > 0,
                         outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
@@ -329,7 +341,7 @@ fun LuaButtonGrid(
             verticalAlignment = Alignment.Top,
         ) {
             Column(
-                modifier = Modifier.offset(x = leftOffsetDp.coerceIn(0, 240).dp)
+                modifier = Modifier.offset(x = leftOffsetDp.coerceIn(-16, 240).dp)
                     .heightIn(max = maxHeight).then(
                     if (editMode) Modifier.verticalScroll(rememberScrollState()) else Modifier
                 ),
