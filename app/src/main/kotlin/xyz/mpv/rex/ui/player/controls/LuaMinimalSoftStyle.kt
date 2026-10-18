@@ -3,7 +3,6 @@ package xyz.mpv.rex.ui.player.controls
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -122,7 +121,7 @@ internal fun LuaMinimalSoftTile(
             fontSize = fontSize,
             fontWeight = fontWeight,
             outlined = !v2 || contrastProfile > 0,
-            outlineWidthDp = if (v2) lineRadiusDp else lineRadiusDp,
+            outlineWidthDp = lineRadiusDp,
             outlineColorOverride = if (v2) Color(0xFF1E2630) else null,
             shadowStyle = shadow,
             maxLines = 1,
