@@ -22,7 +22,7 @@ import com.android.tools.screenshot.PreviewTest
 
 /** Real production renderer over synthetic video-like backgrounds (no APK required). */
 @Composable
-private fun MinimalSoftPreview(bright: Boolean, touched: Boolean, portrait: Boolean) {
+private fun MinimalSoftPreview(bright: Boolean, touched: Boolean) {
     val backdrop = if (bright)
         listOf(Color(0xFFE2D5AA), Color(0xFF8EABAF), Color(0xFFAE905E))
     else
@@ -62,7 +62,7 @@ private fun MinimalSoftPreview(bright: Boolean, touched: Boolean, portrait: Bool
         Text(
             "Minimal Soft • ${if (bright) "jasne" else "ciemne"} tło • " +
                 if (touched) "85% po dotknięciu" else "55% w spoczynku",
-            modifier = Modifier.padding(start = 12.dp, top = if (portrait) 235.dp else 235.dp),
+            modifier = Modifier.padding(start = 12.dp, top = 235.dp),
             color = if (bright) Color(0xFF202833) else Color.White,
             fontSize = 12.sp,
         )
@@ -73,26 +73,26 @@ private fun MinimalSoftPreview(bright: Boolean, touched: Boolean, portrait: Bool
 @Preview(name = "31 Minimal Soft - jasne tło, spoczynek", widthDp = 850, heightDp = 420)
 @Composable
 fun MinimalSoftLightIdlePreview() {
-    MinimalSoftPreview(bright = true, touched = false, portrait = false)
+    MinimalSoftPreview(bright = true, touched = false)
 }
 
 @PreviewTest
 @Preview(name = "32 Minimal Soft - ciemne tło, spoczynek", widthDp = 850, heightDp = 420)
 @Composable
 fun MinimalSoftDarkIdlePreview() {
-    MinimalSoftPreview(bright = false, touched = false, portrait = false)
+    MinimalSoftPreview(bright = false, touched = false)
 }
 
 @PreviewTest
 @Preview(name = "33 Minimal Soft - jasne tło, po dotknięciu", widthDp = 850, heightDp = 420)
 @Composable
 fun MinimalSoftLightTouchedPreview() {
-    MinimalSoftPreview(bright = true, touched = true, portrait = false)
+    MinimalSoftPreview(bright = true, touched = true)
 }
 
 @PreviewTest
 @Preview(name = "34 Minimal Soft - pion, spoczynek", widthDp = 420, heightDp = 850)
 @Composable
 fun MinimalSoftPortraitPreview() {
-    MinimalSoftPreview(bright = false, touched = false, portrait = true)
+    MinimalSoftPreview(bright = false, touched = false)
 }
