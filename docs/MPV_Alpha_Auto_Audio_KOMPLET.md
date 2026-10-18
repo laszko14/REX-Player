@@ -438,3 +438,31 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 3. Jeśli sygnał PCM jest poprawny, przetestować **drugi niezależny klasyfikator** / detekcję muzyki na tych samych pięciu kontrolach **bez zmiany filtrów**; dopiero po pomiarze fałszywych wykryć i przeoczeń rozważać reguły sterowania.
 4. Nie scalać PR #55 ani nie wydawać podpisanego v47 wyłącznie na podstawie testów jednostkowych i diagnostyki.
 
+
+## 24. Auto Audio v47 — kolejny test wywiadu ulicznego i usterka prezentacji diagnostyki (19.10.2026)
+
+### Test rzeczywisty z nowym panelem PCM (5 zrzutów użytkownika)
+
+- Źródło: **wywiad uliczny**, bieżący streaming na Nothing Phone (1), szczegółowa analiza **3 × 10 s**; raport pokazuje **30,0 s** i ciągłość PTS. Wariant diagnostyczny ARM64 v47 z nową sekcją kontroli wejścia VAD.
+- Pomiar źródłowy **FFmpeg/astats** (nie jest to pomiar wejścia PCM do WebRTC): RMS **−19,3 dBFS**, tło szacunkowe **−24,8 dBFS**, dynamika **9,0 dB**, centroid **1792 Hz**, spectral flatness **0,04**, rolloff **2766 Hz**, kanały nieznane.
+- Oddzielne fragmenty metryk widmowych: F1 centroid **1915 Hz**, flatness **0,05**, rolloff **2906 Hz**, tło **−22,7 dBFS**, dynamika **6,2 dB**; F2 **1853 Hz / 0,04 / 2906 Hz / −25,1 dBFS / 7,8 dB**; F3 **1655 Hz / 0,04 / 2555 Hz / −26,4 dBFS / 11,9 dB**.
+- WebRTC VAD ponownie **100% pozytywnych ramek**, a raport nowej diagnostyki pokazuje **48000 Hz → 16000 Hz i 500 ramek w każdym z trzech 10-sekundowych okien**. To nie oznacza potwierdzonego wykrycia dialogów, zwłaszcza wobec poprzedniego wyniku **99% na instrumentalu bez słów**.
+- Na panelu aktywne EQ, DRC 3/3 i Dialogue Enhance 5/5, Szum Lua OFF; źródłowy łańcuch af widoczny na zrzucie. Odwracalna propozycja **DRC 3→2** wynika z niewielkiej dynamiki źródła, a nie z potwierdzonego VAD. Nie potwierdzono, że użytkownik zastosował tę zmianę lub ocenił odsłuch A/B.
+
+### Reprodukcja i przyczyna błędu UI (Systematic Debugging)
+
+- Na zdjęciach w sekcji „Kontrola wejścia VAD” literalnie pozostają `VAD %.0f%%`, `RMS %.1f`, `szczyt %.1f`. Pokazywane jest też `prawie cisza 100,0%` i `blisko przesterowania −19,5%` / `−20,7%` / `−18,3%`, co jest fizycznie niedopuszczalnym ujemnym udziałem procentowym.
+- Odczyt źródła `AutoAudioDialog.kt` wykazał, że **`.format(...)` wiązało się tylko z ostatnim literałem String** (operator `+`), więc pierwsze trzy placeholdery nie były formatowane, a pozostałe dwa otrzymywały argumenty `positiveFraction` i `rmsDbfs`, zamiast `nearSilenceFraction` i `nearFullScaleFraction`.
+- To błąd **prezentacji**, a nie dowód awarii JNI, VAD, resamplingu lub obliczeń w `AutoAudioVadPcm`. **Wartości rzeczywiste** wejściowego RMS/szczytu oraz udziałów ciszy/przesterowania **nie są możliwe do odzyskania z tych zrzutów**. Należy powtórzyć pomiar po poprawce.
+
+### Minimalna poprawka w istniejącym PR #55
+
+- Wyodrębniono `formatVadWindow(index, window, locale)` w `AutoAudioVadPcm.kt`; **jedno wywołanie** `String.format(locale, cały_szablon, wszystkie_argumenty)` obejmuje nazwę fragmentu, source sample rate, liczbę ramek, VAD%, wejściowe RMS/peak, nearSilence% i nearFullScale%. `AutoAudioDialog.kt` korzysta bezpośrednio z funkcji.
+- Dodano test regresyjny `diagnosticTextUsesAllFiveNumericFieldsInCorrectOrder`: sprawdza poprawną kolejność, usunięcie surowych placeholderów, przykładowe **100%, −19,5 dBFS, −4,1 dBFS, 0,2% i 0,1%**, a także formatowanie PL/EN. Nie zmieniono algorytmu klasyfikacji, audio PCM ani sterowania filtrami.
+- Nadal **nie** można scalić PR #55 ani wydać produkcyjnego APK v47 przed zielonym CI zmian i porównaniem próbek kontrolnych na urządzeniu.
+
+### Kolejny punkt kontrolny
+
+1. Sprawdzić status CI po zmianie oraz komplet `assembleDebug/testDebugUnitTest/lintDebug/check_workflows`. Zamieścić wynik w dokumentacji, gdy będzie potwierdzony.
+2. Z nowego **diagnostycznego** APK powtórzyć ten sam wywiad i **instrumental bez słów**. Odczytać już prawidłowe PCM RMS/peak/near-silence/near-full-scale **osobno w F1/F2/F3** i zobaczyć, czy oba materiały mają fizycznie rozsądne dane.
+3. Potem cisza/szum/mieszany materiał, dopiero na koniec ocena ograniczeń WebRTC i ewentualna niezależna klasyfikacja mowy/muzyki; bez automatycznych zmian filtrów.
