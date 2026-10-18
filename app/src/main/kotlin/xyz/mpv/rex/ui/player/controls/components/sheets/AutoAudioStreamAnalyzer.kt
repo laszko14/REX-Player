@@ -29,7 +29,6 @@ import `is`.xyz.mpv.MPVLib
 internal object AutoAudioStreamAnalyzer {
   private const val PROBE = "@rex_auto_audio_probe"
   private val mutex = Mutex()
-  private val timePattern = Regex("""\bpts_time:\s*([-+0-9.eE]+)""")
 
   fun supports(path: String): Boolean {
     val scheme = android.net.Uri.parse(path).scheme?.lowercase()
@@ -128,7 +127,7 @@ internal object AutoAudioStreamAnalyzer {
 
 internal object StreamAstatsParser {
   private data class Sample(val time: Double, val rms: Double, val peak: Double)
-  private val timePattern = Regex("""\\bpts_time:\\s*([-+0-9.eE]+)""")
+  private val timePattern = Regex("""\bpts_time:\s*([-+0-9.eE]+)""")
 
   fun parse(raw: String, windows: List<Pair<Double, Double>>): AutoAudioMetrics {
     val samples = ArrayList<Sample>()
@@ -146,8 +145,7 @@ internal object StreamAstatsParser {
     for (line in raw.lineSequence()) {
       if (line.startsWith("frame:")) {
         flush()
-        frameTime = Regex("""\bpts_time:\s*([-+0-9.eE]+)""")
-          .find(line)?.groupValues?.get(1)?.toDoubleOrNull()
+        frameTime = timePattern.find(line)?.groupValues?.get(1)?.toDoubleOrNull()
         rms = null
         peak = null
       } else if (line.startsWith("lavfi.astats.Overall.RMS_level=")) {
