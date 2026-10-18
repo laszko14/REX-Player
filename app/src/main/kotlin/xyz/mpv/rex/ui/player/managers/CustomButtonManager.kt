@@ -214,7 +214,7 @@ class CustomButtonManager(
             val value = speed.groupValues[1].toFloatOrNull() ?: return false
             if (value !in 0.1f..8f) return false
             MPVLib.setPropertyFloat("speed", value)
-            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value))
+            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value.toString()))
             return true
         }
         val speedCommand = Regex("""^mp\.commandv\s*\(\s*['"]set['"]\s*,\s*['"]speed['"]\s*,\s*['"]?([0-9]+(?:\.[0-9]+)?)['"]?\s*\)$""")
@@ -223,7 +223,7 @@ class CustomButtonManager(
             val value = speedCommand.groupValues[1].toFloatOrNull() ?: return false
             if (value !in 0.1f..8f) return false
             MPVLib.setPropertyFloat("speed", value)
-            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value))
+            showFeedback(context.getString(R.string.audit_lua_speed_feedback, value.toString()))
             return true
         }
         val seek = Regex("""^mp\.commandv\s*\(\s*['"]seek['"]\s*,\s*['"]?([+-]?[0-9]+(?:\.[0-9]+)?)['"]?\s*,\s*['"](relative|absolute)['"]\s*\)$""")
