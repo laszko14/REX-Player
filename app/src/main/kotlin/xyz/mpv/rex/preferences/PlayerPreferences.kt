@@ -26,6 +26,8 @@ class PlayerPreferences(
   val luaButtonWidth = preferenceStore.getInt("lua_button_width_dp", 52)
   val luaButtonHeight = preferenceStore.getInt("lua_button_height_dp", 27)
   val luaButtonFontSize = preferenceStore.getInt("lua_button_font_sp", 11)
+  // Minimal Soft changes only rendering; legacy/per-button colors remain saved.
+  val luaButtonMinimalSoft = preferenceStore.getBoolean("lua_button_minimal_soft", true)
   val luaButtonHighContrastText = preferenceStore.getBoolean("lua_button_high_contrast_text", false)
   val luaButtonBoldText = preferenceStore.getBoolean("lua_button_bold_text", false)
   // New continuous settings preserve the old switches on first upgrade.
