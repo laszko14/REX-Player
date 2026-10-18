@@ -200,10 +200,16 @@ fun PlayerControls(
     RexEqualizerAudio.apply(rexEqEnabled, RexEqualizerAudio.parseBands(rexEqBands), rexEqBoost)
   }
   val drcEnabled by audioPreferences.drcEnabled.collectAsState()
-  LaunchedEffect(drcEnabled, rexEqMediaPath) {
+  val drcStrength by audioPreferences.drcStrength.collectAsState()
+  val dialogueEnhanceLevel by audioPreferences.dialogueEnhanceLevel.collectAsState()
+  LaunchedEffect(drcEnabled, drcStrength, rexEqMediaPath) {
     // Each effect owns only its named filter, so existing Lua/EQ filters remain intact.
     delay(130L)
-    RexDrcAudio.apply(drcEnabled)
+    RexDrcAudio.apply(drcEnabled, drcStrength)
+  }
+  LaunchedEffect(dialogueEnhanceLevel, rexEqMediaPath) {
+    delay(130L)
+    RexDialogueAudio.apply(dialogueEnhanceLevel)
   }
   val context = LocalContext.current
   val gesturePreferences = koinInject<GesturePreferences>()
