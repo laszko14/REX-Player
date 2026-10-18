@@ -63,4 +63,5 @@
     <string name="lua_v3_advanced">Wymiary, odstępy i kolory aktywne</string>
     <string name="lua_v3_preview">Podgląd na jasnym i ciemnym tle</string>
     <string name="lua_v3_preview_tip">Podgląd służy do oceny kontrastu i nie zmienia filmu.</string>
+    <string name="lua_v3_custom_override_hint">Przyciski z indywidualnymi kolorami zachowują swoje ustawienia. Możesz je zmienić w zakładce „Przyciski” → Edytuj.</string>
 </resources>
