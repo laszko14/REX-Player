@@ -144,7 +144,7 @@ fun LuaButtonGrid(
     val rowSpace = rowGap.coerceIn(0, 24).dp
     val colSpace = columnGap.coerceIn(0, 24).dp
     val maxHeight = (LocalConfiguration.current.screenHeightDp -
-        92 - positionY.coerceIn(0, 240)).coerceAtLeast(95).dp
+        92 - luaButtonVerticalPositionDp(positionY)).coerceAtLeast(95).dp
     val shape = if (minimalSoft && softV2) when (softShape.coerceIn(0, 3)) {
         0 -> CircleShape
         1 -> RoundedCornerShape(0.dp)

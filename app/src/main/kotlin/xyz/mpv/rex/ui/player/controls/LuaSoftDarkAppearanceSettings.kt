@@ -446,7 +446,7 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                     " dp", prefs.luaButtonRowGap::set)
                 LuaSoftSlider(stringResource(R.string.audit_x_position), positionX, -16, 240,
                     " dp", prefs.luaButtonPositionX::set)
-                LuaSoftSlider(stringResource(R.string.audit_y_position), positionY, 0, 240,
+                LuaSoftSlider(stringResource(R.string.audit_y_position), positionY, LUA_POSITION_Y_MIN_DP, LUA_POSITION_Y_MAX_DP,
                     " dp", prefs.luaButtonPositionY::set)
                 LuaSoftSlider(stringResource(R.string.audit_active_background),
                     activeTransparency, 0, 100, "%", prefs.luaButtonActiveTransparency::set)
