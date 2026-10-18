@@ -183,6 +183,48 @@ class AutoAudioSpectralPlannerTest {
     assertEquals("DRC", plan.changes.single().name)
   }
 
+  @Test fun instrumentalWithNinetySevenPercentFalseVadMustNotTriggerSpeechChanges() {
+    // Real negative-control streaming test on Nothing Phone (1), 3 × 10 s:
+    // instrumental only, yet WebRTC marked 95%, 97%, 99% as speech.
+    // These are binary frame votes, not verified probability.
+    val metrics = spectrum(
+      centroid = 1509.0, flatness = 0.03, rolloff = 2713.0,
+      floor = -29.3, dynamics = 19.2,
+    ).copy(
+      rmsDb = -12.8,
+      vadSpeechFraction = 0.97,
+      verifiedSpeechProbability = null,
+      segments = listOf(
+        AutoAudioSegmentMetrics(
+          rmsDb = -13.0, noiseFloorDb = -29.5, dynamicRangeDb = 19.2,
+          spectralCentroidHz = 1500.0, spectralFlatness = 0.04,
+          spectralRolloffHz = 2735.0, frameCount = 500,
+        ),
+        AutoAudioSegmentMetrics(
+          rmsDb = -13.2, noiseFloorDb = -29.3, dynamicRangeDb = 19.0,
+          spectralCentroidHz = 1509.0, spectralFlatness = 0.03,
+          spectralRolloffHz = 2606.0, frameCount = 500,
+        ),
+        AutoAudioSegmentMetrics(
+          rmsDb = -12.9, noiseFloorDb = -29.3, dynamicRangeDb = 19.3,
+          spectralCentroidHz = 1526.0, spectralFlatness = 0.03,
+          spectralRolloffHz = 2778.0, frameCount = 500,
+        ),
+      ),
+    )
+    val current = before.copy(
+      dialogue = 5, drcOn = true, drcLevel = 2,
+      noise = 0, voiceLevel = 0, trebleLevel = 0,
+      eqOn = true, eqBoost = 0,
+    )
+    val plan = AutoAudioPlanner.plan(metrics, current)
+    assertEquals(current, plan.after)
+    assertTrue(plan.changes.isEmpty())
+    assertTrue(plan.findings.any { it.contains("WebRTC VAD wykrył 97%") })
+    assertTrue(plan.findings.any { it.contains("Żaden z 3 fragmentów") })
+    assertFalse(plan.findings.any { it.contains("Fragmenty różnią się") })
+  }
+
   @Test fun extremeDialogueAndDrcCanOfferGentlerDialogueWhenDynamicsNotLow() {
     val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 20.0)
     val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)
