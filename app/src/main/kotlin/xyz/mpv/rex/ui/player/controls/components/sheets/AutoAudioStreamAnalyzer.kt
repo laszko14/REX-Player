@@ -186,17 +186,30 @@ internal object StreamAstatsParser {
     }
     flush()
     require(samples.size >= 60) { "Zbyt mało danych metadanych PCM (astats)." }
+
+    // Metadata can be truncated or PTS can jump at an HLS discontinuity.
+    // Frame count alone (v44) and 55% of a window are NOT enough to call a
+    // sparse recording a complete 10/15-second sample. Fail closed; never
+    // recommend filters based on a partial or discontinuous audio window.
+    require(samples.zipWithNext().all { (a, b) -> b.time >= a.time }) {
+      "Strumień zmienił kolejność czasu audio (PTS). Ponów analizę."
+    }
     val baseline = samples.first().time
     val byWindow = windows.map { (from, until) ->
-      samples.filter {
+      val subset = samples.filter {
         val relative = it.time - baseline
         relative >= from && relative < until
-      }.also { subset ->
-        require(subset.size >= 15 &&
-          subset.last().time - subset.first().time >= (until - from) * 0.55) {
-          "Strumień nie dostarczył pełnych próbek audio — analiza nie jest wiarygodna."
-        }
       }
+      val seconds = until - from
+      require(seconds > 0.0 && subset.size >= 15 &&
+        subset.firstOrNull()?.let { it.time - baseline - from <= 0.5 } == true &&
+        subset.lastOrNull()?.let { until - (it.time - baseline) <= 0.5 } == true &&
+        subset.last().time - subset.first().time >= seconds * 0.85 &&
+        subset.zipWithNext().all { (a, b) -> b.time - a.time <= 0.75 }) {
+        "Próbka streamingu jest niepełna lub ma przerwy w czasie audio. " +
+          "Nie zmieniono filtrów — ponów analizę."
+      }
+      subset
     }
     val selected = byWindow.flatten()
     val rmsDb = selected.map { it.rms }.sorted()
