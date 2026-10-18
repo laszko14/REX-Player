@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -225,7 +226,13 @@ private fun LuaFontReadabilitySettings(prefs: PlayerPreferences, compact: Boolea
             stringResource(R.string.audit_lua_readability_help),
             style = MaterialTheme.typography.labelSmall,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Wrap the three presets at narrow widths / enlarged system fonts;
+        // a fixed Row squeezes the last label into a vertical clipped column.
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
             OutlinedButton(onClick = {
                 prefs.luaButtonFontWeightPercent.set(0)
                 prefs.luaButtonOutlinePercent.set(0)
