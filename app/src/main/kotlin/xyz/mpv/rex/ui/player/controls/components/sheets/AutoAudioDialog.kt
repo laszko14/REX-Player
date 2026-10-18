@@ -185,14 +185,23 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   val flat = segment.spectralFlatness?.let {
                     "%.2f".format(it)
                   } ?: "brak"
+                  val roll = segment.spectralRolloffHz?.let { "%.0f Hz".format(it) } ?: "brak"
                   Surface(color = Color(0xFF26354A), shape = RoundedCornerShape(10.dp)) {
-                    Row(
+                    Column(
                       Modifier.fillMaxWidth().padding(10.dp),
-                      horizontalArrangement = Arrangement.SpaceBetween,
+                      verticalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
                       Text("Fragment ${index + 1}", fontWeight = FontWeight.Medium)
-                      Text("Jasność: $cent  •  Płaskość: $flat", color = mutedAudioText,
-                        style = MaterialTheme.typography.bodySmall)
+                      Text(
+                        "Jasność: $cent  •  Płaskość: $flat  •  Rolloff: $roll",
+                        color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                      )
+                      Text(
+                        "Tło: %.1f dBFS  •  Dynamika: %.1f dB".format(
+                          segment.noiseFloorDb, segment.dynamicRangeDb,
+                        ),
+                        color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                      )
                     }
                   }
                 }
@@ -212,7 +221,12 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               HorizontalDivider(color = Color(0xFF3B526D))
               Text("Propozycja zmian", fontWeight = FontWeight.Bold)
               if (plan.changes.isEmpty()) {
-                Text("Nie wykryto wystarczająco mocnych powodów do zmiany ustawień.", color = mutedAudioText)
+                Text(
+                  "Brak pewnej korekty. Gdy trzy fragmenty się różnią, nie należy " +
+                    "dopasowywać całego filmu do jednej sceny. Możesz ponowić " +
+                    "analizę w miejscu z wyraźnie słyszalnymi dialogami.",
+                  color = mutedAudioText,
+                )
               }
               plan.changes.forEach { change ->
                 Surface(color = Color(0xFF26354A), shape = RoundedCornerShape(12.dp)) {
@@ -300,6 +314,18 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               },
             ) { Text("Rozpocznij analizę", color = Color.White) }
           } else {
+            OutlinedButton(
+              enabled = !busy,
+              modifier = Modifier.fillMaxWidth(),
+              onClick = {
+                resetPreview()
+                report = null
+                proposal = null
+                issue = null
+                originalPath = null
+                confirmed = false
+              },
+            ) { Text("Powtórz analizę na innym fragmencie") }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
               OutlinedButton(modifier = Modifier.weight(1f), onClick = ::dismiss) { Text("Anuluj / przywróć") }
               Button(
