@@ -54,4 +54,16 @@
     <string name="lua_v2_drag">Przeciągnij, aby zmienić kolejność</string>
     <string name="lua_v2_legacy">Klasyczny wygląd (przed Minimal Soft)</string>
     <string name="lua_v2_icon">Ikona (opcjonalna, do 3 znaków)</string>
+    <string name="lua_v3_style">Styl przycisków</string>
+    <string name="lua_v3_v29">Starszy Minimal Soft v29</string>
+    <string name="lua_v3_classic">Klasyczny</string>
+    <string name="lua_v3_disabled_tip">Ustawienia wyglądu poniżej działają w trybie Minimal Soft v2. Wybierz ten styl, aby zobaczyć zmiany na przyciskach.</string>
+    <string name="lua_v3_corner_tip">Zaokrąglenie działa tylko dla kształtu „Zaokrąglony”.</string>
+    <string name="lua_v3_icon_tip">Nowe ikony dotyczą tylko rozpoznanych przycisków. Własne nazwy pozostają bez zmian.</string>
+    <string name="lua_v3_advanced">Wymiary, odstępy i kolory aktywne</string>
+    <string name="lua_v3_preview">Podgląd na jasnym i ciemnym tle</string>
+    <string name="lua_v3_preview_tip">Podgląd służy do oceny kontrastu i nie zmienia filmu.</string>
+    <string name="lua_v3_custom_override_hint">Przyciski z indywidualnymi kolorami zachowują swoje ustawienia. Możesz je zmienić w zakładce „Przyciski” → Edytuj.</string>
+    <string name="lua_v3_mode_v2">Nowy v2</string>
+    <string name="lua_v3_mode_v29">Starszy v29</string>
 </resources>

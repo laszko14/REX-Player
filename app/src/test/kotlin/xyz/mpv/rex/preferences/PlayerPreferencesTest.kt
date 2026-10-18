@@ -167,5 +167,23 @@ class PlayerPreferencesTest {
     preferences.lastMoreSheetTab.delete()
     assertEquals(0, preferences.lastMoreSheetTab.get())
   }
+
+  @Test
+  fun luaScaleDoesNotChangeThreeFingerScaleOrSavedButtons() {
+    val prefs = PlayerPreferences(InMemoryPreferenceStore())
+    val savedButtons = """{"slots":[null]}"""
+    prefs.customButtons.set(savedButtons)
+    assertEquals(100, prefs.luaButtonScalePercent.get())
+    assertEquals(100, prefs.threeFingerSpeedPanelSize.get())
+    prefs.luaButtonScalePercent.set(125)
+    assertEquals(125, prefs.luaButtonScalePercent.get())
+    assertEquals(100, prefs.threeFingerSpeedPanelSize.get())
+    assertEquals(20, prefs.luaButtonBackgroundTransparency.get())
+    prefs.luaButtonBackgroundTransparency.set(70)
+    assertEquals(70, prefs.luaButtonBackgroundTransparency.get())
+    assertEquals(20, prefs.threeFingerSpeedPanelTransparency.get())
+    assertEquals(savedButtons, prefs.customButtons.get())
+  }
+
 }
 

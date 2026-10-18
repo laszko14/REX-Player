@@ -32,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -125,15 +126,19 @@ internal fun LuaSoftPalette(title: String, selected: Int, onSelect: (Int) -> Uni
     }
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Text(title, color = LuaDarkText, modifier = Modifier.weight(.41f), fontSize = 12.sp)
-        Row(modifier = Modifier.weight(.59f).horizontalScroll(rememberScrollState()),
+        Row(modifier = Modifier.weight(.59f),
             horizontalArrangement = Arrangement.spacedBy(6.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            colors.forEach { swatch ->
+            Row(modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                colors.forEach { swatch ->
                 Box(
                     modifier = Modifier.size(26.dp).background(Color(swatch), CircleShape)
                         .then(if (selected == swatch) Modifier.border(2.dp, LuaDarkAccent, CircleShape) else Modifier)
                         .clickable { onSelect(swatch) },
                 )
+                }
             }
             Box(
                 modifier = Modifier.size(26.dp).background(Color(0xFF303846), CircleShape)
@@ -178,13 +183,18 @@ internal fun LuaSoftSwitch(title: String, checked: Boolean, onChange: (Boolean) 
     }
 }
 
+/**
+ * The only in-player appearance editor. No nested v29 Material2/light-theme panel.
+ * Existing button dimensions, colors and positions are read, never initialized again.
+ */
 @Composable
 internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
-    val scale by prefs.threeFingerSpeedPanelSize.collectAsState()
+    val scale by prefs.luaButtonScalePercent.collectAsState()
     val corner by prefs.luaButtonCornerRadius.collectAsState()
-    val opacity by prefs.threeFingerSpeedPanelTransparency.collectAsState()
+    val opacity by prefs.luaButtonBackgroundTransparency.collectAsState()
     val background by prefs.luaSoftBackgroundColor.collectAsState()
     val textColor by prefs.luaSoftTextColor.collectAsState()
+    val activeText by prefs.luaSoftActiveTextColor.collectAsState()
     val shape by prefs.luaSoftShape.collectAsState()
     val border by prefs.luaButtonBorderOpacity.collectAsState()
     val font by prefs.luaButtonFontSize.collectAsState()
@@ -194,19 +204,52 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
     val icons by prefs.luaSoftIconStyle.collectAsState()
     val softV2 by prefs.luaButtonMinimalSoftV2.collectAsState()
     val softEnabled by prefs.luaButtonMinimalSoft.collectAsState()
+    val buttonWidth by prefs.luaButtonWidth.collectAsState()
+    val buttonHeight by prefs.luaButtonHeight.collectAsState()
+    val rowGap by prefs.luaButtonRowGap.collectAsState()
+    val columnGap by prefs.luaButtonColumnGap.collectAsState()
+    val positionX by prefs.luaButtonPositionX.collectAsState()
+    val positionY by prefs.luaButtonPositionY.collectAsState()
+    val activeTransparency by prefs.luaButtonActiveTransparency.collectAsState()
+    val alwaysVisible by prefs.luaButtonAlwaysVisible.collectAsState()
     var advanced by remember { mutableStateOf(false) }
+    val activeStyle = if (!softEnabled) 2 else if (softV2) 0 else 1
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        LuaSoftCard(stringResource(R.string.lua_v3_style)) {
+            LuaSoftSegment(
+                listOf(stringResource(R.string.lua_v3_mode_v2), stringResource(R.string.lua_v3_mode_v29),
+                    stringResource(R.string.lua_v3_classic)),
+                activeStyle,
+            ) { index ->
+                when (index) {
+                    0 -> { prefs.luaButtonMinimalSoft.set(true); prefs.luaButtonMinimalSoftV2.set(true) }
+                    1 -> { prefs.luaButtonMinimalSoft.set(true); prefs.luaButtonMinimalSoftV2.set(false) }
+                    else -> prefs.luaButtonMinimalSoft.set(false)
+                }
+            }
+            if (activeStyle != 0) Text(stringResource(R.string.lua_v3_disabled_tip),
+                color = LuaDarkMuted, fontSize = 11.sp, lineHeight = 15.sp)
+        }
         LuaSoftCard(stringResource(R.string.lua_v2_size)) {
-            LuaSoftSlider(stringResource(R.string.lua_v2_button_size), scale, 70, 150, "%", prefs.threeFingerSpeedPanelSize::set)
-            LuaSoftSlider(stringResource(R.string.lua_v2_corner), corner, 0, 24, "", prefs.luaButtonCornerRadius::set)
-            LuaSoftSlider(stringResource(R.string.lua_v2_background_opacity), opacity, 0, 100, "%", prefs.threeFingerSpeedPanelTransparency::set)
+            LuaSoftSlider(stringResource(R.string.lua_v2_button_size), scale, 70, 150, "%",
+                prefs.luaButtonScalePercent::set)
+            if (shape == 2) {
+                LuaSoftSlider(stringResource(R.string.lua_v2_corner), corner, 0, 24, " dp",
+                    prefs.luaButtonCornerRadius::set)
+            } else {
+                Text(stringResource(R.string.lua_v3_corner_tip), color = LuaDarkMuted,
+                    fontSize = 11.sp)
+            }
+            LuaSoftSlider(stringResource(R.string.lua_v2_background_opacity), opacity, 0, 100, "%",
+                prefs.luaButtonBackgroundTransparency::set)
         }
         LuaSoftCard(stringResource(R.string.lua_v2_colors)) {
             Text(stringResource(R.string.lua_v2_shape), color = LuaDarkMuted, fontSize = 12.sp)
-            LuaSoftSegment(listOf(stringResource(R.string.lua_v2_circle),
-                stringResource(R.string.lua_v2_square), stringResource(R.string.lua_v2_rounded),
-                stringResource(R.string.lua_v2_minimal)), shape, prefs.luaSoftShape::set)
+            LuaSoftSegment(
+                listOf(stringResource(R.string.lua_v2_circle), stringResource(R.string.lua_v2_square),
+                    stringResource(R.string.lua_v2_rounded), stringResource(R.string.lua_v2_minimal)),
+                shape, prefs.luaSoftShape::set)
             LuaSoftPalette(stringResource(R.string.lua_v2_bg_color), background,
                 prefs.luaSoftBackgroundColor::set,
                 listOf(0xFF1F2A33.toInt(), 0xFF27364A.toInt(), 0xFF4C4540.toInt(),
@@ -215,27 +258,99 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                 prefs.luaSoftTextColor::set,
                 listOf(0xFFB8C2CC.toInt(), 0xFFFFFFFF.toInt(), 0xFF101419.toInt(),
                     0xFFFFDD6C.toInt(), 0xFF70DE85.toInt(), 0xFFFF7070.toInt()))
-            LuaSoftSlider(stringResource(R.string.lua_v2_border), border, 0, 100, "%", prefs.luaButtonBorderOpacity::set)
+            LuaSoftSlider(stringResource(R.string.lua_v2_border), border, 0, 100, "%",
+                prefs.luaButtonBorderOpacity::set)
+            Text(stringResource(R.string.lua_v3_custom_override_hint),
+                color = LuaDarkMuted, fontSize = 11.sp, lineHeight = 15.sp)
         }
         LuaSoftCard(stringResource(R.string.lua_v2_typography)) {
-            LuaSoftSlider(stringResource(R.string.lua_v2_font_size), font, 8, 22, " sp", prefs.luaButtonFontSize::set)
-            LuaSoftSlider(stringResource(R.string.lua_v2_font_weight), weight, 0, 100, "%", prefs.luaButtonFontWeightPercent::set)
+            LuaSoftSlider(stringResource(R.string.lua_v2_font_size), font, 8, 22, " sp",
+                prefs.luaButtonFontSize::set)
+            LuaSoftSlider(stringResource(R.string.lua_v2_font_weight), weight, 0, 100, "%",
+                prefs.luaButtonFontWeightPercent::set)
             LuaSoftSwitch(stringResource(R.string.lua_v2_shadow), shadow, prefs.luaSoftTextShadow::set)
             Text(stringResource(R.string.lua_v2_contrast), color = LuaDarkMuted, fontSize = 12.sp)
-            LuaSoftSegment(listOf(stringResource(R.string.lua_v2_off), stringResource(R.string.lua_v2_light),
-                stringResource(R.string.lua_v2_medium), stringResource(R.string.lua_v2_strong)), contrast, prefs.luaSoftContrast::set)
+            LuaSoftSegment(
+                listOf(stringResource(R.string.lua_v2_off), stringResource(R.string.lua_v2_light),
+                    stringResource(R.string.lua_v2_medium), stringResource(R.string.lua_v2_strong)),
+                contrast, prefs.luaSoftContrast::set)
             Text(stringResource(R.string.lua_v2_icons), color = LuaDarkMuted, fontSize = 12.sp)
-            LuaSoftSegment(listOf(stringResource(R.string.lua_v2_default), stringResource(R.string.lua_v2_modern),
-                stringResource(R.string.lua_v2_simple)), icons, prefs.luaSoftIconStyle::set)
+            LuaSoftSegment(
+                listOf(stringResource(R.string.lua_v2_default), stringResource(R.string.lua_v2_modern),
+                    stringResource(R.string.lua_v2_simple)),
+                icons, prefs.luaSoftIconStyle::set)
+            if (icons != 0) Text(stringResource(R.string.lua_v3_icon_tip),
+                color = LuaDarkMuted, fontSize = 11.sp)
         }
-        LuaSoftCard(stringResource(R.string.lua_v2_advanced)) {
-            LuaSoftSwitch(stringResource(R.string.lua_v2_soft_v2), softV2, prefs.luaButtonMinimalSoftV2::set)
-            LuaSoftSwitch(stringResource(R.string.lua_v2_legacy), !softEnabled,
-                { prefs.luaButtonMinimalSoft.set(!it) })
-            TextButton(onClick = { advanced = !advanced }) {
-                Text(stringResource(R.string.lua_v2_advanced) + if (advanced) " ▲" else " ▼", color = LuaDarkText)
+        LuaSoftCard(stringResource(R.string.lua_v3_preview)) {
+            val ratio = scale.coerceIn(70, 150) / 100f
+            val tileWidth = (buttonWidth.coerceIn(30, 140) * ratio).dp
+            val tileHeight = (buttonHeight.coerceIn(22, 80) * ratio).dp
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listOf(Color(0xFFF1F3F5), Color(0xFF171D26)).forEachIndexed { index, bg ->
+                    Box(
+                        modifier = Modifier.weight(1f)
+                            .background(bg, RoundedCornerShape(9.dp))
+                            .padding(vertical = 10.dp, horizontal = 4.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        LuaMinimalSoftTile(
+                            text = "1.5x", active = index == 1,
+                            modifier = Modifier.size(tileWidth, tileHeight).graphicsLayer {
+                                alpha = if (index == 1) LUA_SOFT_V2_ACTIVE_ALPHA else LUA_SOFT_V2_IDLE_ALPHA
+                            },
+                            fontSize = (font.coerceIn(8, 22) * ratio).sp,
+                            activeBackgroundOpacity = .50f *
+                                (100 - activeTransparency.coerceIn(0, 100)) / 100f,
+                            v2 = true, shapeMode = shape, shape = when (shape) {
+                                0 -> CircleShape
+                                1 -> RoundedCornerShape(0.dp)
+                                3 -> RoundedCornerShape(2.dp)
+                                else -> RoundedCornerShape(corner.coerceIn(0, 24).dp)
+                            },
+                            circleDiameterDp = minOf(tileWidth.value, tileHeight.value),
+                            normalBackgroundColor = Color(background),
+                            activeBackgroundColor = Color(background),
+                            foreground = Color(textColor),
+                            activeForeground = Color(activeText),
+                            normalBackgroundOpacity = luaSoftV2BackgroundOpacity(opacity),
+                            borderOpacity = border,
+                            fontWeight = fontWeightForReadability(weight),
+                            contrastProfile = contrast,
+                            textShadow = shadow,
+                        )
+                    }
+                }
             }
-            if (advanced) LuaButtonOrganizedAppearanceSettings(prefs)
+            Text(stringResource(R.string.lua_v3_preview_tip), color = LuaDarkMuted, fontSize = 11.sp)
+        }
+        LuaSoftCard(stringResource(R.string.lua_v3_advanced)) {
+            TextButton(onClick = { advanced = !advanced }) {
+                Text(stringResource(R.string.lua_v3_advanced) + if (advanced) " ▲" else " ▼",
+                    color = LuaDarkText, fontSize = 12.sp)
+            }
+            if (advanced) {
+                LuaSoftSlider(stringResource(R.string.audit_button_width), buttonWidth, 30, 140,
+                    " dp", prefs.luaButtonWidth::set)
+                LuaSoftSlider(stringResource(R.string.audit_button_height), buttonHeight, 22, 80,
+                    " dp", prefs.luaButtonHeight::set)
+                LuaSoftSlider(stringResource(R.string.audit_horizontal_spacing), columnGap, 0, 24,
+                    " dp", prefs.luaButtonColumnGap::set)
+                LuaSoftSlider(stringResource(R.string.audit_vertical_spacing), rowGap, 0, 24,
+                    " dp", prefs.luaButtonRowGap::set)
+                LuaSoftSlider(stringResource(R.string.audit_x_position), positionX, 0, 240,
+                    " dp", prefs.luaButtonPositionX::set)
+                LuaSoftSlider(stringResource(R.string.audit_y_position), positionY, 0, 240,
+                    " dp", prefs.luaButtonPositionY::set)
+                LuaSoftSlider(stringResource(R.string.audit_active_background),
+                    activeTransparency, 0, 100, "%", prefs.luaButtonActiveTransparency::set)
+                LuaSoftPalette(stringResource(R.string.audit_active_speed_text), activeText,
+                    prefs.luaSoftActiveTextColor::set,
+                    listOf(0xFFA9C4D8.toInt(), 0xFFFFFFFF.toInt(), 0xFF8BE6BA.toInt(),
+                        0xFFF6D27D.toInt(), 0xFFACBCFF.toInt()))
+                LuaSoftSwitch(stringResource(R.string.audit_always_visible_by_default),
+                    alwaysVisible, prefs.luaButtonAlwaysVisible::set)
+            }
         }
     }
 }

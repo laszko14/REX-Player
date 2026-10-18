@@ -83,8 +83,8 @@ fun LuaButtonGrid(
     val savedSlots = remember(serialized) { decodeLuaButtonSlots(serialized) }
     val readyById = remember(buttons) { buttons.associateBy { it.id } }
     val columns by preferences.luaPanelColumns.collectAsState()
-    val scale by preferences.threeFingerSpeedPanelSize.collectAsState()
-    val transparency by preferences.threeFingerSpeedPanelTransparency.collectAsState()
+    val scale by preferences.luaButtonScalePercent.collectAsState()
+    val transparency by preferences.luaButtonBackgroundTransparency.collectAsState()
     val rowGap by preferences.luaButtonRowGap.collectAsState()
     val columnGap by preferences.luaButtonColumnGap.collectAsState()
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
@@ -257,8 +257,10 @@ fun LuaButtonGrid(
                     this.alpha = when {
                         isDragging -> .25f
                         !minimalSoft || editMode -> 1f
-                        else -> luaSoftEffectiveAlpha(
-                            if (active) { if (softV2) LUA_SOFT_V2_ACTIVE_ALPHA else LUA_SOFT_ACTIVE_ALPHA } else softNormalOpacity,
+                        else -> if (softV2) {
+                            if (active) LUA_SOFT_V2_ACTIVE_ALPHA else softNormalOpacity
+                        } else luaSoftEffectiveAlpha(
+                            if (active) LUA_SOFT_ACTIVE_ALPHA else softNormalOpacity,
                             transparency,
                         )
                     }
@@ -290,11 +292,13 @@ fun LuaButtonGrid(
                     modifier = drawingModifier,
                     shape = shape,
                     v2 = softV2,
+                    shapeMode = softShape,
+                    circleDiameterDp = minOf(width.value, height.value),
                     normalBackgroundColor = Color(saved?.backgroundColor ?: softBg),
                     activeBackgroundColor = Color(saved?.activeBackgroundColor ?: softBg),
                     foreground = Color(saved?.textColor ?: softText),
                     activeForeground = Color(saved?.activeTextColor ?: softActiveText),
-                    normalBackgroundOpacity = if (softV2) .12f * (1f - transparency.coerceIn(0, 100) / 100f) else 0f,
+                    normalBackgroundOpacity = if (softV2) luaSoftV2BackgroundOpacity(transparency) else 0f,
                     borderOpacity = borderOpacity,
                     fontWeight = if (softV2) fontWeightForReadability(fontWeightPercent) else androidx.compose.ui.text.font.FontWeight.Medium,
                     contrastProfile = softContrast,

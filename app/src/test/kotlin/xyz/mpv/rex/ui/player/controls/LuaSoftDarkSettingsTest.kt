@@ -43,6 +43,33 @@ class LuaSoftDarkSettingsTest {
         assertEquals("Moja własna komenda", luaSafeIconLabel("Moja własna komenda", null, 1))
         assertEquals("▶", luaSafeIconLabel("Odtwarzaj / Pauza", null, 1))
         assertEquals("★", luaSafeIconLabel("Dowolny przycisk", "★", 2))
+        assertEquals("1.5×", luaSafeIconLabel("1.5x", null, 1))
+        assertEquals("×2.25", luaSafeIconLabel("2.25x", null, 2))
+        assertEquals("◀◀", luaSafeIconLabel("Przewiń -10s", null, 1))
+        assertEquals("»", luaSafeIconLabel("Przewiń +10s", null, 2))
+        assertEquals("Nie zmieniaj 1.5x tekstu", luaSafeIconLabel("Nie zmieniaj 1.5x tekstu", null, 2))
         assertEquals(.28f, luaSoftContrastShadowAlpha(3), 0.001f)
     }
+
+    @Test fun backgroundOpacityIsIndependentOfTextVisibility() {
+        assertEquals(.55f, luaSoftV2BackgroundOpacity(0), .0001f)
+        assertEquals(.44f, luaSoftV2BackgroundOpacity(20), .0001f)
+        assertEquals(0f, luaSoftV2BackgroundOpacity(100), .0001f)
+        assertEquals(.55f, luaSoftV2BackgroundOpacity(-500), .0001f)
+        assertEquals(0f, luaSoftV2BackgroundOpacity(500), .0001f)
+        assertEquals(.68f, LUA_SOFT_V2_IDLE_ALPHA, .0001f)
+        assertEquals(.85f, LUA_SOFT_V2_TOUCH_ALPHA, .0001f)
+        assertEquals(.95f, LUA_SOFT_V2_ACTIVE_ALPHA, .0001f)
+    }
+
+    @Test fun contrastModesAreDistinctAndNeverExceedOnePhysicalPixel() {
+        val widths = (0..3).map(::luaSoftContrastOutlinePx)
+        assertEquals(0f, widths.first(), .0001f)
+        assertEquals(1f, widths.last(), .0001f)
+        assertEquals(widths.sorted(), widths)
+        assertEquals(4, widths.distinct().size)
+        assertEquals(.20f, luaSoftContrastShadowAlpha(0), .0001f)
+        assertEquals(.28f, luaSoftContrastShadowAlpha(3), .0001f)
+    }
+
 }
