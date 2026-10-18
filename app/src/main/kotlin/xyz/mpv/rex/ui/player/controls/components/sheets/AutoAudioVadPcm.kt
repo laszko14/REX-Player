@@ -5,19 +5,36 @@ import com.konovalov.vad.webrtc.config.FrameSize
 import com.konovalov.vad.webrtc.config.Mode
 import com.konovalov.vad.webrtc.config.SampleRate
 import java.io.Closeable
+import kotlin.math.log10
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * A REAL frame-based voice activity detector: WebRTC VAD runs on mono PCM16
  * BEFORE audio effects. It does not consume RMS/aspectralstats metadata.
  *
- * The current prebuilt libmpv binding exposes metadata, not live PCM for
- * streaming. Until a native PCM tap exists, ONLY real decoded local PCM may
- * enter this class; streaming verifiedSpeechProbability stays null.
+ * The v47 ARM64 native tap can feed the current streaming decoder's
+ * unfiltered PCM. A positive WebRTC frame is not proof of dialogue;
+ * verifiedSpeechProbability remains null until independent validation.
  */
 internal interface AutoAudioVadClassifier : Closeable {
   fun isSpeech(monoPcm16: ShortArray): Boolean
+}
+
+/** Measurements from the actual resampled PCM16 fed into WebRTC.
+ * No waveform is saved and these values do not prove human speech. */
+internal data class AutoAudioVadWindowDiagnostics(
+  val inputRate: Int,
+  val frames: Int,
+  val speechFrames: Int,
+  val rmsDbfs: Double,
+  val peakDbfs: Double,
+  val nearSilenceFraction: Double,
+  val nearFullScaleFraction: Double,
+) {
+  val positiveFraction: Double get() =
+    if (frames > 0) speechFrames.toDouble() / frames else 0.0
 }
 
 internal class WebRtcAutoAudioVadClassifier : AutoAudioVadClassifier {
@@ -53,6 +70,11 @@ internal class AutoAudioVadPcm(
   private var accumulator = 0.0
   private var tickInOutput = 0
   private var closed = false
+  private var classifiedSamples = 0L
+  private var squaredTotal = 0.0
+  private var absolutePeak = 0
+  private var nearSilenceCount = 0L
+  private var nearFullScaleCount = 0L
 
   var totalFrames: Int = 0
     private set
@@ -76,6 +98,16 @@ internal class AutoAudioVadPcm(
         accumulator = 0.0
         tickInOutput = 0
         if (chunkSize == chunk.size) {
+          // Inspect precisely the 320 PCM16 samples sent to the classifier.
+          // This costs O(320) per frame with no extra buffering or I/O.
+          for (sample in chunk) {
+            val magnitude = kotlin.math.abs(sample.toInt())
+            classifiedSamples++
+            squaredTotal += sample.toDouble() * sample.toDouble()
+            absolutePeak = maxOf(absolutePeak, magnitude)
+            if (magnitude <= 32) nearSilenceCount++
+            if (magnitude >= 32604) nearFullScaleCount++
+          }
           if (classifier.isSpeech(chunk)) speechFrames++
           totalFrames++
           chunkSize = 0
@@ -87,6 +119,19 @@ internal class AutoAudioVadPcm(
   /** Fraction of 20 ms frames classified as speech; NOT model probability. */
   fun speechFraction(minFrames: Int = 50): Double? =
     if (totalFrames >= minFrames) speechFrames.toDouble() / totalFrames else null
+
+  fun diagnostics(): AutoAudioVadWindowDiagnostics? {
+    if (totalFrames == 0 || classifiedSamples == 0L) return null
+    return AutoAudioVadWindowDiagnostics(
+      inputRate = inputRate,
+      frames = totalFrames,
+      speechFrames = speechFrames,
+      rmsDbfs = 20.0 * log10((sqrt(squaredTotal / classifiedSamples) / 32768.0).coerceAtLeast(1e-7)),
+      peakDbfs = 20.0 * log10((absolutePeak / 32768.0).coerceAtLeast(1e-7)),
+      nearSilenceFraction = nearSilenceCount.toDouble() / classifiedSamples,
+      nearFullScaleFraction = nearFullScaleCount.toDouble() / classifiedSamples,
+    )
+  }
 
   override fun close() {
     if (!closed) {
