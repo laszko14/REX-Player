@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -76,7 +77,9 @@ internal fun LuaMinimalSoftTile(
         )
     } else null
     Box(
-        modifier = modifier.then(
+        modifier = modifier.then(if (v2) Modifier.border(1.dp,
+            Color.White.copy(alpha = borderOpacity.coerceIn(0, 100) / 100f * .35f), shape)
+            else Modifier).then(
             if (active) Modifier.background(
                 if (v2) normalBackgroundColor.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f))
                 else LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f)),
