@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RectangleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -138,7 +137,7 @@ fun LuaButtonGrid(
         92 - positionY.coerceIn(0, 240)).coerceAtLeast(95).dp
     val shape = if (minimalSoft && softV2) when (softShape.coerceIn(0, 3)) {
         0 -> CircleShape
-        1 -> RectangleShape
+        1 -> RoundedCornerShape(0.dp)
         3 -> RoundedCornerShape(2.dp)
         else -> RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     } else RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
