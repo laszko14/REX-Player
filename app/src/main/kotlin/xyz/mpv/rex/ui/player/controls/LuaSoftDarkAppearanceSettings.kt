@@ -204,6 +204,10 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
     val outlineEnabled by prefs.luaButtonTextOutlineEnabled.collectAsState()
     val outlineHalfPx by prefs.luaButtonTextOutlineHalfPx.collectAsState()
     val outlineArgb by prefs.luaButtonTextOutlineColor.collectAsState()
+    val activeBgEnabled by prefs.luaActiveSpeedBackgroundEnabled.collectAsState()
+    val glowEnabled by prefs.luaActiveSpeedGlowEnabled.collectAsState()
+    val glowColor by prefs.luaActiveSpeedGlowColor.collectAsState()
+    val glowSize by prefs.luaActiveSpeedGlowSizePx.collectAsState()
     var fontPickerOpen by remember { mutableStateOf(false) }
     val weight by prefs.luaButtonFontWeightPercent.collectAsState()
     val shadow by prefs.luaSoftTextShadow.collectAsState()
@@ -291,6 +295,40 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
             }) {
                 Text("Przywróć ustawienia domyślne czcionki i konturu",
                     color = LuaDarkText, fontSize = 12.sp, maxLines = 2)
+            }
+        }
+        LuaSoftCard("Aktywna prędkość — kolorowa poświata") {
+            LuaSoftSwitch("Pokaż tło aktywnej prędkości", activeBgEnabled,
+                prefs.luaActiveSpeedBackgroundEnabled::set)
+            LuaSoftSwitch("Poświata wokół cyfr", glowEnabled,
+                prefs.luaActiveSpeedGlowEnabled::set)
+            LuaSoftPalette("Kolor poświaty", glowColor,
+                prefs.luaActiveSpeedGlowColor::set,
+                listOf(0xFFFF2929.toInt(), 0xFFFF9400.toInt(),
+                    0xFFFFD43B.toInt(), 0xFF00D68F.toInt(),
+                    0xFF418DFF.toInt(), 0xFFAD68FF.toInt(), 0xFFFFFFFF.toInt()))
+            LuaSoftSlider("Wielkość poświaty", glowSize, 0, 12, " px",
+                prefs.luaActiveSpeedGlowSizePx::set)
+            Text("Poświata otacza tylko cyfry wybranej prędkości. " +
+                "Może działać bez tła przycisku i nie zmienia czarnego konturu tekstu.",
+                color = LuaDarkMuted, fontSize = 11.sp, lineHeight = 15.sp)
+            Box(
+                modifier = Modifier.fillMaxWidth()
+                    .background(Color(0xFF9F8C78), RoundedCornerShape(8.dp))
+                    .padding(vertical = 13.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                ContrastVideoLabel(
+                    text = "2x", color = Color.White,
+                    fontSize = 22.sp, fontWeight = FontWeight.Black,
+                    fontFamily = luaFontFamily(fontId),
+                    outlined = true,
+                    outlineWidthPx = if (outlineEnabled) outlineHalfPx.coerceIn(0, 12) / 2f else 2f,
+                    outlineColorOverride = if (outlineEnabled) Color(outlineArgb) else Color.Black,
+                    glowColor = if (glowEnabled) Color(glowColor) else null,
+                    glowSizePx = if (glowEnabled) glowSize.coerceIn(0, 12).toFloat() else 0f,
+                    maxLines = 1,
+                )
             }
         }
         LuaSoftCard(stringResource(R.string.lua_v2_size)) {
@@ -383,6 +421,9 @@ internal fun LuaSoftDarkAppearanceSettings(prefs: PlayerPreferences) {
                             fontFamily = luaFontFamily(fontId),
                             userOutlinePx = if (outlineEnabled) outlineHalfPx.coerceIn(0, 12) / 2f else null,
                             userOutlineColor = Color(outlineArgb),
+                            activeBackgroundEnabled = activeBgEnabled,
+                            activeGlowColor = if (glowEnabled && index == 1) Color(glowColor) else null,
+                            activeGlowSizePx = if (glowEnabled && index == 1) glowSize.toFloat() else 0f,
                         )
                     }
                 }

@@ -82,6 +82,9 @@ internal fun LuaMinimalSoftTile(
     fontFamily: FontFamily = FontFamily.Default,
     userOutlinePx: Float? = null,
     userOutlineColor: Color = Color.Black,
+    activeBackgroundEnabled: Boolean = true,
+    activeGlowColor: Color? = null,
+    activeGlowSizePx: Float = 0f,
 ) {
     val density = LocalDensity.current
     val lineRadiusDp = with(density) {
@@ -96,6 +99,7 @@ internal fun LuaMinimalSoftTile(
     } else null
 
     val fill = when {
+        active && !activeBackgroundEnabled -> Color.Transparent
         !v2 && active -> LuaSoftActiveBackground.copy(alpha = activeBackgroundOpacity.coerceIn(0f, 1f))
         !v2 -> Color.Transparent
         active -> activeBackgroundColor.copy(
@@ -103,7 +107,8 @@ internal fun LuaMinimalSoftTile(
         else -> normalBackgroundColor.copy(
             alpha = normalBackgroundColor.alpha * normalBackgroundOpacity.coerceIn(0f, 1f))
     }
-    val borderAlpha = if (v2) borderOpacity.coerceIn(0, 100) / 200f else 0f
+    val borderAlpha = if (active && !activeBackgroundEnabled) 0f
+        else if (v2) borderOpacity.coerceIn(0, 100) / 200f else 0f
     val borderWidth = with(density) { (1f / this.density).dp }
     Box(modifier = modifier, contentAlignment = Alignment.Center) {
         val tileModifier = if (v2 && shapeMode == 0) {
@@ -130,6 +135,8 @@ internal fun LuaMinimalSoftTile(
             outlineWidthDp = lineRadiusDp,
             outlineColorOverride = if (userOutlinePx != null) userOutlineColor else if (v2) Color(0xFF1E2630) else null,
             shadowStyle = shadow,
+            glowColor = if (active) activeGlowColor else null,
+            glowSizePx = if (active) activeGlowSizePx else 0f,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
