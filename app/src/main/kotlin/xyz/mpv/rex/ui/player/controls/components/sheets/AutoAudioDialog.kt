@@ -252,7 +252,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                       playingProposed = true
                     }
                   },
-                  enabled = !busy,
+                  enabled = !busy && plan.changes.isNotEmpty(),
                 ) { Text(if (playingProposed) "✓ B — po" else "B — po") }
               }
             }
