@@ -226,7 +226,62 @@ internal fun MiniProgressSettingsPanel(
     shadowElevation = 12.dp,
   ) {
     Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-
+          Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth().padding(start = 9.dp, top = 12.dp, end = 20.dp, bottom = 9.dp),
+          ) {
+            IconButton(onClick = onDismiss) {
+              Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zamknij ustawienia", tint = miniTextMuted)
+            }
+            Text(
+              "Mini pasek postępu",
+              fontWeight = FontWeight.SemiBold,
+              fontSize = 23.sp,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+            )
+          }
+          Column(modifier = Modifier.padding(horizontal = 15.dp, vertical = 0.dp)) {
+            MiniSwitchRow(
+              title = "Włącz mini pasek",
+              detail = "Wyświetlaj minimalny pasek postępu na dole ekranu",
+              checked = enabled,
+              onCheckedChange = preferences.miniProgressEnabled::set,
+            )
+            MiniDivider()
+            MiniSliderRow("Grubość", thickness.coerceIn(1, 8), 1, 8, "px") {
+              preferences.miniProgressThicknessPx.set(it)
+            }
+            MiniDivider()
+            Row(
+              modifier = Modifier.fillMaxWidth().height(64.dp).clickable { showColors = true }.padding(horizontal = 10.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text("Kolor", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+              Box(
+                Modifier.size(36.dp).background(miniColor(colorHex), CircleShape),
+              )
+              Spacer(Modifier.width(12.dp))
+              Text(miniColorName(colorHex), color = miniTextMuted, fontSize = 14.sp, maxLines = 1)
+              Icon(Icons.Default.ChevronRight, contentDescription = "Wybierz kolor", tint = miniTextMuted)
+            }
+            MiniDivider()
+            MiniSliderRow("Przezroczystość", opacity.coerceIn(0, 100), 0, 100, "%") {
+              preferences.miniProgressOpacityPercent.set(it)
+            }
+            MiniDivider()
+            MiniSliderRow("Margines od dołu", margin.coerceIn(0, 30), 0, 30, "dp") {
+              preferences.miniProgressBottomMarginDp.set(it)
+            }
+            MiniDivider()
+            MiniSwitchRow(
+              title = "Widoczny przy pauzie",
+              detail = "Pokazuj pasek postępu również podczas pauzy",
+              checked = visibleOnPause,
+              onCheckedChange = preferences.miniProgressVisibleOnPause::set,
+            )
+          }
+          Spacer(Modifier.height(12.dp))
     }
   }
   if (showColors) {
