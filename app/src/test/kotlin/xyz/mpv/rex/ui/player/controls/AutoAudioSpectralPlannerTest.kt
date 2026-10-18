@@ -141,4 +141,58 @@ class AutoAudioSpectralPlannerTest {
     )
     assertEquals(before, plan.after)
   }
+
+  @Test fun lowDynamicsWithDrcThreeOffersOneStepDownWithoutVerifiedVad() {
+    // The street-interview v44 example: spectral metrics didn't classify the
+    // sound as bright or noisy, despite Dialogue 5 + DRC 3 being active.
+    val metrics = spectrum(1675.0, 0.04, 2555.0, floor = -24.5, dynamics = 9.2)
+    val strong = before.copy(
+      dialogue = 5, drcOn = true, drcLevel = 3, noise = 0, trebleLevel = 1,
+    )
+    val plan = AutoAudioPlanner.plan(metrics, strong)
+    assertEquals(2, plan.after.drcLevel)
+    assertEquals(5, plan.after.dialogue)
+    assertEquals(0, plan.after.noise)
+    assertEquals(1, plan.after.trebleLevel)
+    assertEquals(1, plan.changes.size)
+    assertTrue(plan.changes.single().name == "DRC")
+    assertTrue(plan.findings.any { it.contains("test A/B") })
+    assertEquals(null, metrics.verifiedSpeechProbability)
+  }
+
+  @Test fun extremeDialogueAndDrcCanOfferGentlerDialogueWhenDynamicsNotLow() {
+    val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 20.0)
+    val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)
+    val plan = AutoAudioPlanner.plan(metrics, strong)
+    assertEquals(4, plan.after.dialogue)
+    assertEquals(3, plan.after.drcLevel)
+    assertEquals(1, plan.changes.size)
+    assertTrue(plan.changes.single().name == "Dialogue Enhance")
+  }
+
+  @Test fun shortOrIncompleteSampleNeverTriggersOverprocessingProposal() {
+    val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 9.2)
+    val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)
+    assertEquals(strong, AutoAudioPlanner.plan(metrics.copy(seconds = 15.0), strong).after)
+    assertEquals(strong, AutoAudioPlanner.plan(metrics.copy(segments = metrics.segments.take(2)), strong).after)
+  }
+
+  @Test fun reductionRequiresExistingAggressiveSettingsAndDoesNotEnableAnything() {
+    val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 9.2)
+    val normal = before.copy(dialogue = 2, drcOn = false, drcLevel = 3)
+    val plan = AutoAudioPlanner.plan(metrics, normal)
+    assertEquals(normal, plan.after)
+    assertTrue(plan.changes.isEmpty())
+  }
+
+  @Test fun existingTonalityProposalHasPriorityOverAdditionalDrcReduction() {
+    val metrics = spectrum(5000.0, 0.25, 12000.0, dynamics = 9.2)
+    val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3, trebleLevel = 2)
+    val plan = AutoAudioPlanner.plan(metrics, strong)
+    assertEquals(0, plan.after.trebleLevel)
+    assertEquals(3, plan.after.drcLevel)
+    assertEquals(5, plan.after.dialogue)
+    assertEquals(1, plan.changes.size)
+  }
+
 }
