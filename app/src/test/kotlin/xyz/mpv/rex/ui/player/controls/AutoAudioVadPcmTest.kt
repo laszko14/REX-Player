@@ -60,6 +60,25 @@ class AutoAudioVadPcmTest {
     assertThrows(IllegalStateException::class.java) { pcm.accept(0.2) }
   }
 
+  @Test fun realVadDiagnosticNeverAuthorizesUnverifiedSpeechFilterChanges() {
+    val metrics = AutoAudioMetrics(
+      seconds = 15.0, rmsDb = -18.0, noiseFloorDb = -23.0,
+      dynamicRangeDb = 30.0, peak = 0.9, voiceLikeRatio = 0.95,
+      channelCount = 2, clipRatio = 0.0,
+      vadSpeechFraction = 0.96,
+      vadModel = "WebRTC VAD",
+      verifiedSpeechProbability = null,
+    )
+    val before = AutoAudioState(
+      noise = 0, dialogue = 0, drcOn = false, drcLevel = 1,
+      eqOn = false, eqBoost = 0,
+    )
+    val after = AutoAudioPlanner.plan(metrics, before)
+    assertEquals(before, after.after)
+    assertTrue(after.changes.isEmpty())
+    assertTrue(after.findings.any { it.contains("WebRTC VAD") })
+  }
+
   @Test fun classificationTracksActualModelFrameVotesNotRms() {
     var calls = 0
     val fake = object : AutoAudioVadClassifier {
