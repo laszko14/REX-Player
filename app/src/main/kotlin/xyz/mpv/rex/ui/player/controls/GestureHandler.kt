@@ -65,6 +65,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import `is`.xyz.mpv.MPVLib
@@ -100,6 +101,9 @@ fun GestureHandler(
   interactionSource: MutableInteractionSource,
   modifier: Modifier = Modifier,
   onThreeFingerTap: () -> Unit = {},
+  miniProgressHoldEnabled: Boolean = false,
+  miniProgressBottomInset: Dp = 0.dp,
+  miniProgressMarginDp: Int = 8,
 ) {
   val playerPreferences = koinInject<PlayerPreferences>()
   val audioPreferences = koinInject<AudioPreferences>()
@@ -487,13 +491,24 @@ fun GestureHandler(
           } while (event.changes.any { it.pressed })
         }
       }
-      .pointerInput(areControlsLocked, multipleSpeedGesture, holdSpeedQuarterSteps, brightnessGesture, volumeGesture, brightnessSwipeSensitivity) {
+      .pointerInput(areControlsLocked, multipleSpeedGesture, holdSpeedQuarterSteps, brightnessGesture, volumeGesture, brightnessSwipeSensitivity, miniProgressHoldEnabled, miniProgressBottomInset, miniProgressMarginDp) {
         if ((!brightnessGesture && !volumeGesture && multipleSpeedGesture <= 0f) || areControlsLocked) return@pointerInput
 
         awaitEachGesture {
           val down = awaitFirstDown(requireUnconsumed = false)
           if (subtitleGate.isCandidate) return@awaitEachGesture // this touch belongs to a subtitle
           val startPosition = down.position
+          // This narrow zone belongs to the mini-bar's long-hold action. Ordinary
+          // swipes, taps and two-finger gestures still follow the existing handlers.
+          val inMiniProgressHoldZone = miniProgressHoldEnabled &&
+            miniProgressHit(
+              // This recognizer is AFTER 16.dp vertical padding; the mini bar
+              // observer is BEFORE it. Convert to the common full-window frame.
+              startPosition.y + 16.dp.toPx(),
+              size.height.toFloat() + 32.dp.toPx(),
+              (miniProgressBottomInset + miniProgressMarginDp.coerceIn(0, 30).dp).toPx(),
+              24.dp.toPx(),
+            )
 
           // Reset long press tracking at the start of each gesture
           longPressTriggeredDuringTouch = false
@@ -526,7 +541,7 @@ fun GestureHandler(
                 (down.position.y - startPosition.y) * (down.position.y - startPosition.y)
               )
               // Only trigger if still within tap threshold
-              if (distance < 10f && multipleSpeedGesture > 0f) {
+              if (distance < 10f && multipleSpeedGesture > 0f && !inMiniProgressHoldZone) {
                 longPressTriggered = true
                 isLongPressing = true
                 longPressStartTime = System.currentTimeMillis()
