@@ -362,3 +362,11 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 - Workflow `publish-arm64.yml` po zielonym buildzie `master` ma sprawdzić eksporty i parę JNI oraz opublikować `native-v47-arm64-r1` jako zasób GitHub Release. Nie wolno pobierać wydania pod nieweryfikowanym adresem.
 - Gałąź aplikacyjna `feature/v47-arm64-native-vad-integration` nadal czeka na **rzeczywiste wydanie**. Kolejny etap to: potwierdzić wydanie i SHA256 AAR, uruchomić CI Gradle na PR aplikacji, sprawdzić komplet JNI oraz testy VAD w streamingu na urządzeniu. Nie uruchamiać jeszcze podpisanego APK v47 ani automatycznej zmiany filtrów.
 
+
+
+### Diagnostyczny build v47 bez zastępowania zainstalowanego MPV Alpha
+
+- W workflow aplikacji `.github/workflows/build.yml` (tylko PR gałęzi `feature/v47-arm64-native-vad-integration`) dodano archiwizowanie debugowego pliku APK `mpv-alpha-auto-audio-v47-arm64-debug`, **wyłącznie jeśli cały etap `assembleDebug/testDebugUnitTest/lintDebug` zakończy się sukcesem**.
+- Testowa aplikacja ma osobny `applicationIdSuffix=".debug"`; nie zastępuje podpisanego produkcyjnego `xyz.mpv.rex`, nie podmienia istniejących danych/ustawień i nie rezerwuje numeru wydania `v47`.
+- To artefakt diagnostyczny do przyszłego testu urządzenia i streamingu, **nie instalacyjna aktualizacja właściwego MPV Alpha**. Nie twierdzić, że WebRTC VAD przeszedł test na telefonie, dopóki użytkownik nie prześle wyników.
+
