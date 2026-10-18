@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RectangleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -101,6 +103,16 @@ fun LuaButtonGrid(
     val activeTextColor by preferences.luaButtonActiveTextColor.collectAsState()
     val globalAlwaysVisible by preferences.luaButtonAlwaysVisible.collectAsState()
     val minimalSoft by preferences.luaButtonMinimalSoft.collectAsState()
+    val softV2 by preferences.luaButtonMinimalSoftV2.collectAsState()
+    val softShape by preferences.luaSoftShape.collectAsState()
+    val softBg by preferences.luaSoftBackgroundColor.collectAsState()
+    val softText by preferences.luaSoftTextColor.collectAsState()
+    val softActiveText by preferences.luaSoftActiveTextColor.collectAsState()
+    val softContrast by preferences.luaSoftContrast.collectAsState()
+    val softShadow by preferences.luaSoftTextShadow.collectAsState()
+    val softIcons by preferences.luaSoftIconStyle.collectAsState()
+    val rightColumns by preferences.luaRightColumns.collectAsState()
+    val emptySlots by preferences.luaEmptySlots.collectAsState()
     var softTouchSequence by remember { mutableIntStateOf(0) }
     var softTouched by remember { mutableStateOf(false) }
     LaunchedEffect(minimalSoft, softTouchSequence) {
@@ -111,7 +123,7 @@ fun LuaButtonGrid(
         }
     }
     val softNormalOpacity by animateFloatAsState(
-        targetValue = if (softTouched) LUA_SOFT_TOUCH_ALPHA else LUA_SOFT_IDLE_ALPHA,
+        targetValue = if (softTouched) LUA_SOFT_TOUCH_ALPHA else if (softV2) LUA_SOFT_V2_IDLE_ALPHA else LUA_SOFT_IDLE_ALPHA,
         animationSpec = tween(durationMillis = 240),
         label = "luaSoftTouchFade",
     )
@@ -124,7 +136,12 @@ fun LuaButtonGrid(
     val colSpace = columnGap.coerceIn(0, 24).dp
     val maxHeight = (LocalConfiguration.current.screenHeightDp -
         92 - positionY.coerceIn(0, 240)).coerceAtLeast(95).dp
-    val shape = RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
+    val shape = if (minimalSoft && softV2) when (softShape.coerceIn(0, 3)) {
+        0 -> CircleShape
+        1 -> RectangleShape
+        3 -> RoundedCornerShape(2.dp)
+        else -> RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
+    } else RoundedCornerShape((cornerRadius.coerceIn(0, 24) * factor).dp)
     val alpha = (1f - transparency.coerceIn(0, 100) / 100f) * .86f
     val activeOpacity = 1f - activeTransparency.coerceIn(0, 100) / 100f
 
@@ -134,13 +151,13 @@ fun LuaButtonGrid(
         val live = readyById[saved.id] ?: return false
         return showAllButtons || (live.alwaysVisible ?: globalAlwaysVisible)
     }
-    val lastLeft = if (editMode) LUA_MAIN_SLOT_COUNT else
+    val lastLeft = if ((editMode && emptySlots != 0) || (!editMode && emptySlots == 2)) LUA_MAIN_SLOT_COUNT else
         (0 until LUA_MAIN_SLOT_COUNT).indexOfLast(::isVisible) + 1
-    val lastRight = if (editMode) LUA_SLOT_COUNT else
+    val lastRight = if ((editMode && emptySlots != 0) || (!editMode && emptySlots == 2)) LUA_SLOT_COUNT else
         (LUA_EXTRA_START until LUA_SLOT_COUNT).lastOrNull(::isVisible)?.plus(1)
             ?: LUA_EXTRA_START
     val leftRows = (0 until lastLeft).toList().chunked(colCount)
-    val rightRows = (LUA_EXTRA_START until lastRight).toList().chunked(LUA_EXTRA_COLUMNS)
+    val rightRows = (LUA_EXTRA_START until lastRight).toList().chunked(rightColumns.coerceIn(1, 8))
 
     var draggedIndex by remember { mutableIntStateOf(-1) }
     var dragDistance by remember { mutableStateOf(Offset.Zero) }
@@ -181,7 +198,7 @@ fun LuaButtonGrid(
                 activeTextColor = saved.activeTextColor,
             )
         } else if (isVisible(index)) live else null
-        val visible = editMode || button != null
+        val visible = (editMode && emptySlots != 0) || emptySlots == 2 || button != null
         val isDragging = draggedIndex == index
         val boundModifier = Modifier.width(width).height(height).then(
             if (editMode) Modifier.onGloballyPositioned { tileBounds[index] = it.boundsInRoot() }
@@ -242,7 +259,7 @@ fun LuaButtonGrid(
                         isDragging -> .25f
                         !minimalSoft || editMode -> 1f
                         else -> luaSoftEffectiveAlpha(
-                            if (active) LUA_SOFT_ACTIVE_ALPHA else softNormalOpacity,
+                            if (active) { if (softV2) LUA_SOFT_V2_ACTIVE_ALPHA else LUA_SOFT_ACTIVE_ALPHA } else softNormalOpacity,
                             transparency,
                         )
                     }
@@ -266,12 +283,22 @@ fun LuaButtonGrid(
 
             if (minimalSoft) {
                 LuaMinimalSoftTile(
-                    text = label,
+                    text = if (softV2) luaSafeIconLabel(label, saved?.icon, softIcons) else label,
                     active = active,
                     fontSize = (fontSize.coerceIn(8, 22) * factor).sp,
-                    activeBackgroundOpacity = LUA_SOFT_ACTIVE_BACKGROUND_ALPHA * activeOpacity,
+                    activeBackgroundOpacity = (if (softV2) LUA_SOFT_V2_ACTIVE_BACKGROUND_ALPHA
+                        else LUA_SOFT_ACTIVE_BACKGROUND_ALPHA) * activeOpacity,
                     modifier = drawingModifier,
                     shape = shape,
+                    v2 = softV2,
+                    normalBackgroundColor = Color(saved?.backgroundColor ?: softBg),
+                    foreground = Color(saved?.textColor ?: softText),
+                    activeForeground = Color(saved?.activeTextColor ?: softActiveText),
+                    normalBackgroundOpacity = if (softV2) .12f * (1f - transparency.coerceIn(0, 100) / 100f) else 0f,
+                    borderOpacity = borderOpacity,
+                    fontWeight = if (softV2) fontWeightForReadability(fontWeightPercent) else androidx.compose.ui.text.font.FontWeight.Medium,
+                    contrastProfile = softContrast,
+                    textShadow = softShadow,
                 )
             } else {
                 Box(contentAlignment = Alignment.Center, modifier = drawingModifier) {
