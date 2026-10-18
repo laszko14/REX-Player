@@ -162,7 +162,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
               if (metrics.vadSpeechFraction != null) {
                 Text(
-                  "Prawdziwy VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek z aktywnością mowy. "
+                  "Diagnostyczny VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek oznaczonych jako mowa. "
                     .format(metrics.vadSpeechFraction * 100.0) +
                     "To udział wykrytych ramek, a nie prawdopodobieństwo ani ocena jakości dialogu. " +
                     "Dobór filtrów zależnych od mowy pozostaje zablokowany do walidacji.",
@@ -171,14 +171,39 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               } else {
                 Text(
                   if (metrics.sourceDescription.startsWith("Streaming")) {
-                    "VAD: niedostępny dla streamingu — mpv udostępnia tylko statystyki, " +
-                      "nie surowy PCM dla WebRTC. Nie udajemy wykrycia mowy."
+                    "VAD: brak kompletnego wyniku z natywnego PCM (np. brak danych, " +
+                      "luki PTS, przepełnienie kolejki lub niedostępne JNI). " +
+                      "Nie udajemy wykrycia mowy."
                   } else {
                     "VAD: niedostępny dla tej lokalnej próbki PCM; " +
                       "nie wyliczono sztucznego wyniku rozpoznawania mowy."
                   },
                   color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
                 )
+              }
+              if (metrics.vadWindows.isNotEmpty()) {
+                Text("Kontrola wejścia VAD (oryginalny PCM → 16 kHz mono)",
+                  fontWeight = FontWeight.Bold)
+                Text(
+                  "Instrumental bez słów może dawać wysokie wyniki WebRTC. " +
+                    "RMS i szczyt poniżej dotyczą PCM16 przekazanego modelowi, " +
+                    "a nie dźwięku po filtrach.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+                metrics.vadWindows.forEachIndexed { index, window ->
+                  Text(
+                    "F${index + 1}: ${window.inputRate} Hz → 16 kHz, ${window.frames} ramek; " +
+                      "VAD %.0f%% • RMS %.1f dBFS • szczyt %.1f dBFS • " +
+                      "prawie cisza %.1f%% • blisko przesterowania %.1f%%".format(
+                        window.positiveFraction * 100.0,
+                        window.rmsDbfs,
+                        window.peakDbfs,
+                        window.nearSilenceFraction * 100.0,
+                        window.nearFullScaleFraction * 100.0,
+                      ),
+                    color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                  )
+                }
               }
               if (metrics.spectralCentroidHz != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
