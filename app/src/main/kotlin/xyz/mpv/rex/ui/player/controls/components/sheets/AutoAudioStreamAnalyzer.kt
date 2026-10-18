@@ -255,9 +255,13 @@ internal object StreamAstatsParser {
     val selected = byWindow.flatten()
     val rmsDb = selected.map { it.rms }.sorted()
     val active = rmsDb.filter { it > -55.0 }
-    require(active.size >= 20) { "W próbce dominuje cisza. Nie zmieniono filtrów." }
+    // Previously threw away a complete PCM/VAD scan when audio was silent.
+    // Preserve full PTS/window validation above, but report silence as a
+    // diagnostic-only result so the real WebRTC vote can be inspected.
+    val silenceDominant = active.size < 20
     val noiseDb = quantile(rmsDb, 0.18)
-    val dynamic = (quantile(active, 0.90) - quantile(active, 0.20)).coerceAtLeast(0.0)
+    val dynamic = if (silenceDominant) 0.0 else
+      (quantile(active, 0.90) - quantile(active, 0.20)).coerceAtLeast(0.0)
     // Activity ratio based on PCM energy only; NOT voice activity detection.
     val activeFraction = selected.count { it.rms > noiseDb + 6.0 && it.rms > -48.0 }.toDouble() / selected.size
     val voiceHint = if (activeFraction > 0.35 && dynamic > 7.0) {
@@ -301,6 +305,7 @@ internal object StreamAstatsParser {
       spectralFlatness = spectralMedian(selected) { it.flatness },
       spectralRolloffHz = spectralMedian(selected) { it.rolloff },
       segments = perWindow,
+      silenceDominant = silenceDominant,
       sourceDescription = "Streaming • PCM przed filtrami",
     )
   }
