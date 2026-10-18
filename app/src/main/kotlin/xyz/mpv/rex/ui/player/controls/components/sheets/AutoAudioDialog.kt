@@ -176,6 +176,32 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   )
                 }
               }
+              if (metrics.segments.size >= 3) {
+                Text("Porównanie trzech fragmentów", fontWeight = FontWeight.Bold)
+                metrics.segments.take(3).forEachIndexed { index, segment ->
+                  val cent = segment.spectralCentroidHz?.let {
+                    "%.0f Hz".format(it)
+                  } ?: "brak"
+                  val flat = segment.spectralFlatness?.let {
+                    "%.2f".format(it)
+                  } ?: "brak"
+                  Surface(color = Color(0xFF26354A), shape = RoundedCornerShape(10.dp)) {
+                    Row(
+                      Modifier.fillMaxWidth().padding(10.dp),
+                      horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                      Text("Fragment ${index + 1}", fontWeight = FontWeight.Medium)
+                      Text("Jasność: $cent  •  Płaskość: $flat", color = mutedAudioText,
+                        style = MaterialTheme.typography.bodySmall)
+                    }
+                  }
+                }
+              }
+              Text(
+                "Mowa: niepotwierdzona — obecna analiza nie ma osobnego modelu VAD. " +
+                  "Zmiany wymagające rozpoznania dialogów nie są proponowane.",
+                color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+              )
               Text(
                 "Pomiar obejmuje sygnał przed filtrami. Jasność i płaskość widma nie rozpoznają " +
                   "mowy ani jakości dialogów; o skuteczności zmiany rozstrzyga odsłuch A/B.",
@@ -278,6 +304,7 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               OutlinedButton(modifier = Modifier.weight(1f), onClick = ::dismiss) { Text("Anuluj / przywróć") }
               Button(
                 modifier = Modifier.weight(1f),
+                enabled = !busy && proposal?.changes?.isNotEmpty() == true,
                 colors = ButtonDefaults.buttonColors(containerColor = premiumBlue),
                 onClick = {
                   if (!validSource()) {
