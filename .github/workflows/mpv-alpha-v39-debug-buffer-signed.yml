@@ -1,0 +1,128 @@
+name: MPV Alpha v48 debug - v39 base buffer-color update
+
+on:
+  push:
+    branches:
+      - release/v39-debug-buffer-color-isolated
+    paths:
+      - .github/workflows/mpv-alpha-v39-debug-buffer-signed.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mpv-alpha-v39-debug-buffer-update
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Verify and sign v48 debug update (v39 baseline)
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Checkout v39-based branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact legacy baseline and no Auto Audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD
+          test "$(git merge-base 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD)" = "5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475"
+          test -s app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressOverlay.kt
+          test ! -f app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/components/sheets/AutoAudioDialog.kt
+          git diff --name-only 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD |
+            grep -vE '^(app/src/main/kotlin/xyz/mpv/rex/(preferences/PlayerPreferences.kt|ui/player/controls/(MiniProgressOverlay.kt|PlayerControls.kt))|app/src/(test|screenshotTest)/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgress(Screenshots|Test).kt|.github/workflows/mpv-alpha-v39-debug-buffer-signed.yml)$' > /tmp/unexpected-files.txt || true
+          if [[ -s /tmp/unexpected-files.txt ]]; then
+            cat /tmp/unexpected-files.txt
+            echo "::error::Unexpected modifications outside mini-progress."
+            exit 1
+          fi
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Setup Android
+        uses: android-actions/setup-android@v4
+
+      - name: Install Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Validate existing workflow syntax
+        shell: bash
+        run: |
+          python3 -m pip install --disable-pip-version-check 'PyYAML>=6,<7'
+          python3 .github/scripts/check_workflows.py
+
+      - name: Restore existing fixed signing key
+        shell: bash
+        env:
+          MPV_ALPHA_KEYSTORE_BASE64: ${{ secrets.MPV_ALPHA_KEYSTORE_BASE64 }}
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in MPV_ALPHA_KEYSTORE_BASE64 MPV_ALPHA_KEYSTORE_PASSWORD MPV_ALPHA_KEY_ALIAS MPV_ALPHA_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing configured signing key component: $name"
+              exit 1
+            fi
+          done
+          install -d -m 700 "$RUNNER_TEMP/mpv-alpha-signing"
+          keystore="$RUNNER_TEMP/mpv-alpha-signing/release.jks"
+          printf '%s' "$MPV_ALPHA_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          chmod 600 "$keystore"
+          test -s "$keystore"
+          echo "MPV_ALPHA_KEYSTORE_PATH=$keystore" >> "$GITHUB_ENV"
+
+      - name: Assemble signed debug, tests and lint
+        shell: bash
+        env:
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon \
+            -PmpvAlphaVersionCode=100048 -PmpvAlphaVersionName=v48
+
+      - name: Validate signer, package, version and unique ARM64 artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/debug/*.apk)
+          if (( ${#apks[@]} != 1 )); then
+            echo "::error::Expected one ARM64 APK, got ${#apks[@]}"
+            exit 1
+          fi
+          apk="${apks[0]}"
+          [[ "$apk" == *arm64-v8a*.apk ]] || { echo "::error::Not ARM64"; exit 1; }
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk"
+          actual_cert=$("$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$apk" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+          expected_cert=$(tr -d '[:space:]' < .github/mpv-alpha-signing-certificate.sha256)
+          [[ "$actual_cert" == "$expected_cert" ]] || { echo "::error::Signing certificate mismatch"; exit 1; }
+          package=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep '^package:')
+          [[ "$package" == *"name='xyz.mpv.rex.debug'"* ]] || { echo "::error::Package mismatch"; exit 1; }
+          [[ "$package" == *"versionCode='1000482'"* ]] || { echo "::error::Version must exceed v39"; exit 1; }
+          [[ "$package" == *"versionName='v48'"* ]] || { echo "::error::Version name mismatch"; exit 1; }
+          mkdir -p dist
+          cp "$apk" dist/MPV-Alpha-v48-debug-v39base-buffer-color-arm64-v8a.apk
+
+      - name: Upload signed debug update
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-v48-DEBUG-v39-update
+          path: dist/MPV-Alpha-v48-debug-v39base-buffer-color-arm64-v8a.apk
+          if-no-files-found: error
+          retention-days: 30
