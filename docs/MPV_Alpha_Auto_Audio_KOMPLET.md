@@ -655,3 +655,23 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 1. **Nie budować jeszcze nowej wersji:** użytkownik zapowiedział kolejne wyniki testów tego samego Audio v47 na instrumentalu bez mowy; potrzebna jest diagnoza źródłowej usterki native PCM / VAD.
 2. Po wynikach połączyć diagnostykę źródła PCM z przygotowaniem trwałego podpisu Audio i następnym nieużytym numerem wersji.
 3. Jeśli do aktualizacji starego v47 brakuje jego pierwotnego prywatnego klucza, uprzedzić użytkownika przed kompilacją; zbudować pierwsze trwale podpisane Audio i dopiero od tego wydania zapewnić instalowanie kolejnych wersji bez odinstalowania.
+
+
+## 31. Auto Audio v47 — SoundHelix i powtarzalny brak natywnego PCM (20.10.2026)
+
+### Wynik testu urządzenia: SoundHelix instrumentalny, MP3 / streaming
+
+- MPV Alpha Audio v47, Nothing Phone (1), prędkość **1,00×**, analiza **3 × 10 s = 30,0 s**.
+- Wyniki astats: **RMS −11,4 dBFS**, tło **−20,6 dBFS**, dynamika **12,2 dB**, centroid **1730 Hz**, płaskość **0,04**, rolloff **3747 Hz**, kanały nieznane.
+- F1: centroid 1272 Hz, flatness 0,03, rolloff 2455 Hz, tło −22,3 dBFS, dynamika 13,7 dB.
+- F2: centroid 1397 Hz, flatness 0,03, rolloff 3015 Hz, tło −21,2 dBFS, dynamika 13,0 dB.
+- F3: centroid 2844 Hz, flatness 0,06, rolloff 7235 Hz, tło −18,4 dBFS, dynamika 10,0 dB.
+- **Drugi niezależny streaming po londyńskim wywiadzie** pokazuje komunikat „VAD: brak kompletnego wyniku z natywnego PCM”, mimo prawidłowego raportu FFmpeg. Nie ma wyników WebRTC, Silero ani YAMNet; oznacza to brak wiarygodnego sygnału do oceny, **nie 0% mowy**. Planer nie zaproponował zmian.
+- Aktywne w odtwarzaniu: EQ, DRC 2/3, Dialogue Enhance; Szum Lua wyłączony. Brak dowodu, że filtry spowodowały usterkę, ponieważ analiza astats jest wpinana przed efektami.
+
+### Systematic Debugging
+
+- Działający `astats` i PTS jego okien **nie potwierdzają** poprawności oddzielnego toru JNI. `AutoAudioNativePcmBridge` może nie wystartować, `poll()` może zgłosić wyjątek, `AutoAudioStreamingVad` może odrzucić dane przy skokach PTS, `droppedChunks`, zmianie sample rate albo niepełnych oknach.
+- Potrzebna jest instrumentacja **konkretnej pierwszej przyczyny** zamiast wspólnego ogólnego komunikatu: start JNI, liczba odebranych paczek/próbek, Hz, pierwszy i ostatni PTS, licznik ramek w oknach, pierwszy powód odrzucenia. Nie zapisywać surowych PCM i nie zmieniać toru odtwarzania.
+- Bez testu z nowym instrumentowanym buildem nie wiadomo, co jest przyczyną. Nie zmieniać na ślepo progów Silero/YAMNet ani reguł filtrów.
+- **Wymaganie instalacyjne:** następny Audio APK ma aktualizować obecną aplikację; potrzebny jest ten sam `applicationId`, wyższy `versionCode` i **identyczny certyfikat podpisu**. Dotychczasowy v47 używał nietrwałego podpisu debug z CI, więc aktualizacji nad nim nie wolno obiecywać bez odzyskania odpowiadającego klucza; może być nieunikniona jedna migracja na stały klucz.
