@@ -110,6 +110,15 @@ android {
         signingConfig = signingConfigs.getByName("release")
       }
     }
+
+    // Auto Audio PR #55: independent diagnostic installation, no overwrite of mpv α.
+    // Unlike debug, this variant has a stable separate package ID and launcher name.
+    create("audio") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".audio"
+      versionNameSuffix = "-audio-v47"
+      matchingFallbacks.add("debug")
+    }
   }
 
   compileOptions {

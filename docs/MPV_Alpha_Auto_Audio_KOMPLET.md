@@ -582,3 +582,23 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 - GitHub Actions [39459861529](https://github.com/laszko14/REX-Player/actions/runs/39459861529) zakończył się `failure`, pomimo sukcesu kontroli YAML/Python/Lua. Pierwszą przyczyną w `:app:compileDebugKotlin` były `Unresolved reference 'tensorflow'`, `AudioClassifier` i `TensorAudio` w `AutoAudioNeuralCompare.kt`. **Nie był to błąd inferencji na urządzeniu.**
 - Zależność `yamnet:2.0.10` deklaruje TensorFlow Task Audio jako `implementation`, więc samo dołączenie modułu YAMNet nie daje źródłom aplikacji dostępu do klas `org.tensorflow.lite...`. Commit [c8abc32](https://github.com/laszko14/REX-Player/commit/c8abc32786f7fc73694876675e27b4dd95b42ed1) dodaje jawnie `implementation("org.tensorflow:tensorflow-lite-task-audio:0.4.4")`.
 - Przed zielonym ponownym CI **nie podawać diagnostycznego APK jako gotowego**. Nie zmieniano w tej korekcie istniejących filtrów, JNI, planera ani modeli.
+
+
+## 28. MPV Alpha Audio v47 — osobna aplikacja instalacyjna dla PR #55 (20.10.2026)
+
+### Wymaganie użytkownika
+
+- Użytkownik chce jednocześnie zachować **zwykły MPV Alpha v39** oraz zainstalować testowy **MPV Alpha Audio** z bieżącego PR #55; to muszą być dwie różne aplikacje Android, a nie aktualizacja tej samej.
+- Dodano osobny wariant Gradle **audio**, dziedziczący diagnostyczny `debug`, ale o własnym identyfikatorze **`xyz.mpv.rex.audio`**, wersji z sufiksem `-audio-v47` oraz nazwie ikony launchera **MPV Alpha Audio** (nadpisany `app_name` w `app/src/audio/res/values/strings.xml`). Dla porównania: dotychczasowy testowy debug pozostaje `xyz.mpv.rex.debug`, a zwykła produkcyjna aplikacja `xyz.mpv.rex`.
+- Zachowano wszystkie zmiany PR #55 dotyczące WebRTC, Silero, YAMNet, niefiltrowanego PCM, streamingu oraz bezpieczeństwa planera. Nie scalono PR, nie wydano produkcyjnego v47, nie zmieniono natywnego AAR ani istniejącego release signing.
+
+### Kompilacja i dowody zamiast założeń
+
+- Bazowy stan PR #55 przed wydzieleniem wariantu: [CI 39460986000](https://github.com/laszko14/REX-Player/actions/runs/39460986000) **completed/success** z artefaktem debug, ale dotychczasowym identyfikatorem `xyz.mpv.rex.debug` i nazwą `mpv α` — nie jest to docelowy Audio APK.
+- Na PR #55 GitHub Actions dodatkowo uruchamia `assembleAudio` przy zachowaniu `assembleDebug`, `testDebugUnitTest`, `lintDebug`. Przed publikacją nowego artefaktu wymaga `apksigner verify`, dokładnego pakietu `xyz.mpv.rex.audio`, etykiety `MPV Alpha Audio` i obecności pojedynczego ARM64 APK.
+- Docelowy wynik po zielonym CI: artefakt `MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA` z plikiem `MPV-Alpha-Audio-v47-ARM64.apk`. **Wynik nowej kompilacji i działanie na fizycznym telefonie pozostają niepotwierdzone do zakończenia CI oraz testów.**
+- Wariant jest na razie **diagnostyczny** i podpisywany kluczem debug w PR CI; z uwagi na możliwą zmianę klucza między uruchomieniami nie należy obiecywać aktualizacji kolejnych APK Audio bez odinstalowania. W przyszłości do trwałych aktualizacji Audio trzeba odrębnie zapewnić stały klucz podpisu, bez udostępniania sekretów w jobie PR.
+
+### Test na telefonie
+
+- Zainstalować Audio obok MPV Alpha v39 i sprawdzić dwie ikony, oddzielne ustawienia, odtwarzanie streamu oraz wyniki WebRTC/Silero/YAMNet w 15 s i 3 × 10 s. W razie błędów zbierać objawy i logi, nie uruchamiać automatycznych filtrów przed wiarygodnym porównaniem mowy, muzyki i ciszy.
