@@ -75,6 +75,17 @@ internal fun miniProgressFraction(position: Float, duration: Float): Float? {
   return (position / duration).coerceIn(0f, 1f)
 }
 
+/** Render cache only when mpv supplies a valid buffered endpoint ahead of playback. */
+internal fun miniBufferedFraction(
+  positionSeconds: Float,
+  bufferedUntilSeconds: Float?,
+  durationSeconds: Float,
+): Float? {
+  val played = miniProgressFraction(positionSeconds, durationSeconds) ?: return null
+  val buffered = bufferedUntilSeconds?.let { miniProgressFraction(it, durationSeconds) } ?: return null
+  return buffered.takeIf { it > played }
+}
+
 /** A long press is reserved only inside the 24 dp zone immediately above the line. */
 internal fun miniProgressHit(
   touchY: Float,
@@ -133,15 +144,19 @@ internal fun MiniProgressBar(
   visible: Boolean,
   preferences: PlayerPreferences,
   navigationBarBottom: Dp,
+  bufferedUntilSeconds: Float? = null,
 ) {
   val enabled by preferences.miniProgressEnabled.collectAsState()
   val thickness by preferences.miniProgressThicknessPx.collectAsState()
   val colorHex by preferences.miniProgressColorHex.collectAsState()
+  val bufferColorHex by preferences.miniProgressBufferColorHex.collectAsState()
   val opacity by preferences.miniProgressOpacityPercent.collectAsState()
   val margin by preferences.miniProgressBottomMarginDp.collectAsState()
   val fraction = miniProgressFraction(positionSeconds, durationSeconds)
+  val bufferedFraction = miniBufferedFraction(positionSeconds, bufferedUntilSeconds, durationSeconds)
   if (!visible || !enabled || fraction == null || opacity <= 0) return
   val color = miniColor(colorHex)
+  val bufferColor = miniColor(bufferColorHex)
   val alpha = opacity.coerceIn(0, 100) / 100f
   val strokeWidthPx = thickness.coerceIn(1, 8).toFloat()
   val lineHeight = with(LocalDensity.current) { strokeWidthPx.toDp() }
@@ -161,6 +176,19 @@ internal fun MiniProgressBar(
         strokeWidth = strokeWidthPx,
         cap = StrokeCap.Round,
       )
+      // Draw only the measured cache range, behind the played section.
+      if (bufferedFraction != null) {
+        drawLine(
+          color = bufferColor.copy(alpha = alpha),
+          start = Offset(strokeWidthPx / 2f + (size.width - strokeWidthPx) * fraction, midY),
+          end = Offset(
+            (strokeWidthPx / 2f + (size.width - strokeWidthPx) * bufferedFraction).coerceAtMost(size.width),
+            midY,
+          ),
+          strokeWidth = strokeWidthPx,
+          cap = StrokeCap.Round,
+        )
+      }
       if (fraction > 0f) {
         drawLine(
           color = color.copy(alpha = alpha),
@@ -215,10 +243,12 @@ internal fun MiniProgressSettingsPanel(
   val enabled by preferences.miniProgressEnabled.collectAsState()
   val thickness by preferences.miniProgressThicknessPx.collectAsState()
   val colorHex by preferences.miniProgressColorHex.collectAsState()
+  val bufferColorHex by preferences.miniProgressBufferColorHex.collectAsState()
   val opacity by preferences.miniProgressOpacityPercent.collectAsState()
   val margin by preferences.miniProgressBottomMarginDp.collectAsState()
   val visibleOnPause by preferences.miniProgressVisibleOnPause.collectAsState()
   var showColors by remember { mutableStateOf(false) }
+  var showBufferColors by remember { mutableStateOf(false) }
   Surface(
     modifier = modifier.clickable(onClick = {}),
     color = miniPanelBg,
@@ -259,13 +289,24 @@ internal fun MiniProgressSettingsPanel(
               modifier = Modifier.fillMaxWidth().height(54.dp).clickable { showColors = true }.padding(horizontal = 10.dp),
               verticalAlignment = Alignment.CenterVertically,
             ) {
-              Text("Kolor", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+              Text("Kolor odtworzonego", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
               Box(
                 Modifier.size(36.dp).background(miniColor(colorHex), CircleShape),
               )
               Spacer(Modifier.width(12.dp))
               Text(miniColorName(colorHex), color = miniTextMuted, fontSize = 14.sp, maxLines = 1)
               Icon(Icons.Default.ChevronRight, contentDescription = "Wybierz kolor", tint = miniTextMuted)
+            }
+            MiniDivider()
+            Row(
+              modifier = Modifier.fillMaxWidth().height(54.dp).clickable { showBufferColors = true }.padding(horizontal = 10.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text("Kolor bufora", modifier = Modifier.weight(1f), fontSize = 16.sp, fontWeight = FontWeight.Medium)
+              Box(Modifier.size(36.dp).background(miniColor(bufferColorHex), CircleShape))
+              Spacer(Modifier.width(12.dp))
+              Text(miniColorName(bufferColorHex), color = miniTextMuted, fontSize = 14.sp, maxLines = 1)
+              Icon(Icons.Default.ChevronRight, contentDescription = "Wybierz kolor bufora", tint = miniTextMuted)
             }
             MiniDivider()
             MiniSliderRow("Przezroczystość", opacity.coerceIn(0, 100), 0, 100, "%") {
@@ -291,6 +332,15 @@ internal fun MiniProgressSettingsPanel(
       currentHex = colorHex,
       onColor = preferences.miniProgressColorHex::set,
       onDismiss = { showColors = false },
+      title = "Kolor odtworzonego",
+    )
+  }
+  if (showBufferColors) {
+    MiniProgressColorDialog(
+      currentHex = bufferColorHex,
+      onColor = preferences.miniProgressBufferColorHex::set,
+      onDismiss = { showBufferColors = false },
+      title = "Kolor bufora",
     )
   }
 }
@@ -375,6 +425,9 @@ private val miniPalette = listOf(
   "Zielony" to "#32D67B",
   "Żółty" to "#FFD54F",
   "Różowy" to "#FF69B4",
+  "Pomarańczowy" to "#FF9100",
+  "Fioletowy" to "#B66CFF",
+  "Czerwony" to "#FF5252",
 )
 
 private fun miniColorName(hex: String): String =
@@ -385,6 +438,7 @@ private fun MiniProgressColorDialog(
   currentHex: String,
   onColor: (String) -> Unit,
   onDismiss: () -> Unit,
+  title: String,
 ) {
   var hexText by remember(currentHex) { mutableStateOf(currentHex) }
   val normalizedHex = remember(hexText) {
@@ -398,7 +452,7 @@ private fun MiniProgressColorDialog(
       shape = RoundedCornerShape(22.dp),
     ) {
       Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Wybierz kolor", fontWeight = FontWeight.SemiBold, fontSize = 20.sp)
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 20.sp)
         miniPalette.chunked(3).forEach { row ->
           Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             row.forEach { (_, hex) ->
