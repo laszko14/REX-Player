@@ -56,6 +56,7 @@ internal object AutoAudioStreamAnalyzer {
       var streamVad: AutoAudioStreamingVad? = null
       var vadSpeechFraction: Double? = null
       var vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList()
+      var pcmForNeural: List<ShortArray>? = null
 
       fun drainVadPackets() {
         if (nativeSource == null || streamVad == null) return
@@ -139,6 +140,7 @@ internal object AutoAudioStreamAnalyzer {
         drainVadPackets()
         vadSpeechFraction = streamVad?.speechFraction()
         vadWindows = streamVad?.windowDiagnostics().orEmpty()
+        pcmForNeural = streamVad?.pcmWindows()
       } finally {
         nativeSource?.close()
         streamVad?.close()
@@ -152,9 +154,14 @@ internal object AutoAudioStreamAnalyzer {
           "Brak pomiarów astats. Ten build FFmpeg może nie udostępniać ametadata."
         }
         val metrics = StreamAstatsParser.parse(file.readText(), windows)
+        // Infer AFTER native PCM capture and JNI teardown. A slow TFLite/ONNX
+        // model cannot stall libmpv's real-time decoder / 3x playback.
+        // No incomplete, dropped or discontinuous PTS samples reach AI.
+        val neural = pcmForNeural?.let { AutoAudioNeuralCompare.analyze(context, it) }
         metrics.copy(
           vadSpeechFraction = vadSpeechFraction,
           vadWindows = vadWindows,
+          neuralReport = neural,
           vadModel = if (vadSpeechFraction != null) "WebRTC VAD • oryginalny PCM mpv" else null,
           sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)",
         )
