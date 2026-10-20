@@ -160,9 +160,21 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
+              metrics.vadCaptureStatus?.let { detail ->
+                Text("Natywny PCM: " + detail,
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall)
+              }
+              if (metrics.silenceDominant) {
+                Text(
+                  "W próbce dominuje cisza. Nie proponujemy żadnych zmian filtrów. " +
+                    "Poniższy pomiar WebRTC (jeśli dostępny) służy wyłącznie " +
+                    "do sprawdzenia fałszywych wykryć mowy na ciszy.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              }
               if (metrics.vadSpeechFraction != null) {
                 Text(
-                  "Prawdziwy VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek z aktywnością mowy. "
+                  "Diagnostyczny VAD (${metrics.vadModel ?: "WebRTC"}): %.0f%% ramek oznaczonych jako mowa. "
                     .format(metrics.vadSpeechFraction * 100.0) +
                     "To udział wykrytych ramek, a nie prawdopodobieństwo ani ocena jakości dialogu. " +
                     "Dobór filtrów zależnych od mowy pozostaje zablokowany do walidacji.",
@@ -171,12 +183,66 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               } else {
                 Text(
                   if (metrics.sourceDescription.startsWith("Streaming")) {
-                    "VAD: niedostępny dla streamingu — mpv udostępnia tylko statystyki, " +
-                      "nie surowy PCM dla WebRTC. Nie udajemy wykrycia mowy."
+                    "VAD: brak kompletnego wyniku z natywnego PCM (np. brak danych, " +
+                      "luki PTS, przepełnienie kolejki lub niedostępne JNI). " +
+                      "Nie udajemy wykrycia mowy."
                   } else {
                     "VAD: niedostępny dla tej lokalnej próbki PCM; " +
                       "nie wyliczono sztucznego wyniku rozpoznawania mowy."
                   },
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              }
+              if (metrics.vadWindows.isNotEmpty()) {
+                Text("Kontrola wejścia VAD (oryginalny PCM → 16 kHz mono)",
+                  fontWeight = FontWeight.Bold)
+                Text(
+                  "Muzyka instrumentalna, szum i cisza mogą ujawniać błędy WebRTC. " +
+                    "RMS i szczyt poniżej dotyczą PCM16 przekazanego modelowi, " +
+                    "a nie dźwięku po filtrach.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+                metrics.vadWindows.forEachIndexed { index, window ->
+                  Text(
+                    formatVadWindow(index, window),
+                    color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                  )
+                }
+              }
+              metrics.neuralReport?.let { neural ->
+                Text("AI — porównanie dokładnie tych samych fragmentów PCM",
+                  fontWeight = FontWeight.Bold)
+                Text(
+                  "WebRTC: udział dodatnich ramek; Silero: udział dodatnich okien 32 ms; " +
+                    "YAMNet: średnie wyniki klas Speech i Music z okien 0,975 s. " +
+                    "Skale nie są zamienne i żaden wynik nie zmienia filtrów.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+                neural.windows.forEachIndexed { index, nw ->
+                  val silero = nw.sileroFraction?.let { "%.0f%% (%d okien)".format(
+                    it * 100.0, nw.sileroFrames ?: 0,
+                  ) } ?: "niedostępny"
+                  val yamnet = if (nw.yamnetFrames != null) {
+                    "mowa %.1f%% / muzyka %.1f%% (%d okien); dominująca: %s".format(
+                      (nw.yamnetSpeech ?: 0.0) * 100.0,
+                      (nw.yamnetMusic ?: 0.0) * 100.0,
+                      nw.yamnetFrames,
+                      nw.yamnetTopLabel ?: "?",
+                    )
+                  } else "niedostępny"
+                  Text(
+                    "F${index + 1}: Silero $silero • YAMNet $yamnet",
+                    color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                  )
+                }
+                neural.sileroError?.let { Text("Silero: $it", color = mutedAudioText,
+                  style = MaterialTheme.typography.bodySmall) }
+                neural.yamnetError?.let { Text("YAMNet: $it", color = mutedAudioText,
+                  style = MaterialTheme.typography.bodySmall) }
+                Text(
+                  "Inferencja po przechwyceniu PCM: ${neural.wallMillis} ms, " +
+                    "CPU wątku ${neural.threadCpuMillis} ms, " +
+                    "zmiana sterty JVM ${neural.javaHeapChangeKiB} KiB (nie pełny RAM procesu).",
                   color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
                 )
               }
@@ -227,8 +293,19 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 }
               }
               Text(
-                "Mowa: niepotwierdzona — obecna analiza nie ma osobnego modelu VAD. " +
-                  "Zmiany wymagające rozpoznania dialogów nie są proponowane.",
+                if (metrics.silenceDominant) {
+                  "Cisza: brak podstaw do poprawy dialogów. " +
+                    "Ewentualne pozytywne ramki VAD w tym materiale są tylko " +
+                    "diagnostyką klasyfikatora, nie potwierdzeniem prawdziwej mowy."
+                } else if (metrics.vadSpeechFraction != null) {
+                  "Mowa: WebRTC VAD wykrył aktywność w oryginalnym PCM, ale " +
+                    "trafności rozpoznawania dialogów nie zweryfikowano jeszcze " +
+                    "na próbkach kontrolnych (mowa / muzyka / cisza). " +
+                    "Zmiany filtrów zależne od mowy pozostają wyłączone."
+                } else {
+                  "Mowa: niepotwierdzona — brak kompletnego, wiarygodnego wyniku VAD. " +
+                    "Zmiany wymagające rozpoznania dialogów nie są proponowane."
+                },
                 color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
               )
               Text(
@@ -242,9 +319,9 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
               Text("Propozycja zmian", fontWeight = FontWeight.Bold)
               if (plan.changes.isEmpty()) {
                 Text(
-                  "Brak pewnej korekty. Gdy trzy fragmenty się różnią, nie należy " +
-                    "dopasowywać całego filmu do jednej sceny. Możesz ponowić " +
-                    "analizę w miejscu z wyraźnie słyszalnymi dialogami.",
+                  "Brak wystarczająco pewnych przesłanek do zmiany aktualnych filtrów. " +
+                    "To nie oznacza, że fragmenty różnią się między sobą. " +
+                    "Możesz pozostawić obecne ustawienia lub ponowić analizę na innym materiale.",
                   color = mutedAudioText,
                 )
               }

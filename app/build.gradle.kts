@@ -110,6 +110,15 @@ android {
         signingConfig = signingConfigs.getByName("release")
       }
     }
+
+    // Auto Audio PR #55: independent diagnostic installation, no overwrite of mpv α.
+    // Unlike debug, this variant has a stable separate package ID and launcher name.
+    create("audio") {
+      initWith(getByName("debug"))
+      applicationIdSuffix = ".audio"
+      versionNameSuffix = "-audio-v47"
+      matchingFallbacks.add("debug")
+    }
   }
 
   compileOptions {
@@ -235,10 +244,19 @@ dependencies {
   implementation(libs.truetype.parser)
   implementation(libs.fsaf)
   implementation(libs.mediainfo.lib)
-  implementation(libs.mpv.lib)
+  // ARM64-only AAR: contains a MATCHED libmpv.so/libplayer.so PCM tap pair.
+  // v47 release is fixed to the tag; APK versioning remains separate.
+  implementation("com.github.laszko14:mpvRex-libmpv:native-v47-arm64-r1@aar")
   // Real offline frame-based VAD; consumes original decoded PCM, never FFT metadata.
   // MIT-licensed Android wrapper around WebRTC VAD, arm64 JNI artifact.
   implementation("com.github.gkonovalov.android-vad:webrtc:2.0.10")
+  // Diagnostic-only neural models. Both bundle their own offline model assets.
+  // No runtime network access, no change to existing libmpv / Lua filter graph.
+  implementation("com.github.gkonovalov.android-vad:silero:2.0.10")
+  implementation("com.github.gkonovalov.android-vad:yamnet:2.0.10")
+  // Our YAMNet adapter directly imports TensorFlow Task Audio classes. The
+  // yamnet module declares this as implementation(), not a public API.
+  implementation("org.tensorflow:tensorflow-lite-task-audio:0.4.4")
   implementation(libs.androidx.security.crypto)
 
   // Network protocol libraries

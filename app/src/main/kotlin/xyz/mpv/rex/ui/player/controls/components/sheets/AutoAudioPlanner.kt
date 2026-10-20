@@ -88,6 +88,26 @@ internal data class AutoAudioPlan(
  */
 internal object AutoAudioPlanner {
   fun plan(metrics: AutoAudioMetrics, before: AutoAudioState): AutoAudioPlan {
+    // Fail closed on quiet/inaudible material even when WebRTC itself produced
+    // a complete binary vote. Silence is not evidence for altering EQ/DRC.
+    if (metrics.silenceDominant) {
+      val observation = if (metrics.vadSpeechFraction != null) {
+        "WebRTC VAD: %.0f%% dodatnich ramek na ciszy (diagnostyka, nie mowa)."
+          .format(metrics.vadSpeechFraction * 100.0)
+      } else {
+        "WebRTC VAD: brak pełnych danych PCM do oceny ciszy."
+      }
+      return AutoAudioPlan(
+        before = before,
+        after = before,
+        changes = emptyList(),
+        findings = listOf(
+          "W próbce dominuje cisza. Nie zmieniono filtrów.",
+          observation,
+          "Nie wolno wyciągać z ciszy wniosków o poprawie dialogów.",
+        ),
+      )
+    }
     var after = before
     val findings = mutableListOf<String>()
     findings += "Poziom tła (orientacyjnie): ${metrics.noiseFloorDb.toInt()} dBFS"
@@ -159,7 +179,15 @@ internal object AutoAudioPlanner {
           findings += "Trzy ciemne fragmenty: bez automatycznego rozjaśniania przed potwierdzeniem mowy."
         }
       } else {
-        findings += "Fragmenty różnią się lub brak zgodności 2/3: nie zmieniam tonalności całego filmu."
+        // Zero votes mean none of the three categories exceeded its threshold.
+        // This does NOT establish that the three audio windows differ.
+        findings += if (brightVotes == 0 && darkVotes == 0 && noisyVotes == 0) {
+          "Żaden z 3 fragmentów nie przekracza progów jasności, przytłumienia ani " +
+            "szumopodobności. Brak podstaw do zmiany tonalności całego filmu."
+        } else {
+          "Brak przewagi 2/3 jednej kategorii widma: " +
+            "nie zmieniam tonalności całego filmu."
+        }
       }
       if (noisyVotes >= 2 && !speechConfirmed) {
         findings += "Szumopodobne widmo w $noisyVotes/3 fragmentach nie dowodzi szumu przy dialogach — pozostawiono Szum Lua."
