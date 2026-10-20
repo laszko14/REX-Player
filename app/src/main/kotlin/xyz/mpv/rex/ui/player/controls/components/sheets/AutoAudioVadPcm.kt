@@ -83,6 +83,7 @@ internal class WebRtcAutoAudioVadClassifier : AutoAudioVadClassifier {
 internal class AutoAudioVadPcm(
   private val inputRate: Int,
   private val classifier: AutoAudioVadClassifier,
+  private val onCompletePcmFrame: ((ShortArray) -> Unit)? = null,
 ) : Closeable {
   init { require(inputRate in 8_000..192_000) { "Unsupported PCM sample rate: $inputRate" } }
 
@@ -130,6 +131,7 @@ internal class AutoAudioVadPcm(
             if (magnitude >= 32604) nearFullScaleCount++
           }
           if (classifier.isSpeech(chunk)) speechFrames++
+          onCompletePcmFrame?.invoke(chunk)
           totalFrames++
           chunkSize = 0
         }
