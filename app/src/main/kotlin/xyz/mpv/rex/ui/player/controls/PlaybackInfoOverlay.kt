@@ -42,7 +42,9 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -65,7 +67,10 @@ internal fun PlaybackInfoOverlay(
   durationSeconds: Float,
   playbackSpeed: Float,
   preferences: PlayerPreferences,
-  downloadSpeedMbps: Float? = null,
+  playbackPath: String? = null,
+  originalPath: String? = null,
+  networkStream: Boolean = false,
+  loadingFile: Boolean = false,
   modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current
@@ -92,6 +97,20 @@ internal fun PlaybackInfoOverlay(
   val layout = resolveHudLayout(layoutSpec, showBattery, showClock, showAdjustedRemaining,
     showRemaining, showSpeed)
   val batteryVisible = HudElement.BATTERY in layout.items
+  val downloadVisible = HudElement.DOWNLOAD in layout.items
+  val networkInput = networkStream || isMpvNetworkSource(playbackPath, false) ||
+    isMpvNetworkSource(originalPath, false)
+  var downloadSpeedMbps by remember { mutableStateOf<Float?>(null) }
+  LaunchedEffect(downloadVisible, networkInput, playbackPath, originalPath, loadingFile) {
+    downloadSpeedMbps = null
+    if (!downloadVisible || loadingFile || !networkInput) return@LaunchedEffect
+    // This data comes directly from libmpv; the phone's TrafficStats is never queried.
+    while (true) {
+      val bytes = withContext(Dispatchers.IO) { readMpvInputRateBytesPerSecond() }
+      downloadSpeedMbps = mpvStreamDownloadMbps(bytes, playbackPath, networkInput)
+      delay(1000L)
+    }
+  }
   val speedHex by preferences.hudSpeedColor.collectAsState()
   val remainingHex by preferences.hudRemainingColor.collectAsState()
   val clockHex by preferences.hudClockColor.collectAsState()
