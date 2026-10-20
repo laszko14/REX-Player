@@ -602,3 +602,11 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 ### Test na telefonie
 
 - Zainstalować Audio obok MPV Alpha v39 i sprawdzić dwie ikony, oddzielne ustawienia, odtwarzanie streamu oraz wyniki WebRTC/Silero/YAMNet w 15 s i 3 × 10 s. W razie błędów zbierać objawy i logi, nie uruchamiać automatycznych filtrów przed wiarygodnym porównaniem mowy, muzyki i ciszy.
+
+
+### Potwierdzenie kompilacji osobnego APK Audio (20.10.2026)
+
+- **Potwierdzone GitHub Actions:** [run #39465414955](https://github.com/laszko14/REX-Player/actions/runs/39465414955), commit [ae9013c](https://github.com/laszko14/REX-Player/commit/ae9013c6683e05719f921fed5334a96ea63adc15), status `completed/success`. Joby `YAML, Python i Lua` oraz `Android - build, testy, lint` zakończono `success`; produkcyjny podpisany APK `skipped` zgodnie z blokadą PR.
+- Testy `assembleDebug`, `assembleAudio`, `testDebugUnitTest`, `lintDebug` zakończono sukcesem. Osobny krok **`Potwierdz nazwe, osobny pakiet i podpis APK Audio`** zakończył się `success`: kontrola `apksigner verify`, `aapt` dla `xyz.mpv.rex.audio`, `application-label:'MPV Alpha Audio'` oraz jednego ARM64 APK.
+- **Gotowy artefakt testowy:** [MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA (artifact ID 12286175620)](https://github.com/laszko14/REX-Player/actions/runs/39465414955/artifacts/12286175620), ZIP z `MPV-Alpha-Audio-v47-ARM64.apk`. Artefakt jest osobny od zwykłej wersji v39, nie podmienia jej ustawień. ZIP GitHub Actions raportuje SHA-256 `2690c8bdafc1f9facc902aec0041c20a9e0e56b3f42f7d5da5ac4949dc1da62f` (digest archiwum artefaktu, **nie** samego APK).
+- **Niepotwierdzone** do czasu instalacji na Nothing Phone (1): wykonanie Silero/YAMNet, wydajność strumieni przy 1,5–3×, brak błędów po stronie modelu i wyniki F1/F2/F3 na instrumentalu/ciszy/mowie. Nadal **nie scalać PR #55** na podstawie samego CI i **nie wydawać podpisanej produkcyjnej v47**. Audio jest oddzielnym diagnostycznym APK z podpisem debug; bez stałego klucza nie gwarantuje nadpisania przyszłą kompilacją Audio.
