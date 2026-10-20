@@ -72,6 +72,8 @@ object AlphaHudPreferencesScreen : Screen {
       showAdjustedRemaining, showRemaining, showSpeed)
     val scale by prefs.hudScalePercent.collectAsState()
     val gap by prefs.hudItemGapDp.collectAsState()
+    val rowGap by prefs.hudRowGapDp.collectAsState()
+    val icons by prefs.hudShowIcons.collectAsState()
     val innerPadding by prefs.hudPaddingDp.collectAsState()
     val opacity by prefs.hudBackgroundOpacity.collectAsState()
     val fontWeightPercent by prefs.hudFontWeightPercent.collectAsState()
@@ -123,11 +125,15 @@ object AlphaHudPreferencesScreen : Screen {
 
 
         Text(stringResource(R.string.audit_size_and_spacing))
+        HudToggle("Pokazuj ikony przy informacjach", icons) { prefs.hudShowIcons.set(it) }
         HudIntSlider(stringResource(R.string.audit_hud_scale), scale, 35, 300, "%") {
           prefs.hudScalePercent.set(it)
         }
         HudIntSlider(stringResource(R.string.audit_spacing_between_icons_and_information), gap, 0, 64, " dp") {
           prefs.hudItemGapDp.set(it)
+        }
+        HudIntSlider("Odstęp między wierszami", rowGap, 0, 32, " dp") {
+          prefs.hudRowGapDp.set(it)
         }
         HudIntSlider(stringResource(R.string.audit_bar_padding), innerPadding, 0, 40, " dp") {
           prefs.hudPaddingDp.set(it)
@@ -194,6 +200,8 @@ object AlphaHudPreferencesScreen : Screen {
         Button(onClick = {
           prefs.hudScalePercent.set(100)
           prefs.hudItemGapDp.set(12)
+          prefs.hudRowGapDp.set(4)
+          prefs.hudShowIcons.set(true)
           prefs.hudPaddingDp.set(8)
           prefs.hudBackgroundOpacity.set(70)
           prefs.hudHighContrastText.set(false)
