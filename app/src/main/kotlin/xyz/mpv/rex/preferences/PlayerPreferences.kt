@@ -113,6 +113,8 @@ class PlayerPreferences(
   // Allow very small and very large HUDs; renderer always clamps unsafe saved values.
   val hudScalePercent = preferenceStore.getInt("alpha_hud_scale_percent", 100) // 35..300%
   val hudItemGapDp = preferenceStore.getInt("alpha_hud_item_gap_dp", 12) // 0..64 dp
+  val hudRowGapDp = preferenceStore.getInt("alpha_hud_row_gap_dp", 4) // 0..32 dp
+  val hudShowIcons = preferenceStore.getBoolean("alpha_hud_show_icons", true)
   val hudPaddingDp = preferenceStore.getInt("alpha_hud_padding_dp", 8) // 0..40 dp
   val hudBackgroundOpacity = preferenceStore.getInt("alpha_hud_background_opacity", 70)
   val hudHighContrastText = preferenceStore.getBoolean("alpha_hud_high_contrast_text", false)
