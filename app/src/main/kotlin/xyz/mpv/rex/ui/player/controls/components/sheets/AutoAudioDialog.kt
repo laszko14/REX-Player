@@ -160,6 +160,10 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                 MetricCard("Kanały", if (metrics.channelCount > 0) metrics.channelCount.toString() else "nieznane", Modifier.weight(1f))
               }
               Text(metrics.sourceDescription, color = premiumBlue, style = MaterialTheme.typography.bodySmall)
+              metrics.vadCaptureStatus?.let { detail ->
+                Text("Natywny PCM: " + detail,
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall)
+              }
               if (metrics.silenceDominant) {
                 Text(
                   "W próbce dominuje cisza. Nie proponujemy żadnych zmian filtrów. " +
