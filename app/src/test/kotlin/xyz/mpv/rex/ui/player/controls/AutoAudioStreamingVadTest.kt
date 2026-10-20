@@ -126,4 +126,37 @@ class AutoAudioStreamingVadTest {
     assertNull(AutoAudioNeuralWindow().sileroFraction)
   }
 
+
+  @Test fun diagnosticReportsCompleteStreamWithoutAuthorizingSpeechChanges() {
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(750) { vad.accept(packet(it)) }
+      val status = vad.captureStatus()
+      assertTrue(status.contains("paczki 750"))
+      assertTrue(status.contains("F1: 750/750 ramek"))
+      assertTrue(status.contains("stan: kompletne PCM"))
+    }
+  }
+
+  @Test fun diagnosticIdentifiesNativeDropsAndPtsDiscontinuities() {
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(20) { vad.accept(packet(it, if (it == 19) 2 else 0)) }
+      assertNull(vad.speechFraction())
+      assertTrue(vad.captureStatus().contains("utracono 2 paczek"))
+    }
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(40) { vad.accept(packet(it)) }
+      vad.accept(packet(200))
+      assertNull(vad.speechFraction())
+      assertTrue(vad.captureStatus().contains("skok PTS"))
+    }
+  }
+
+  @Test fun diagnosticDistinguishesPartialWindowFromZeroSpeech() {
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(350) { vad.accept(packet(it)) }
+      assertNull(vad.speechFraction())
+      assertTrue(vad.captureStatus().contains("F1: 350/750 ramek"))
+      assertTrue(vad.captureStatus().contains("niekompletne okna"))
+    }
+  }
 }
