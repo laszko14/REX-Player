@@ -71,6 +71,8 @@ internal fun PlaybackInfoOverlay(
   val context = LocalContext.current
   val scalePercent by preferences.hudScalePercent.collectAsState()
   val itemGapDp by preferences.hudItemGapDp.collectAsState()
+  val rowGapDp by preferences.hudRowGapDp.collectAsState()
+  val showIcons by preferences.hudShowIcons.collectAsState()
   val paddingDp by preferences.hudPaddingDp.collectAsState()
   val backgroundOpacity by preferences.hudBackgroundOpacity.collectAsState()
   val fontWeightPercent by preferences.hudFontWeightPercent.collectAsState()
@@ -214,6 +216,8 @@ internal fun PlaybackInfoOverlay(
       layout = layout,
       downloadSpeedMbps = downloadSpeedMbps,
       downloadColor = downloadColor,
+      rowGap = (rowGapDp.coerceIn(0, 32) * factor).dp,
+      showIcons = showIcons,
       ),
       modifier = panelModifier,
       maxWidth = maxWidth,
