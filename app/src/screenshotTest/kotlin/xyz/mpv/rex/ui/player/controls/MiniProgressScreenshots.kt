@@ -35,6 +35,7 @@ fun MiniProgressLandscapeScreenshot() {
       visible = true,
       preferences = prefs,
       navigationBarBottom = 0.dp,
+      bufferedUntilSeconds = 224f,
     )
     MiniProgressSettingsPanel(
       preferences = prefs,
@@ -60,6 +61,7 @@ fun MiniProgressLineOnlyScreenshot() {
       visible = true,
       preferences = prefs,
       navigationBarBottom = 0.dp,
+      bufferedUntilSeconds = 224f,
     )
   }
 }
@@ -80,6 +82,7 @@ fun MiniProgressPortraitScreenshot() {
       visible = true,
       preferences = prefs,
       navigationBarBottom = 0.dp,
+      bufferedUntilSeconds = 224f,
     )
     MiniProgressSettingsPanel(
       preferences = prefs,
