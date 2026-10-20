@@ -135,6 +135,9 @@ class PlayerPreferences(
   // Retain legacy preferences for users upgrading from v21; they no longer control HUD content.
   val hudShowNetworkSpeed = preferenceStore.getBoolean("alpha_hud_show_network_speed", true)
   val hudShowBattery = preferenceStore.getBoolean("alpha_hud_show_battery", true)
+  // Empty value preserves legacy visibility/order until user explicitly edits the HUD.
+  val hudLayoutSpec = preferenceStore.getString("alpha_hud_layout_v2", "")
+  val hudDownloadColor = preferenceStore.getString("alpha_hud_download_color", "#FF9100")
   val hudRealTimeRemaining = preferenceStore.getBoolean("alpha_hud_real_time_remaining", false)
   val hudSpeedColor = preferenceStore.getString("alpha_hud_speed_color", "#60E2F2")
   val hudRemainingColor = preferenceStore.getString("alpha_hud_remaining_color", "#FFFFFF")
