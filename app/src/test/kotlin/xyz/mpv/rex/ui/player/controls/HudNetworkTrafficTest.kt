@@ -28,4 +28,12 @@ class HudNetworkTrafficTest {
     assertNull(mpvStreamDownloadMbps(-1, "https://video.test/movie.mp4"))
     assertNull(mpvStreamDownloadMbps(1_000_000, null))
   }
+  @Test
+  fun hudTransferTextDistinguishesUnknownFromIdleCacheAndUsesMegabits() {
+    assertEquals("-- Mb/s", hudDownloadSpeedText(null))
+    assertEquals("-- Mb/s", hudDownloadSpeedText(Float.NaN))
+    assertEquals("0.00 Mb/s", hudDownloadSpeedText(0f))
+    assertEquals("5.66 Mb/s", hudDownloadSpeedText(5.66f))
+  }
+
 }
