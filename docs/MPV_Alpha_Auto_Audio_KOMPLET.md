@@ -610,3 +610,30 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 - Testy `assembleDebug`, `assembleAudio`, `testDebugUnitTest`, `lintDebug` zakończono sukcesem. Osobny krok **`Potwierdz nazwe, osobny pakiet i podpis APK Audio`** zakończył się `success`: kontrola `apksigner verify`, `aapt` dla `xyz.mpv.rex.audio`, `application-label:'MPV Alpha Audio'` oraz jednego ARM64 APK.
 - **Gotowy artefakt testowy:** [MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA (artifact ID 12286175620)](https://github.com/laszko14/REX-Player/actions/runs/39465414955/artifacts/12286175620), ZIP z `MPV-Alpha-Audio-v47-ARM64.apk`. Artefakt jest osobny od zwykłej wersji v39, nie podmienia jej ustawień. ZIP GitHub Actions raportuje SHA-256 `2690c8bdafc1f9facc902aec0041c20a9e0e56b3f42f7d5da5ac4949dc1da62f` (digest archiwum artefaktu, **nie** samego APK).
 - **Niepotwierdzone** do czasu instalacji na Nothing Phone (1): wykonanie Silero/YAMNet, wydajność strumieni przy 1,5–3×, brak błędów po stronie modelu i wyniki F1/F2/F3 na instrumentalu/ciszy/mowie. Nadal **nie scalać PR #55** na podstawie samego CI i **nie wydawać podpisanej produkcyjnej v47**. Audio jest oddzielnym diagnostycznym APK z podpisem debug; bez stałego klucza nie gwarantuje nadpisania przyszłą kompilacją Audio.
+
+
+## 29. MPV Alpha Audio v47 — wynik na wywiadzie podczas protestu w Londynie (20.10.2026)
+
+### Test fizyczny zgłoszony przez użytkownika (4 zrzuty ekranu)
+
+- Źródło: **„Wywiad podczas protestu — Londyn”**, odtwarzane jako streaming w oddzielnej aplikacji **MPV Alpha Audio v47**, kompilacja z [CI #39465414955](https://github.com/laszko14/REX-Player/actions/runs/39465414955) (wariant `xyz.mpv.rex.audio`). Na pasku podczas testu widoczne **1,00×**.
+- Tryb szczegółowy: **3 × 10 s = 30,0 s** ocenionego materiału, trzy okna FFmpeg `astats/aspectralstats` z kompletną ciągłością PTS i bez drugiego pobierania streamingu.
+- Metryki zbiorcze: **RMS −19,2 dBFS**, orientacyjne **tło −22,8 dBFS**, **dynamika 6,6 dB**, **centroid 1753 Hz**, **spectral flatness 0,04**, **rolloff 2719 Hz**. Liczba kanałów: **nieznane** (nie oznacza mono ani 0 kanałów).
+- F1: centroid **1706 Hz**, flatness **0,03**, rolloff **2695 Hz**, tło **−22,2 dBFS**, dynamika **6,6 dB**.
+- F2: centroid **1761 Hz**, flatness **0,04**, rolloff **2719 Hz**, tło **−22,7 dBFS**, dynamika **5,5 dB**.
+- F3: centroid **1772 Hz**, flatness **0,04**, rolloff **2742 Hz**, tło **−23,3 dBFS**, dynamika **7,2 dB**.
+- **Kluczowy problem:** panel zgłasza `VAD: brak kompletnego wyniku z natywnego PCM (np. brak danych, luki PTS, przepełnienie kolejki lub niedostępne JNI)`. Sekcja mowy pokazuje **`Mowa: niepotwierdzona`**, nie ma liczbowych okien WebRTC ani wyników **Silero/YAMNet**. Z tych zrzutów **nie wynika**, że któreś z modeli poprawnie wykryło/odrzuciło mowę, ani że PCM do modeli w ogóle dotarł.
+- Aktywne filtry odtwarzania w osobnym oknie: EQ (`@rex_visual_eq`), DRC **2/3** (`@mpv_alpha_drc`) oraz Dialogue Enhance (`@mpv_alpha_dialogue`); Szum Lua OFF. Jest to informacja o rzeczywistym łańcuchu efektów, a nie o zanieczyszczeniu sygnału astats — ten drugi analizowany jest przed efektami.
+- Planer **nie zaproponował zmian**, co jest zgodne z zasadą fail-closed bez pewnej klasyfikacji. Sama podobna jasność/płaskość trzech fragmentów nie potwierdza ani nie wyklucza dialogów.
+
+### Systematic Debugging — co potwierdza kod, czego nie wiemy
+
+- `AutoAudioStreamAnalyzer` niezależnie gromadzi metadane `astats` oraz opcjonalnie wywołuje `AutoAudioNativePcmBridge.openOrNull()` i `AutoAudioStreamingVad`. Dlatego **sukces 30 s + PTS w UI dowodzi kompletności pomiaru FFmpeg, NIE kompletności ramek z osobnego natywnego źródła JNI**.
+- `AutoAudioNativePcmBridge.openOrNull()` zwraca `null` przy błędzie refleksji lub uruchomienia JNI; `drainVadPackets()` zamyka źródło i kasuje diagnostykę przy wyjątkach; `AutoAudioStreamingVad` odrzuca skan przy gubionych paczkach, niestałym sample rate, nieprawidłowym lub skokowym PTS, krótkich/niepełnych oknach. **Bieżący panel skleja wszystkie przyczyny w jeden ogólny komunikat; nie można wybrać konkretnej zrzutami.**
+- Nie znaleziono wystarczającego dowodu na winę formatu Opus/WebM, architektury ARM64, przeciążenia JNI, samego modelu ani konkretnej wtyczki audio. Nie zmieniać progów filtrów, klasyfikatora, sygnału wejściowego ani natywnego AAR na podstawie samych tych zrzutów.
+
+### Następny etap
+
+1. Dla rozróżnienia usterki ogólnej od zależnej od źródła: przetestować na tym samym APK i przy **1,00×** krótki materiał **instrumentalny bez wypowiedzi** w trybie 3×10 s. Zwrócić uwagę, czy pojawiają się ramki VAD F1/F2/F3 oraz Silero/YAMNet, czy dokładnie ten sam komunikat.
+2. Jeśli native PCM znów będzie niekompletny, minimalna kolejna zmiana powinna ujawnić **przyczynę fail-closed**: powodzenie `vadTapStart`, liczba odebranych paczek i ramek, drop count, pierwszy/ostatni PTS, zmiany sample rate i powód unieważnienia skanu; dane liczbowe i komunikat błędu diagnostycznego, bez zapisania próbek i bez ingerencji w tor odtwarzania.
+3. Po zweryfikowanej kompletności natywnego PCM dopiero porównać WebRTC, Silero i YAMNet na identycznych próbkach; automatyczne zmiany filtrów pozostają wyłączone, PR #55 nadal **nie scalać** przed testami.
