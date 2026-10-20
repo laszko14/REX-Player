@@ -12,7 +12,15 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,6 +33,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -32,6 +43,9 @@ import kotlinx.serialization.Serializable
 import org.koin.compose.koinInject
 import xyz.mpv.rex.preferences.PlayerPreferences
 import xyz.mpv.rex.preferences.preference.collectAsState
+import xyz.mpv.rex.ui.player.controls.HudElement
+import xyz.mpv.rex.ui.player.controls.HudLayout
+import xyz.mpv.rex.ui.player.controls.resolveHudLayout
 import xyz.mpv.rex.presentation.Screen
 import xyz.mpv.rex.ui.utils.LocalBackStack
 import kotlin.math.roundToInt
@@ -52,6 +66,10 @@ object AlphaHudPreferencesScreen : Screen {
     val showClock by prefs.hudShowClock.collectAsState()
     val showAdjustedRemaining by prefs.hudShowAdjustedRemaining.collectAsState()
     val showBattery by prefs.hudShowBattery.collectAsState()
+    val layoutSpec by prefs.hudLayoutSpec.collectAsState()
+    val downloadColor by prefs.hudDownloadColor.collectAsState()
+    val itemLayout = resolveHudLayout(layoutSpec, showBattery, showClock,
+      showAdjustedRemaining, showRemaining, showSpeed)
     val scale by prefs.hudScalePercent.collectAsState()
     val gap by prefs.hudItemGapDp.collectAsState()
     val innerPadding by prefs.hudPaddingDp.collectAsState()
@@ -90,17 +108,19 @@ object AlphaHudPreferencesScreen : Screen {
         }
         Text(stringResource(R.string.audit_hud_drag_help))
 
-        Text(stringResource(R.string.audit_displayed_information))
-        HudToggle(stringResource(R.string.audit_battery_level), showBattery) { prefs.hudShowBattery.set(it) }
-        HudToggle(stringResource(R.string.audit_clock), showClock) { prefs.hudShowClock.set(it) }
-        HudToggle(stringResource(R.string.audit_remaining_time_adjusted_for_speed), showAdjustedRemaining) {
-          prefs.hudShowAdjustedRemaining.set(it)
-        }
-        HudToggle(stringResource(R.string.audit_remaining_time_original_at_1), showRemaining) {
-          prefs.hudShowRemaining.set(it)
-        }
-        HudToggle(stringResource(R.string.audit_playback_speed), showSpeed) { prefs.hudShowSpeed.set(it) }
+        Text("Elementy HUD i ich położenie")
+        Text("Wybierz elementy, ustaw kolejność od lewej do prawej i przenoś je między wierszami. Usunięcie elementu nie usuwa ustawień aplikacji.")
+        HudLayoutEditor(
+          layout = itemLayout,
+          onChange = { prefs.hudLayoutSpec.set(it.encode()) },
+        )
+        OutlinedButton(
+          onClick = { prefs.hudLayoutSpec.set("") },
+          modifier = Modifier.fillMaxWidth(),
+        ) { Text("Przywróć wcześniejszy układ HUD") }
         Text(stringResource(R.string.audit_hud_times_help))
+        Text("Pobieranie mpv: rzeczywista szybkość wejścia strumienia (Mb/s), a nie transfer telefonu. Gdy nie ma pomiaru, wyświetla się --.")
+
 
         Text(stringResource(R.string.audit_size_and_spacing))
         HudIntSlider(stringResource(R.string.audit_hud_scale), scale, 35, 300, "%") {
@@ -168,6 +188,7 @@ object AlphaHudPreferencesScreen : Screen {
         }
         HudHexInput(stringResource(R.string.audit_remaining_time_original), remainingColor) { prefs.hudRemainingColor.set(it) }
         HudHexInput(stringResource(R.string.audit_speed), speedColor) { prefs.hudSpeedColor.set(it) }
+        HudHexInput("Pobieranie mpv", downloadColor) { prefs.hudDownloadColor.set(it) }
         HudHexInput(stringResource(R.string.audit_background), backgroundColor) { prefs.hudBackgroundColor.set(it) }
 
         Button(onClick = {
@@ -188,8 +209,73 @@ object AlphaHudPreferencesScreen : Screen {
           prefs.hudNetworkSpeedColor.set("#A7F3D0")
           prefs.hudBatteryColor.set("#4ADE80")
           prefs.hudBackgroundColor.set("#10151C")
+          prefs.hudDownloadColor.set("#FF9100")
           prefs.hudEditMode.set(false)
         }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.audit_reset_hud_appearance_and_position)) }
+      }
+    }
+  }
+}
+
+@Composable
+private fun HudLayoutEditor(
+  layout: HudLayout,
+  onChange: (HudLayout) -> Unit,
+) {
+  var addFirst by remember { mutableStateOf(false) }
+  var addSecond by remember { mutableStateOf(false) }
+  val unused = HudElement.entries.filterNot { it in layout.items }
+
+  listOf(layout.first, layout.second).forEachIndexed { rowIndex, items ->
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Text("Wiersz ${rowIndex + 1}", style = androidx.compose.material3.MaterialTheme.typography.titleMedium)
+      if (items.isEmpty()) Text("Pusty wiersz")
+      items.forEachIndexed { index, element ->
+        Row(modifier = Modifier.fillMaxWidth(),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Text(element.label, modifier = Modifier.weight(1f),
+            style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+          IconButton(onClick = { onChange(layout.move(element, rowIndex, -1)) },
+            enabled = index > 0) {
+            Icon(Icons.Default.KeyboardArrowLeft, contentDescription = "Przesuń w lewo")
+          }
+          IconButton(onClick = { onChange(layout.move(element, rowIndex, 1)) },
+            enabled = index < items.lastIndex) {
+            Icon(Icons.Default.KeyboardArrowRight, contentDescription = "Przesuń w prawo")
+          }
+          IconButton(onClick = { onChange(layout.insert(element, 1 - rowIndex)) }) {
+            Icon(if (rowIndex == 0) Icons.Default.KeyboardArrowDown else Icons.Default.KeyboardArrowUp,
+              contentDescription = if (rowIndex == 0) "Przenieś do wiersza 2" else "Przenieś do wiersza 1")
+          }
+          IconButton(onClick = { onChange(layout.without(element)) }) {
+            Icon(Icons.Default.DeleteOutline, contentDescription = "Usuń element")
+          }
+        }
+      }
+
+      androidx.compose.foundation.layout.Box {
+        OutlinedButton(
+          onClick = { if (rowIndex == 0) addFirst = true else addSecond = true },
+          enabled = unused.isNotEmpty(),
+        ) {
+          Icon(Icons.Default.Add, contentDescription = null)
+          Text("Dodaj element")
+        }
+        DropdownMenu(
+          expanded = if (rowIndex == 0) addFirst else addSecond,
+          onDismissRequest = { if (rowIndex == 0) addFirst = false else addSecond = false },
+        ) {
+          unused.forEach { element ->
+            DropdownMenuItem(
+              text = { Text(element.label) },
+              onClick = {
+                onChange(layout.insert(element, rowIndex))
+                if (rowIndex == 0) addFirst = false else addSecond = false
+              },
+            )
+          }
+        }
       }
     }
   }
