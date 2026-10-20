@@ -36,4 +36,25 @@ class HudNetworkTrafficTest {
     assertEquals("5.66 Mb/s", hudDownloadSpeedText(5.66f))
   }
 
+
+  @Test
+  fun wrappedAndroidNetworkStreamCountsMpvCacheButNotWholePhone() {
+    assertNull(mpvStreamDownloadMbps(900_000, "content://app/video/5"))
+    assertEquals(7.2f, mpvStreamDownloadMbps(
+      900_000, "content://app/video/5", isNetworkStream = true)!!, 0.001f)
+    assertEquals(7.2f, mpvStreamDownloadMbps(
+      900_000, "edl://network-proxy", isNetworkStream = true)!!, 0.001f)
+    assertNull(mpvStreamDownloadMbps(null, "fd://13", isNetworkStream = true))
+  }
+
+  @Test
+  fun nativeInt64RateDoesNotOverflowAndMissingSamplesRemainMissing() {
+    assertEquals(16_000.0f, mpvStreamDownloadMbps(
+      2_000_000_000L, "https://video.test/movie.mp4")!!, 0.01f)
+    assertEquals(0L, parseMpvInputRate("0"))
+    assertEquals(708_000L, parseMpvInputRate(" 708000 "))
+    assertNull(parseMpvInputRate("N/A"))
+    assertNull(parseMpvInputRate("-1"))
+    assertNull(parseMpvInputRate(null))
+  }
 }
