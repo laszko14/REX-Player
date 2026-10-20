@@ -48,6 +48,8 @@ internal data class AutoAudioMetrics(
   // Used for reporting only until live pre-filter PCM can be obtained safely.
   val vadSpeechFraction: Double? = null,
   val vadModel: String? = null,
+  // Native JNI counters and first PCM failure reason, never used by the planner.
+  val vadCaptureStatus: String? = null,
   // Per-window diagnostics of the PCM16 actually submitted to WebRTC.
   // For streaming only until local-file reporting is similarly instrumented.
   val vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList(),
