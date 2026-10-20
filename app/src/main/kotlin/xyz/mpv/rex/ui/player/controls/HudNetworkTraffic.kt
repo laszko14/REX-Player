@@ -19,3 +19,11 @@ internal fun mpvStreamDownloadMbps(
   if (bytesPerSecond == null || bytesPerSecond < 0) return null
   return bytesPerSecond * 8f / 1_000_000f
 }
+
+/** Explicitly distinguish unavailable mpv cache input from a measured 0 Mb/s. */
+internal fun hudDownloadSpeedText(valueMbps: Float?): String =
+  if (valueMbps == null || !valueMbps.isFinite() || valueMbps < 0f) {
+    "-- Mb/s"
+  } else {
+    String.format(Locale.US, "%.2f Mb/s", valueMbps)
+  }
