@@ -55,6 +55,8 @@ internal data class HudBarModel(
   val layout: HudLayout? = null,
   val downloadSpeedMbps: Float? = null,
   val downloadColor: Color = Color(0xFFFF9100),
+  val rowGap: Dp = (4f * factor).dp,
+  val showIcons: Boolean = true,
 )
 
 /** Flexible, separately ordered rows; items can be added, removed and moved in settings. */
@@ -73,7 +75,7 @@ internal fun HudBarContent(
 
     Column(
       modifier = modifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
-      verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
+      verticalArrangement = Arrangement.spacedBy(rowGap),
     ) {
       listOf(visibleLayout.first, visibleLayout.second).forEach { row ->
         if (row.isEmpty()) return@forEach
@@ -88,7 +90,7 @@ internal fun HudBarContent(
                   verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.spacedBy(innerGap),
                 ) {
-                  Icon(Icons.Default.BatteryFull, contentDescription = null,
+                  if (showIcons) Icon(Icons.Default.BatteryFull, contentDescription = null,
                     modifier = Modifier.size(iconSize), tint = lowBatteryColor)
                   ContrastVideoLabel(
                     (if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
@@ -103,7 +105,7 @@ internal fun HudBarContent(
               HudElement.CLOCK -> {
                 Row(verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-                  Icon(Icons.Default.AccessTime, contentDescription = null,
+                  if (showIcons) Icon(Icons.Default.AccessTime, contentDescription = null,
                     modifier = Modifier.size(iconSize), tint = clockColor)
                   ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
                     fontWeight = textWeight, outlined = highContrastText,
@@ -120,7 +122,7 @@ internal fun HudBarContent(
               HudElement.REMAINING -> {
                 Row(verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-                  Icon(Icons.Default.HourglassBottom, contentDescription = null,
+                  if (showIcons) Icon(Icons.Default.HourglassBottom, contentDescription = null,
                     modifier = Modifier.size(iconSize), tint = remainingColor)
                   ContrastVideoLabel(originalTimeLabel, color = remainingColor,
                     fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText,
@@ -131,7 +133,7 @@ internal fun HudBarContent(
               HudElement.SPEED -> {
                 Row(verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-                  Icon(Icons.Default.PlayArrow, contentDescription = null,
+                  if (showIcons) Icon(Icons.Default.PlayArrow, contentDescription = null,
                     modifier = Modifier.size(iconSize), tint = speedColor)
                   ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
                     color = speedColor, fontSize = fontSize, fontWeight = textWeight,
@@ -143,7 +145,7 @@ internal fun HudBarContent(
               HudElement.DOWNLOAD -> {
                 Row(verticalAlignment = Alignment.CenterVertically,
                   horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-                  Icon(Icons.Default.CloudDownload, contentDescription = null,
+                  if (showIcons) Icon(Icons.Default.CloudDownload, contentDescription = null,
                     modifier = Modifier.size(iconSize), tint = downloadColor)
                   ContrastVideoLabel(hudDownloadSpeedText(downloadSpeedMbps),
                     color = downloadColor, fontSize = fontSize, fontWeight = textWeight,
