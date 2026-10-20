@@ -1,9 +1,9 @@
-name: MPV Alpha v48 debug - v39 base buffer-color update
+name: MPV Alpha v49 debug - editable HUD on v39 no-audio base
 
 on:
   push:
     branches:
-      - release/v39-debug-buffer-color-isolated
+      - release/v49-debug-hud-customizer-no-audio
     paths:
       - .github/workflows/mpv-alpha-v39-debug-buffer-signed.yml
 
@@ -11,12 +11,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: mpv-alpha-v39-debug-buffer-update
+  group: mpv-alpha-v49-debug-hud-update
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Verify and sign v48 debug update (v39 baseline)
+    name: Verify and sign v49 editable HUD update (v39 baseline)
     runs-on: ubuntu-latest
     timeout-minutes: 70
     steps:
@@ -33,11 +33,30 @@ jobs:
           test "$(git merge-base 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD)" = "5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475"
           test -s app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressOverlay.kt
           test ! -f app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/components/sheets/AutoAudioDialog.kt
-          git diff --name-only 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD |
-            grep -vE '^(app/src/main/kotlin/xyz/mpv/rex/(preferences/PlayerPreferences.kt|ui/player/controls/(MiniProgressOverlay.kt|PlayerControls.kt))|app/src/(test|screenshotTest)/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgress(Screenshots|Test).kt|.github/workflows/mpv-alpha-v39-debug-buffer-signed.yml)$' > /tmp/unexpected-files.txt || true
+          : > /tmp/unexpected-files.txt
+          while IFS= read -r changed; do
+            case "$changed" in
+              app/src/main/kotlin/xyz/mpv/rex/preferences/PlayerPreferences.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/preferences/AlphaHudPreferencesScreen.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressOverlay.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlayerControls.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/HudBarContent.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/HudLayout.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/PlaybackInfoOverlay.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/HudNetworkTraffic.kt|\
+              app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/HudLayoutTest.kt|\
+              app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/HudNetworkTrafficTest.kt|\
+              app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressTest.kt|\
+              app/src/screenshotTest/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressScreenshots.kt|\
+              app/src/screenshotTest/kotlin/xyz/mpv/rex/ui/player/controls/PlayerLayoutScreenshots.kt|\
+              .github/workflows/mpv-alpha-v39-debug-buffer-signed.yml)
+                ;;
+              *) printf '%s\n' "$changed" >> /tmp/unexpected-files.txt ;;
+            esac
+          done < <(git diff --name-only 5e7f7d44506bb33c277e76c3ec57c4d9ab7b6475 HEAD)
           if [[ -s /tmp/unexpected-files.txt ]]; then
             cat /tmp/unexpected-files.txt
-            echo "::error::Unexpected modifications outside mini-progress."
+            echo "::error::Unexpected source modification outside approved v39 HUD/mini-progress files."
             exit 1
           fi
 
@@ -94,7 +113,7 @@ jobs:
           set -euo pipefail
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon \
-            -PmpvAlphaVersionCode=100048 -PmpvAlphaVersionName=v48
+            -PmpvAlphaVersionCode=100049 -PmpvAlphaVersionName=v49
 
       - name: Validate signer, package, version and unique ARM64 artifact
         shell: bash
@@ -114,15 +133,15 @@ jobs:
           [[ "$actual_cert" == "$expected_cert" ]] || { echo "::error::Signing certificate mismatch"; exit 1; }
           package=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep '^package:')
           [[ "$package" == *"name='xyz.mpv.rex.debug'"* ]] || { echo "::error::Package mismatch"; exit 1; }
-          [[ "$package" == *"versionCode='1000482'"* ]] || { echo "::error::Version must exceed v39"; exit 1; }
-          [[ "$package" == *"versionName='v48'"* ]] || { echo "::error::Version name mismatch"; exit 1; }
+          [[ "$package" == *"versionCode='1000492'"* ]] || { echo "::error::Version must exceed v39"; exit 1; }
+          [[ "$package" == *"versionName='v49'"* ]] || { echo "::error::Version name mismatch"; exit 1; }
           mkdir -p dist
-          cp "$apk" dist/MPV-Alpha-v48-debug-v39base-buffer-color-arm64-v8a.apk
+          cp "$apk" dist/MPV-Alpha-v49-debug-v39base-custom-HUD-arm64-v8a.apk
 
       - name: Upload signed debug update
         uses: actions/upload-artifact@v4
         with:
-          name: MPV-Alpha-v48-DEBUG-v39-update
-          path: dist/MPV-Alpha-v48-debug-v39base-buffer-color-arm64-v8a.apk
+          name: MPV-Alpha-v49-DEBUG-HUD-update
+          path: dist/MPV-Alpha-v49-debug-v39base-custom-HUD-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
