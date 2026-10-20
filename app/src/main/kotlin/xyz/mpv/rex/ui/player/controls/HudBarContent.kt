@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.player.controls
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.BatteryFull
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.HourglassBottom
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
@@ -23,10 +25,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
-/**
- * Data-only HUD snapshot; production and Compose screenshot tests use the same layout.
- * This does not access the battery, clock, player, or saved preferences.
- */
+/** Real player and screenshots share this model; old fixtures keep the legacy arrangement. */
 internal data class HudBarModel(
   val showBattery: Boolean,
   val showClock: Boolean,
@@ -51,12 +50,14 @@ internal data class HudBarModel(
   val highContrastText: Boolean,
   val gap: Dp,
   val factor: Float,
-  // Default preserves existing preview fixtures without changing their look.
   val outlineWidthDp: Float = if (highContrastText) 1.2f else 0f,
   val fontFamily: FontFamily = FontFamily.Default,
+  val layout: HudLayout? = null,
+  val downloadSpeedMbps: Float? = null,
+  val downloadColor: Color = Color(0xFFFF9100),
 )
 
-/** Actual production HUD content layout, reused by the screenshot test fixtures. */
+/** Flexible, separately ordered rows; items can be added, removed and moved in settings. */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun HudBarContent(
@@ -65,57 +66,95 @@ internal fun HudBarContent(
   maxWidth: Dp,
 ) {
   with(model) {
-    FlowRow(
-        modifier = modifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
-        horizontalArrangement = Arrangement.spacedBy(gap),
-        verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
-      ) {
-        if (showBattery) {
-          Row(verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-            Icon(Icons.Default.BatteryFull, contentDescription = null,
-              modifier = Modifier.size(iconSize), tint = lowBatteryColor)
-            ContrastVideoLabel((if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
-              (if (isCharging) " ⚡" else ""),
-              color = lowBatteryColor, fontSize = fontSize,
-              fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
+    val visibleLayout = layout ?: legacyHudLayout(
+      showBattery, showClock, showAdjustedRemaining, showRemaining, showSpeed,
+    )
+    if (visibleLayout.items.isEmpty()) return
+
+    Column(
+      modifier = modifier.widthIn(max = (maxWidth - 8.dp).coerceAtLeast(1.dp)),
+      verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
+    ) {
+      listOf(visibleLayout.first, visibleLayout.second).forEach { row ->
+        if (row.isEmpty()) return@forEach
+        FlowRow(
+          horizontalArrangement = Arrangement.spacedBy(gap),
+          verticalArrangement = Arrangement.spacedBy((4f * factor).dp),
+        ) {
+          row.forEach { item ->
+            when (item) {
+              HudElement.BATTERY -> {
+                Row(
+                  verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(innerGap),
+                ) {
+                  Icon(Icons.Default.BatteryFull, contentDescription = null,
+                    modifier = Modifier.size(iconSize), tint = lowBatteryColor)
+                  ContrastVideoLabel(
+                    (if (batteryPercent >= 0) "$batteryPercent%" else "--%") +
+                      (if (isCharging) " ⚡" else ""),
+                    color = lowBatteryColor, fontSize = fontSize, fontWeight = textWeight,
+                    outlined = highContrastText, outlineWidthDp = outlineWidthDp,
+                    fontFamily = fontFamily, maxLines = 1,
+                  )
+                }
+              }
+
+              HudElement.CLOCK -> {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(innerGap)) {
+                  Icon(Icons.Default.AccessTime, contentDescription = null,
+                    modifier = Modifier.size(iconSize), tint = clockColor)
+                  ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
+                    fontWeight = textWeight, outlined = highContrastText,
+                    outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
+                }
+              }
+
+              HudElement.ADJUSTED -> {
+                ContrastVideoLabel(adjustedTimeLabel, color = adjustedRemainingColor,
+                  fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText,
+                  outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
+              }
+
+              HudElement.REMAINING -> {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(innerGap)) {
+                  Icon(Icons.Default.HourglassBottom, contentDescription = null,
+                    modifier = Modifier.size(iconSize), tint = remainingColor)
+                  ContrastVideoLabel(originalTimeLabel, color = remainingColor,
+                    fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText,
+                    outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
+                }
+              }
+
+              HudElement.SPEED -> {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(innerGap)) {
+                  Icon(Icons.Default.PlayArrow, contentDescription = null,
+                    modifier = Modifier.size(iconSize), tint = speedColor)
+                  ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
+                    color = speedColor, fontSize = fontSize, fontWeight = textWeight,
+                    outlined = highContrastText, outlineWidthDp = outlineWidthDp,
+                    fontFamily = fontFamily, maxLines = 1)
+                }
+              }
+
+              HudElement.DOWNLOAD -> {
+                Row(verticalAlignment = Alignment.CenterVertically,
+                  horizontalArrangement = Arrangement.spacedBy(innerGap)) {
+                  Icon(Icons.Default.CloudDownload, contentDescription = null,
+                    modifier = Modifier.size(iconSize), tint = downloadColor)
+                  ContrastVideoLabel(hudDownloadSpeedText(downloadSpeedMbps),
+                    color = downloadColor, fontSize = fontSize, fontWeight = textWeight,
+                    outlined = highContrastText, outlineWidthDp = outlineWidthDp,
+                    fontFamily = fontFamily, maxLines = 1)
+                }
+              }
+            }
           }
         }
-        if (showClock) {
-          Row(verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-            Icon(Icons.Default.AccessTime, contentDescription = null,
-              modifier = Modifier.size(iconSize), tint = clockColor)
-            ContrastVideoLabel(clockText, color = clockColor, fontSize = fontSize,
-              fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
-          }
-        }
-        if (showAdjustedRemaining) {
-          ContrastVideoLabel(
-            text = adjustedTimeLabel,
-            color = adjustedRemainingColor, fontSize = fontSize,
-            fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1,
-          )
-        }
-        if (showRemaining) {
-          Row(verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-            Icon(Icons.Default.HourglassBottom, contentDescription = null,
-              modifier = Modifier.size(iconSize), tint = remainingColor)
-            ContrastVideoLabel(originalTimeLabel, color = remainingColor,
-              fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
-          }
-        }
-        if (showSpeed) {
-          Row(verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(innerGap)) {
-            Icon(Icons.Default.PlayArrow, contentDescription = null,
-              modifier = Modifier.size(iconSize), tint = speedColor)
-            ContrastVideoLabel(String.format(Locale.US, "%.2f×", playbackSpeed.coerceAtLeast(0f)),
-              color = speedColor, fontSize = fontSize, fontWeight = textWeight, outlined = highContrastText, outlineWidthDp = outlineWidthDp, fontFamily = fontFamily, maxLines = 1)
-          }
-        }
-  
       }
+    }
   }
 }
