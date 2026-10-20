@@ -16,6 +16,8 @@ internal class AutoAudioStreamingVad(
     val start: Double,
     val stop: Double,
     var detector: AutoAudioVadPcm? = null,
+    var pcm: ShortArray? = null,
+    var pcmLength: Int = 0,
     var firstTime: Double? = null,
     var lastTime: Double? = null,
   )
@@ -61,8 +63,18 @@ internal class AutoAudioStreamingVad(
       val slice = slices.firstOrNull { relativeTime >= it.start && relativeTime < it.stop }
         ?: continue // 2-second detailed scan gaps are intentionally ignored.
       if (slice.detector == null) {
+        slice.pcm = ShortArray(((slice.stop - slice.start) * 16_000).toInt())
         slice.detector = try {
-          AutoAudioVadPcm(packet.sampleRate, classifierFactory())
+          AutoAudioVadPcm(packet.sampleRate, classifierFactory()) { frame ->
+            // Bound storage to the exact validated analysis window (max 15 s).
+            // Deep models run AFTER capture, never inside native/JNI polling.
+            val destination = slice.pcm ?: error("PCM window is unavailable")
+            require(slice.pcmLength + frame.size <= destination.size) {
+              "PCM window exceeded its allocated duration"
+            }
+            frame.copyInto(destination, slice.pcmLength)
+            slice.pcmLength += frame.size
+          }
         } catch (_: Exception) {
           invalid = true
           return
@@ -100,6 +112,17 @@ internal class AutoAudioStreamingVad(
   fun windowDiagnostics(): List<AutoAudioVadWindowDiagnostics>? {
     if (speechFraction() == null) return null
     return slices.map { it.detector?.diagnostics() ?: return null }
+  }
+
+  /** Copy only complete, validated PCM16 windows. Never return a partial
+   * stream when PTS, JNI queue or WebRTC evidence is incomplete. */
+  fun pcmWindows(): List<ShortArray>? {
+    if (speechFraction() == null) return null
+    return slices.map { slice ->
+      val pcm = slice.pcm ?: return null
+      if (slice.pcmLength < (slice.stop - slice.start) * 16_000 * 0.85) return null
+      pcm.copyOf(slice.pcmLength)
+    }
   }
 
   override fun close() {
