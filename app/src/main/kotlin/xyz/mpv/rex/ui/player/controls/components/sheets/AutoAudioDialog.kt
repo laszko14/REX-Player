@@ -205,6 +205,43 @@ internal fun AutoAudioDialog(onDismissRequest: () -> Unit) {
                   )
                 }
               }
+              metrics.neuralReport?.let { neural ->
+                Text("AI — porównanie dokładnie tych samych fragmentów PCM",
+                  fontWeight = FontWeight.Bold)
+                Text(
+                  "WebRTC: udział dodatnich ramek; Silero: udział dodatnich okien 32 ms; " +
+                    "YAMNet: średnie wyniki klas Speech i Music z okien 0,975 s. " +
+                    "Skale nie są zamienne i żaden wynik nie zmienia filtrów.",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+                neural.windows.forEachIndexed { index, nw ->
+                  val silero = nw.sileroFraction?.let { "%.0f%% (%d okien)".format(
+                    it * 100.0, nw.sileroFrames ?: 0,
+                  ) } ?: "niedostępny"
+                  val yamnet = if (nw.yamnetFrames != null) {
+                    "mowa %.1f%% / muzyka %.1f%% (%d okien); dominująca: %s".format(
+                      (nw.yamnetSpeech ?: 0.0) * 100.0,
+                      (nw.yamnetMusic ?: 0.0) * 100.0,
+                      nw.yamnetFrames,
+                      nw.yamnetTopLabel ?: "?",
+                    )
+                  } else "niedostępny"
+                  Text(
+                    "F${index + 1}: Silero $silero • YAMNet $yamnet",
+                    color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                  )
+                }
+                neural.sileroError?.let { Text("Silero: $it", color = mutedAudioText,
+                  style = MaterialTheme.typography.bodySmall) }
+                neural.yamnetError?.let { Text("YAMNet: $it", color = mutedAudioText,
+                  style = MaterialTheme.typography.bodySmall) }
+                Text(
+                  "Inferencja po przechwyceniu PCM: ${neural.wallMillis} ms, " +
+                    "CPU wątku ${neural.threadCpuMillis} ms, " +
+                    "zmiana sterty JVM ${neural.javaHeapChangeKiB} KiB (nie pełny RAM procesu).",
+                  color = mutedAudioText, style = MaterialTheme.typography.bodySmall,
+                )
+              }
               if (metrics.spectralCentroidHz != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                   MetricCard(
