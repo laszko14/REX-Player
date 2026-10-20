@@ -7,6 +7,7 @@ import com.konovalov.vad.silero.VadSilero
 import com.konovalov.vad.silero.config.FrameSize as SileroFrameSize
 import com.konovalov.vad.silero.config.Mode as SileroMode
 import com.konovalov.vad.silero.config.SampleRate as SileroSampleRate
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import org.tensorflow.lite.support.audio.TensorAudio
@@ -88,6 +89,8 @@ internal object AutoAudioNeuralCompare {
             sileroPositive = positives,
           )
         }
+      } catch (e: CancellationException) {
+        throw e
       } catch (e: Exception) {
         sileroError = e.javaClass.simpleName + ": " + (e.message ?: "brak szczegółów")
         // Don't pretend that a failed model produced a valid negative sample.
@@ -114,8 +117,7 @@ internal object AutoAudioNeuralCompare {
           var speechSum = 0.0
           var musicSum = 0.0
           var frames = 0
-          var dominantLabel = ""
-          var dominantScore = -1.0
+          val dominantCounts = mutableMapOf<String, Int>()
           var offset = 0
           while (offset + YAMNET_FRAME <= pcm.size) {
             currentCoroutineContext().ensureActive()
@@ -124,9 +126,8 @@ internal object AutoAudioNeuralCompare {
             speechSum += categories.firstOrNull { it.label.equals("Speech", true) }?.score ?: 0f
             musicSum += categories.firstOrNull { it.label.equals("Music", true) }?.score ?: 0f
             val top = categories.maxByOrNull { it.score }
-            if (top != null && top.score > dominantScore) {
-              dominantScore = top.score.toDouble()
-              dominantLabel = top.label
+            if (top != null) {
+              dominantCounts[top.label] = (dominantCounts[top.label] ?: 0) + 1
             }
             frames++
             offset += YAMNET_FRAME
@@ -135,10 +136,12 @@ internal object AutoAudioNeuralCompare {
             yamnetFrames = frames,
             yamnetSpeech = speechSum / frames,
             yamnetMusic = musicSum / frames,
-            yamnetTopLabel = dominantLabel,
+            yamnetTopLabel = dominantCounts.maxByOrNull { it.value }?.key,
           )
         }
       }
+    } catch (e: CancellationException) {
+      throw e
     } catch (e: Exception) {
       yamnetError = e.javaClass.simpleName + ": " + (e.message ?: "brak szczegółów")
     } catch (e: LinkageError) {
