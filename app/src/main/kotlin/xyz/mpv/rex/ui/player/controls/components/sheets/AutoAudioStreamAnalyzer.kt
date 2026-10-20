@@ -57,6 +57,10 @@ internal object AutoAudioStreamAnalyzer {
       var vadSpeechFraction: Double? = null
       var vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList()
       var pcmForNeural: List<ShortArray>? = null
+      var bridgeError: String? = null
+      var pollingError: String? = null
+      var nativeStatus: String? = null
+      var polledCount = 0
 
       fun drainVadPackets() {
         if (nativeSource == null || streamVad == null) return
@@ -64,14 +68,19 @@ internal object AutoAudioStreamAnalyzer {
           // Bounded polling: avoid unbounded JNI work when decoding 3x speed.
           for (index in 0 until 96) {
             val pcm = nativeSource?.poll() ?: break
+            polledCount++
             streamVad?.accept(pcm)
           }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+          pollingError = "JNI poll: " + e.javaClass.simpleName
+          nativeStatus = streamVad?.captureStatus()
           nativeSource?.close()
           nativeSource = null
           streamVad?.close()
           streamVad = null
-        } catch (_: LinkageError) {
+        } catch (e: LinkageError) {
+          pollingError = "JNI poll: " + e.javaClass.simpleName
+          nativeStatus = streamVad?.captureStatus()
           nativeSource?.close()
           nativeSource = null
           streamVad?.close()
@@ -106,7 +115,9 @@ internal object AutoAudioStreamAnalyzer {
           ?: error("Brak czasu odtwarzania. Nie można wyznaczyć długości próbek streamingu.")
         // The old native AAR has no PCM export and returns null here.
         // Never treat astats metadata as evidence of detected speech.
-        nativeSource = AutoAudioNativePcmBridge.openOrNull()
+        val opened = AutoAudioNativePcmBridge.openWithStatus()
+        nativeSource = opened.source
+        bridgeError = opened.error
         streamVad = nativeSource?.let { AutoAudioStreamingVad(windows) }
         var previousPosition = startAt
         var lastElapsed = SystemClock.elapsedRealtime()
@@ -141,6 +152,7 @@ internal object AutoAudioStreamAnalyzer {
         vadSpeechFraction = streamVad?.speechFraction()
         vadWindows = streamVad?.windowDiagnostics().orEmpty()
         pcmForNeural = streamVad?.pcmWindows()
+        nativeStatus = streamVad?.captureStatus() ?: nativeStatus
       } finally {
         nativeSource?.close()
         streamVad?.close()
@@ -162,6 +174,9 @@ internal object AutoAudioStreamAnalyzer {
           vadSpeechFraction = vadSpeechFraction,
           vadWindows = vadWindows,
           neuralReport = neural,
+          vadCaptureStatus = listOfNotNull(bridgeError, pollingError, nativeStatus,
+            if (polledCount == 0) "Brak paczek JNI" else null,
+          ).joinToString(" • ").ifBlank { "Natywny PCM: brak wyniku" },
           vadModel = if (vadSpeechFraction != null) "WebRTC VAD • oryginalny PCM mpv" else null,
           sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)",
         )
