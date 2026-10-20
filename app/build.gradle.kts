@@ -245,6 +245,9 @@ dependencies {
   // No runtime network access, no change to existing libmpv / Lua filter graph.
   implementation("com.github.gkonovalov.android-vad:silero:2.0.10")
   implementation("com.github.gkonovalov.android-vad:yamnet:2.0.10")
+  // Our YAMNet adapter directly imports TensorFlow Task Audio classes. The
+  // yamnet module declares this as implementation(), not a public API.
+  implementation("org.tensorflow:tensorflow-lite-task-audio:0.4.4")
   implementation(libs.androidx.security.crypto)
 
   // Network protocol libraries
