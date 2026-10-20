@@ -32,26 +32,39 @@ internal class AutoAudioStreamingVad(
   private var origin: Double? = null
   private var expectedNextPts: Double? = null
   private var invalid = false
+  private var invalidReason: String? = null
+  private var packetsReceived = 0
+  private var samplesReceived = 0L
+  private var firstPts: Double? = null
+  private var lastPts: Double? = null
   private var closed = false
 
   fun accept(packet: AutoAudioPcmPacket) {
     check(!closed) { "VAD session already closed" }
     if (invalid) return
-    if (packet.droppedChunks != 0 ||
-      packet.sampleRate !in 8_000..192_000 ||
-      packet.samples.isEmpty() ||
-      !packet.pts.isFinite() ||
-      kotlin.math.abs(packet.pts) > 1e10 ||
-      (rate != null && rate != packet.sampleRate)
-    ) {
+    packetsReceived++
+    samplesReceived += packet.samples.size
+    if (firstPts == null) firstPts = packet.pts
+    lastPts = packet.pts
+    val problem = when {
+      packet.droppedChunks != 0 -> "JNI: utracono " + packet.droppedChunks + " paczek"
+      packet.sampleRate !in 8_000..192_000 -> "PCM: nieprawidłowa częstotliwość"
+      packet.samples.isEmpty() -> "PCM: pusta paczka"
+      !packet.pts.isFinite() || kotlin.math.abs(packet.pts) > 1e10 ->
+        "PCM: niepoprawny PTS"
+      rate != null && rate != packet.sampleRate -> "PCM: zmiana częstotliwości"
+      else -> null
+    }
+    if (problem != null) {
       invalid = true
+      invalidReason = problem
       return
     }
     val prev = expectedNextPts
-    // Large discontinuities and repeated/overlapping frames are not contiguous
-    // decoder PCM. Never fill missing audio with artificial silence.
     if (prev != null && (packet.pts < prev - 0.08 || packet.pts > prev + 0.75)) {
       invalid = true
+      invalidReason = "PCM: skok PTS (oczekiwano %.3f, otrzymano %.3f)"
+        .format(java.util.Locale.US, prev, packet.pts)
       return
     }
     rate = packet.sampleRate
@@ -75,20 +88,38 @@ internal class AutoAudioStreamingVad(
             frame.copyInto(destination, slice.pcmLength)
             slice.pcmLength += frame.size
           }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
           invalid = true
+          invalidReason = "VAD: inicjalizacja " + e.javaClass.simpleName
           return
         }
       }
       try {
         slice.detector!!.accept(packet.samples[i].toDouble() / 32768.0)
-      } catch (_: Exception) {
+      } catch (e: Exception) {
         invalid = true
+        invalidReason = "VAD: przetwarzanie " + e.javaClass.simpleName
         return
       }
       if (slice.firstTime == null) slice.firstTime = relativeTime
       slice.lastTime = relativeTime
     }
+  }
+
+  /** Compact diagnostic counters only: never include actual audio samples. */
+  fun captureStatus(): String {
+    val coverage = slices.mapIndexed { index, slice ->
+      val expected = ((slice.stop - slice.start) * 50.0).toInt()
+      "F" + (index + 1) + ": " + (slice.detector?.totalFrames ?: 0) +
+        "/" + expected + " ramek"
+    }.joinToString(", ")
+    val ptsText = if (firstPts?.isFinite() == true && lastPts?.isFinite() == true)
+      "PTS %.3f → %.3f".format(java.util.Locale.US, firstPts, lastPts)
+    else "PTS: brak"
+    val reason = invalidReason ?: if (speechFraction() == null) "niekompletne okna" else "kompletne PCM"
+    return "paczki " + packetsReceived + ", próbki " + samplesReceived +
+      ", Hz " + (rate?.toString() ?: "brak") + ", " + ptsText +
+      "; " + coverage + "; stan: " + reason
   }
 
   /** 20-ms binary model vote fraction; NOT calibrated model confidence. */
