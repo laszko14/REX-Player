@@ -232,6 +232,8 @@ fun PlayerControls(
   val duration by MPVLib.propInt["duration"].collectAsState()
   val position by MPVLib.propInt["time-pos"].collectAsState()
   val demuxerCacheDuration by MPVLib.propFloat["demuxer-cache-duration"].collectAsState()
+  // mpv cache input speed, not Android device-wide Rx traffic.
+  val mpvCacheSpeed by MPVLib.propInt["cache-speed"].collectAsState()
   val cacheBufferingState by MPVLib.propInt["cache-buffering-state"].collectAsState()
   val precisePosition by viewModel.precisePosition.collectAsState()
   val preciseDuration by viewModel.preciseDuration.collectAsState()
@@ -1336,6 +1338,9 @@ fun PlayerControls(
             durationSeconds = if (preciseDuration > 0f) preciseDuration else (duration ?: 0).toFloat(),
             playbackSpeed = playbackSpeed ?: playerPreferences.defaultSpeed.get(),
             preferences = playerPreferences,
+            downloadSpeedMbps = if (isNetworkStream && !isLoadingFile)
+              mpvStreamDownloadMbps(mpvCacheSpeed, rexEqMediaPath)
+            else null,
             modifier = Modifier.fillMaxSize(),
           )
         }
