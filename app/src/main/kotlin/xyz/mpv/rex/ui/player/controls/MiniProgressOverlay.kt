@@ -76,6 +76,17 @@ internal fun miniProgressFraction(position: Float, duration: Float): Float? {
 }
 
 /** A long press is reserved only inside the 24 dp zone immediately above the line. */
+/** Render cache only when mpv supplies a valid buffered endpoint ahead of playback. */
+internal fun miniBufferedFraction(
+  positionSeconds: Float,
+  bufferedUntilSeconds: Float?,
+  durationSeconds: Float,
+): Float? {
+  val played = miniProgressFraction(positionSeconds, durationSeconds) ?: return null
+  val buffered = bufferedUntilSeconds?.let { miniProgressFraction(it, durationSeconds) } ?: return null
+  return buffered.takeIf { it > played }
+}
+
 internal fun miniProgressHit(
   touchY: Float,
   heightPx: Float,
@@ -133,15 +144,19 @@ internal fun MiniProgressBar(
   visible: Boolean,
   preferences: PlayerPreferences,
   navigationBarBottom: Dp,
+  bufferedUntilSeconds: Float? = null,
 ) {
   val enabled by preferences.miniProgressEnabled.collectAsState()
   val thickness by preferences.miniProgressThicknessPx.collectAsState()
   val colorHex by preferences.miniProgressColorHex.collectAsState()
+  val bufferColorHex by preferences.miniProgressBufferColorHex.collectAsState()
   val opacity by preferences.miniProgressOpacityPercent.collectAsState()
   val margin by preferences.miniProgressBottomMarginDp.collectAsState()
   val fraction = miniProgressFraction(positionSeconds, durationSeconds)
+  val bufferedFraction = miniBufferedFraction(positionSeconds, bufferedUntilSeconds, durationSeconds)
   if (!visible || !enabled || fraction == null || opacity <= 0) return
   val color = miniColor(colorHex)
+  val bufferColor = miniColor(bufferColorHex)
   val alpha = opacity.coerceIn(0, 100) / 100f
   val strokeWidthPx = thickness.coerceIn(1, 8).toFloat()
   val lineHeight = with(LocalDensity.current) { strokeWidthPx.toDp() }
@@ -161,6 +176,19 @@ internal fun MiniProgressBar(
         strokeWidth = strokeWidthPx,
         cap = StrokeCap.Round,
       )
+      // Draw only the measured cache range, behind the played section.
+      if (bufferedFraction != null) {
+        drawLine(
+          color = bufferColor.copy(alpha = alpha),
+          start = Offset(strokeWidthPx / 2f + (size.width - strokeWidthPx) * fraction, midY),
+          end = Offset(
+            (strokeWidthPx / 2f + (size.width - strokeWidthPx) * bufferedFraction).coerceAtMost(size.width),
+            midY,
+          ),
+          strokeWidth = strokeWidthPx,
+          cap = StrokeCap.Round,
+        )
+      }
       if (fraction > 0f) {
         drawLine(
           color = color.copy(alpha = alpha),
