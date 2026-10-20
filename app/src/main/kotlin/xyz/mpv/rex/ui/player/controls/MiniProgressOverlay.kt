@@ -75,7 +75,6 @@ internal fun miniProgressFraction(position: Float, duration: Float): Float? {
   return (position / duration).coerceIn(0f, 1f)
 }
 
-/** A long press is reserved only inside the 24 dp zone immediately above the line. */
 /** Render cache only when mpv supplies a valid buffered endpoint ahead of playback. */
 internal fun miniBufferedFraction(
   positionSeconds: Float,
@@ -87,6 +86,7 @@ internal fun miniBufferedFraction(
   return buffered.takeIf { it > played }
 }
 
+/** A long press is reserved only inside the 24 dp zone immediately above the line. */
 internal fun miniProgressHit(
   touchY: Float,
   heightPx: Float,
