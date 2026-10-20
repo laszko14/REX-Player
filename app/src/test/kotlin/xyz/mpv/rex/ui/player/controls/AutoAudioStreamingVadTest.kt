@@ -91,4 +91,38 @@ class AutoAudioStreamingVadTest {
     }
   }
 
+  @Test fun validatedWindowsExposeTheSameBoundedPcmUsedByWebRtc() {
+    val windows = listOf(0.0 to 10.0, 12.0 to 22.0, 24.0 to 34.0)
+    AutoAudioStreamingVad(windows) { EverySecondFrameVad() }.use { vad ->
+      repeat(1700) { vad.accept(packet(it)) }
+      val pcm = vad.pcmWindows()!!
+      assertEquals(3, pcm.size)
+      pcm.forEach { window ->
+        assertEquals(160_000, window.size)
+        assertEquals(true, window.any { it.toInt() != 0 })
+      }
+      // The same native PCM cannot be consumed after closing the session.
+    }
+  }
+
+  @Test fun droppedOrPartialPcmIsNeverExportedToNeuralModels() {
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(750) { vad.accept(packet(it, if (it == 45) 1 else 0)) }
+      assertNull(vad.pcmWindows())
+    }
+    AutoAudioStreamingVad(listOf(0.0 to 15.0)) { EverySecondFrameVad() }.use { vad ->
+      repeat(350) { vad.accept(packet(it)) }
+      assertNull(vad.pcmWindows())
+    }
+  }
+
+  @Test fun neuralDiagnosticFractionsAreNotVerifiedSpeechProbabilities() {
+    val example = AutoAudioNeuralWindow(
+      sileroFrames = 312, sileroPositive = 156, yamnetFrames = 10,
+      yamnetSpeech = 0.2, yamnetMusic = 0.8, yamnetTopLabel = "Music",
+    )
+    assertEquals(0.5, example.sileroFraction!!, 0.000001)
+    assertNull(AutoAudioNeuralWindow().sileroFraction)
+  }
+
 }
