@@ -2054,6 +2054,9 @@ fun PlayerControls(
       visible = miniBarVisible,
       preferences = playerPreferences,
       navigationBarBottom = navBottom,
+      bufferedUntilSeconds = demuxerCacheDuration
+        ?.takeIf { it.isFinite() && it > 0f && seeking != true && !isLoadingFile && !isSeeking }
+        ?.let { miniPosition + it },
     )
 
     // Persistent, high-priority Back action. Unlike topLeftControls, this layer
