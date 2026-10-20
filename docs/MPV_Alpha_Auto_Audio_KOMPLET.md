@@ -575,3 +575,10 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 - W CI: `check_workflows`, `assembleDebug`, `testDebugUnitTest`, `lintDebug`, weryfikacja konfliktów Android .so i pakietowanych modeli oraz oddzielny diagnostyczny APK `.debug`. Jeśli CI ujawni błąd, analizować faktyczną pierwszą przyczynę, a nie stroić progi na ślepo.
 - Telefon Nothing Phone (1): uruchomić ponownie **wywiad uliczny, instrumental bez słów, cyfrową ciszę, Tears of Steel** (ten sam początek odcinków) i jednostajny szum; zbierać F1/F2/F3 oraz błędy modelu. Sprawdzić zmianę prędkości 1,5×, 2×, 3×, HLS/DASH, seek, brak zacięć, zużycie CPU i RAM w profilerze systemowym, czas analizy i brak wpływu na filtry.
 - Przy wyniku pozytywnym na dialogach i negatywnym na instrumentalu dopiero rozważyć nowe reguły; obecny etap jest **wyłącznie diagnostyczny**. Nie scalać PR #55 ani nie wydawać podpisanego v47 przed walidacją.
+
+
+### Korekta po pierwszym CI diagnostyki neuronowej (20.10.2026)
+
+- GitHub Actions [39459861529](https://github.com/laszko14/REX-Player/actions/runs/39459861529) zakończył się `failure`, pomimo sukcesu kontroli YAML/Python/Lua. Pierwszą przyczyną w `:app:compileDebugKotlin` były `Unresolved reference 'tensorflow'`, `AudioClassifier` i `TensorAudio` w `AutoAudioNeuralCompare.kt`. **Nie był to błąd inferencji na urządzeniu.**
+- Zależność `yamnet:2.0.10` deklaruje TensorFlow Task Audio jako `implementation`, więc samo dołączenie modułu YAMNet nie daje źródłom aplikacji dostępu do klas `org.tensorflow.lite...`. Commit [c8abc32](https://github.com/laszko14/REX-Player/commit/c8abc32786f7fc73694876675e27b4dd95b42ed1) dodaje jawnie `implementation("org.tensorflow:tensorflow-lite-task-audio:0.4.4")`.
+- Przed zielonym ponownym CI **nie podawać diagnostycznego APK jako gotowego**. Nie zmieniano w tej korekcie istniejących filtrów, JNI, planera ani modeli.
