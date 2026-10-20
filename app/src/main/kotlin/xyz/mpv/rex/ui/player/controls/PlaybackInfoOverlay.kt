@@ -65,6 +65,7 @@ internal fun PlaybackInfoOverlay(
   durationSeconds: Float,
   playbackSpeed: Float,
   preferences: PlayerPreferences,
+  downloadSpeedMbps: Float? = null,
   modifier: Modifier = Modifier,
 ) {
   val context = LocalContext.current
@@ -84,6 +85,11 @@ internal fun PlaybackInfoOverlay(
   val showClock by preferences.hudShowClock.collectAsState()
   val showAdjustedRemaining by preferences.hudShowAdjustedRemaining.collectAsState()
   val showBattery by preferences.hudShowBattery.collectAsState()
+  val layoutSpec by preferences.hudLayoutSpec.collectAsState()
+  val downloadHex by preferences.hudDownloadColor.collectAsState()
+  val layout = resolveHudLayout(layoutSpec, showBattery, showClock, showAdjustedRemaining,
+    showRemaining, showSpeed)
+  val batteryVisible = HudElement.BATTERY in layout.items
   val speedHex by preferences.hudSpeedColor.collectAsState()
   val remainingHex by preferences.hudRemainingColor.collectAsState()
   val clockHex by preferences.hudClockColor.collectAsState()
@@ -103,8 +109,8 @@ internal fun PlaybackInfoOverlay(
       delay(1000L)
     }
   }
-  LaunchedEffect(context, showBattery) {
-    if (!showBattery) return@LaunchedEffect
+  LaunchedEffect(context, batteryVisible) {
+    if (!batteryVisible) return@LaunchedEffect
     while (true) {
       val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
       val level = battery?.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) ?: -1
@@ -134,6 +140,7 @@ internal fun PlaybackInfoOverlay(
   val background = hudColor(backgroundHex, Color(0xFF10151C))
     .copy(alpha = backgroundOpacity.coerceIn(0, 100) / 100f)
   val speedColor = hudColor(speedHex, Color(0xFF60E2F2))
+  val downloadColor = hudColor(downloadHex, Color(0xFFFF9100))
   val remainingColor = hudColor(remainingHex, Color.White)
   val clockColor = hudColor(clockHex, Color.White)
   val adjustedRemainingColor = hudColor(adjustedRemainingHex, Color(0xFFA7F3D0))
@@ -150,6 +157,7 @@ internal fun PlaybackInfoOverlay(
     x = storedX.coerceIn(0f, 1f)
     y = storedY.coerceIn(0f, 1f)
   }
+  if (layout.items.isEmpty()) return
   BoxWithConstraints(modifier) {
     val travelX = (constraints.maxWidth - measured.width).coerceAtLeast(0)
     val travelY = (constraints.maxHeight - measured.height).coerceAtLeast(0)
@@ -203,6 +211,9 @@ internal fun PlaybackInfoOverlay(
       factor = factor,
       outlineWidthDp = outlineWidthDpForReadability(outlinePercent) * factor,
       fontFamily = luaFontFamily(luaFontId),
+      layout = layout,
+      downloadSpeedMbps = downloadSpeedMbps,
+      downloadColor = downloadColor,
       ),
       modifier = panelModifier,
       maxWidth = maxWidth,
