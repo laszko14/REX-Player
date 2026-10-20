@@ -637,3 +637,21 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 1. Dla rozróżnienia usterki ogólnej od zależnej od źródła: przetestować na tym samym APK i przy **1,00×** krótki materiał **instrumentalny bez wypowiedzi** w trybie 3×10 s. Zwrócić uwagę, czy pojawiają się ramki VAD F1/F2/F3 oraz Silero/YAMNet, czy dokładnie ten sam komunikat.
 2. Jeśli native PCM znów będzie niekompletny, minimalna kolejna zmiana powinna ujawnić **przyczynę fail-closed**: powodzenie `vadTapStart`, liczba odebranych paczek i ramek, drop count, pierwszy/ostatni PTS, zmiany sample rate i powód unieważnienia skanu; dane liczbowe i komunikat błędu diagnostycznego, bez zapisania próbek i bez ingerencji w tor odtwarzania.
 3. Po zweryfikowanej kompletności natywnego PCM dopiero porównać WebRTC, Silero i YAMNet na identycznych próbkach; automatyczne zmiany filtrów pozostają wyłączone, PR #55 nadal **nie scalać** przed testami.
+
+
+## 30. Aktualizacje MPV Alpha Audio — obowiązkowa zgodność instalacyjna (20.10.2026)
+
+### Nowe wymaganie użytkownika (po pierwszym fizycznym teście Audio v47)
+
+- **Wszystkie kolejne testowe wersje MPV Alpha Audio mają instalować się jako aktualizacja poprzedniej aplikacji Audio**, bez odinstalowywania i bez kasowania jej ustawień. Zwykły MPV Alpha ma pozostać nietknięty.
+- Wariant zachowuje **niezmienny identyfikator pakietu `xyz.mpv.rex.audio`** oraz widoczną nazwę **MPV Alpha Audio**; każda kolejna kompilacja dostaje **wyższy `versionCode`**, a wersje `v48, v49, ...` muszą być unikalne.
+- **Warunek niezbędny: wszystkie kolejne APK Audio muszą być podpisane jednym trwałym kluczem**. Dotychczasowy testowy Audio v47 został utworzony w jobie PR `pull_request`, bez sekretów podpisu release, dlatego używa standardowego klucza **debug runnera GitHub Actions**; nie potwierdzono dostępu do tego samego prywatnego klucza po zakończeniu CI.
+- **Uczciwe ograniczenie:** jeśli certyfikatu starego v47 nie da się powtórzyć przy kolejnym buildzie, Android **nie pozwoli go nadpisać** innym podpisem. Nie obiecywać aktualizacji v47 w miejscu bez porównania odcisków certyfikatów. W takim wypadku konieczna może być **jednorazowa reinstalacja** pierwszej wersji Audio ze stałym podpisem; dopiero wszystkie następne będą aktualizacjami. Nie można obejść wymogu Androida samą zmianą nazwy pliku czy `versionCode`.
+- Dla podpisanej gałęzi Audio użyć bezpiecznego procesu publikacji, który otrzymuje sekrety wyłącznie w **zaufanym jobie**, nie w `pull_request` z potencjalnie niezweryfikowanym kodem. Można zastosować istniejący stały klucz repozytorium wyłącznie z odrębnym identyfikatorem `xyz.mpv.rex.audio`, jeśli projekt i workflow są do tego przygotowane. Zachować niezmienioną zwykłą aplikację.
+- Podczas CI **sprawdzać `apksigner verify --print-certs`, identyfikator pakietu i `versionCode` względem poprzedniego Audio APK**; nie deklarować sukcesu aktualizacji na telefonie przed rzeczywistą instalacją nad poprzednim buildem.
+
+### Kolejność działań
+
+1. **Nie budować jeszcze nowej wersji:** użytkownik zapowiedział kolejne wyniki testów tego samego Audio v47 na instrumentalu bez mowy; potrzebna jest diagnoza źródłowej usterki native PCM / VAD.
+2. Po wynikach połączyć diagnostykę źródła PCM z przygotowaniem trwałego podpisu Audio i następnym nieużytym numerem wersji.
+3. Jeśli do aktualizacji starego v47 brakuje jego pierwotnego prywatnego klucza, uprzedzić użytkownika przed kompilacją; zbudować pierwsze trwale podpisane Audio i dopiero od tego wydania zapewnić instalowanie kolejnych wersji bez odinstalowania.
