@@ -130,6 +130,7 @@ private fun PreviewRealLua(
 private fun PreviewRealHud(
     width: Dp, scale: Int = 100, outlined: Boolean = true,
     weightPercent: Int = 60, outlinePercent: Int = if (outlined) 50 else 0,
+    layout: HudLayout? = null,
 ) {
     val factor = scale.coerceIn(35, 300) / 100f
     val model = HudBarModel(
@@ -157,6 +158,8 @@ private fun PreviewRealHud(
         outlineWidthDp = outlineWidthDpForReadability(outlinePercent),
         gap = 12.dp,
         factor = factor,
+        layout = layout,
+        downloadSpeedMbps = 5.66f,
     )
     HudBarContent(
         model = model,
@@ -333,5 +336,33 @@ fun LuaDragRightSettingsHiddenScreenshot() {
     LayoutBackdrop(bright = true, title = "PRZENOSZENIE / panel ustawien schowany / 30 + 8") {
         PreviewRealLua(edit = true, columns = 5, scale = 100,
             populatedExtra = true, previewDragging = true)
+    }
+}
+
+@PreviewTest
+@Preview(name = "21 HUD custom 2-row layout and mpv speed", widthDp = 980, heightDp = 370)
+@Composable
+fun HudCustomTwoRowsLandscapeScreenshot() {
+    LayoutBackdrop(bright = true, title = "HUD / dowolna kolejnosc / 2 wiersze / transfer tylko mpv") {
+        PreviewRealHud(width = 920.dp,
+            layout = HudLayout(
+                first = listOf(HudElement.CLOCK, HudElement.SPEED, HudElement.BATTERY),
+                second = listOf(HudElement.DOWNLOAD, HudElement.ADJUSTED),
+            ),
+        )
+    }
+}
+
+@PreviewTest
+@Preview(name = "22 HUD custom two rows portrait", widthDp = 430, heightDp = 700)
+@Composable
+fun HudCustomTwoRowsPortraitScreenshot() {
+    LayoutBackdrop(bright = false, title = "HUD / pion / 2 wiersze") {
+        PreviewRealHud(width = 410.dp,
+            layout = HudLayout(
+                first = listOf(HudElement.DOWNLOAD, HudElement.CLOCK),
+                second = listOf(HudElement.REMAINING, HudElement.SPEED),
+            ),
+        )
     }
 }
