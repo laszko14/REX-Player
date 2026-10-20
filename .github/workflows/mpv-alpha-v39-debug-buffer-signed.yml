@@ -3,7 +3,7 @@ name: MPV Alpha v50 debug - mpv-only download meter correction on v39 no-audio b
 on:
   push:
     branches:
-      - release/v50-debug-hud-customizer-no-audio
+      - fix/v50-debug-mpv-download-meter
     paths:
       - .github/workflows/mpv-alpha-v39-debug-buffer-signed.yml
 
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: mpv-alpha-v50-debug-hud-update
+  group: mpv-alpha-v50-debug-meter-fix
   cancel-in-progress: false
 
 jobs:
