@@ -241,6 +241,10 @@ dependencies {
   // Real offline frame-based VAD; consumes original decoded PCM, never FFT metadata.
   // MIT-licensed Android wrapper around WebRTC VAD, arm64 JNI artifact.
   implementation("com.github.gkonovalov.android-vad:webrtc:2.0.10")
+  // Diagnostic-only neural models. Both bundle their own offline model assets.
+  // No runtime network access, no change to existing libmpv / Lua filter graph.
+  implementation("com.github.gkonovalov.android-vad:silero:2.0.10")
+  implementation("com.github.gkonovalov.android-vad:yamnet:2.0.10")
   implementation(libs.androidx.security.crypto)
 
   // Network protocol libraries
