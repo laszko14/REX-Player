@@ -2054,6 +2054,11 @@ fun PlayerControls(
       visible = miniBarVisible,
       preferences = playerPreferences,
       navigationBarBottom = navBottom,
+      // Only mpv's measured read-ahead (never an estimate from buffering percentage).
+      // A seek/load invalidates the old cached range until new data arrives.
+      bufferedUntilSeconds = demuxerCacheDuration
+        ?.takeIf { it.isFinite() && it > 0f && seeking != true && !isLoadingFile && !isSeeking }
+        ?.let { miniPosition + it },
     )
 
     // Persistent, high-priority Back action. Unlike topLeftControls, this layer
