@@ -550,3 +550,28 @@ Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu uliczn
 - Uruchomić i potwierdzić nowe `assembleDebug`, `testDebugUnitTest`, `lintDebug` oraz kontrolę workflow. Dopóki CI nie jest zielony, **nie** dostarczać poprawionej aplikacji diagnostycznej do testu.
 - Ponowić **dokładną analizę tej samej minuty cyfrowej ciszy** na nowym APK; odczytać prawdziwy VAD F1/F2/F3 albo brak kompletnych danych PCM, a nie wymyślać 0%.
 - Następnie na **identycznych oknach** porównać WebRTC z drugim niezależnym modelem odróżniającym mowę od muzyki, nadal tylko diagnostycznie. Natywny AAR, normalne filtry i mechanizmy A/B pozostają bez zmian.
+
+## 27. Auto Audio v47 — diagnostyka porównawcza Silero VAD + YAMNet (20.10.2026)
+
+### Podstawa decyzji
+
+- Punktem wyjścia jest zweryfikowane fałszywe wykrycie WebRTC **97%** na instrumentalu bez wypowiedzi; istniejąca blokada `verifiedSpeechProbability=null` i sterowania filtrami pozostaje nienaruszona.
+- Porównano: WebRTC GMM (dotychczasowy baseline), Silero VAD DNN (offline ONNX) i YAMNet (offline TensorFlow Lite, klasy AudioSet). Zgodnie z dokumentacją Silero jest lekkim detektorem aktywności mowy, a YAMNet klasyfikuje także muzykę i inne zdarzenia dźwiękowe; żaden nie jest miernikiem zrozumiałości dialogów.
+- Dla minimalizacji kosztu integracji wybrano dodatkowe moduły istniejącej biblioteki `com.github.gkonovalov.android-vad` **2.0.10**: `silero` i `yamnet`. Bazowy moduł `webrtc` jest już używany. Biblioteka Silero 2.0.10 używa ONNX Runtime Android 1.22.0 i modelu `silero_vad.onnx`; moduł YAMNet używa TensorFlow Lite Task Audio 0.4.4 i `yamnet.tflite`. Modele mają być dostarczone jako zasoby APK, **bez pobierania ich podczas odtwarzania**. Należy rozpoznać rzeczywiste wersje modeli z dostarczonych AAR przed oceną skuteczności, bez nazywania wariantu Silero najnowszym.
+- Źródła implementacji i API: https://github.com/gkonovalov/android-vad/tree/2.0.10, https://github.com/snakers4/silero-vad, https://github.com/tensorflow/models/tree/master/research/audioset/yamnet. Silero i biblioteka Android VAD: MIT; sprawdzić dodatkowo transytywne notice/licencje modeli i runtime przy przyszłym wydaniu produkcyjnym. W repozytorium biblioteki zgłaszano problem z crashem Silero 2.0.10 na innym telefonie (issue #39) — wdrożenie na Nothing Phone (1) wymaga osobnego testu.
+
+### Zmiany na aktualnej gałęzi PR #55 — bez zmiany mpv/JNI
+
+1. Istniejący `AutoAudioVadPcm` przekazuje opcjonalnej funkcji obserwującej **te same przeliczone na 16 kHz ramki PCM16**, które dostał WebRTC. Nie tworzono osobnego toru resamplingu, dekodowania ani połączenia HTTP.
+2. `AutoAudioStreamingVad` buforuje kopię PCM **wyłącznie w ograniczonych oknach** 15 s lub 3 × 10 s: maksymalnie około 480 000 próbek, tj. około 0,92 MiB surowego PCM (plus narzut Kotlin/Java). Udostępnia kopię tylko po wcześniejszej kontroli kompletności, prawidłowych PTS i braku utraty pakietów JNI. Dane są ulotne i nie trafiają do pliku ani mikrofonu.
+3. `AutoAudioNeuralCompare` startuje **po zakończeniu przechwytywania JNI**, aby inferencja nie blokowała wywołań `poll()` podczas dekodowania 1,5×–3×. Silero analizuje ramki 512 próbek (32 ms) i jest resetowany na każde oddzielne okno. YAMNet analizuje ramki 15 600 próbek (0,975 s); odczytywane są osobno wyniki klas `Speech` i `Music`, nie tylko kategoria top-1.
+4. Na panelu analizatora dodano porównanie per fragment: dotychczasowy WebRTC oraz Silero i YAMNet, z jawnymi informacjami o różnej semantyce wyników. Dodatkowa diagnostyka czasu inferencji, CPU wątku i zmiany sterty JVM służy orientacji, **nie** jest jeszcze testem całkowitego CPU, RSS ani baterii.
+5. Awaria niezależnego modułu AI nie może zostać zinterpretowana jako 0% mowy. Brak wyniku / wyjątek raportowany jest jako niedostępność modelu. Właściwe ustawienia filtrów, A/B, DRC, EQ, Głos, Szum, Dialogue Enhance i `mpv af` pozostają bez zmian.
+6. Dodano testy regresji buforowania pełnych okien, odrzucania fragmentów niekompletnych i diagnostycznych udziałów ramek.
+
+### Status walidacji i wymagane następne etapy
+
+- **Implementacja kodu jest w toku; wyniki nowego CI i testów na telefonie nie zostały jeszcze potwierdzone w chwili tego wpisu.** Nie przypisywać Silero/YAMNet wartości 0%, 100% ani wyższej skuteczności bez pomiarów.
+- W CI: `check_workflows`, `assembleDebug`, `testDebugUnitTest`, `lintDebug`, weryfikacja konfliktów Android .so i pakietowanych modeli oraz oddzielny diagnostyczny APK `.debug`. Jeśli CI ujawni błąd, analizować faktyczną pierwszą przyczynę, a nie stroić progi na ślepo.
+- Telefon Nothing Phone (1): uruchomić ponownie **wywiad uliczny, instrumental bez słów, cyfrową ciszę, Tears of Steel** (ten sam początek odcinków) i jednostajny szum; zbierać F1/F2/F3 oraz błędy modelu. Sprawdzić zmianę prędkości 1,5×, 2×, 3×, HLS/DASH, seek, brak zacięć, zużycie CPU i RAM w profilerze systemowym, czas analizy i brak wpływu na filtry.
+- Przy wyniku pozytywnym na dialogach i negatywnym na instrumentalu dopiero rozważyć nowe reguły; obecny etap jest **wyłącznie diagnostyczny**. Nie scalać PR #55 ani nie wydawać podpisanego v47 przed walidacją.
