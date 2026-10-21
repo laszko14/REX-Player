@@ -45,3 +45,8 @@ Applies to this repository. It is guidance for development, not permission to ma
 - Screenshot tests live in `app/src/screenshotTest/kotlin/`. Update their fixtures whenever HUD or Lua typography changes. Follow `docs/ui-screenshot-previews.md`.
 - Do **not** call an illustrative screenshot a live player screenshot; these tests do not decode movies or show saved private preferences. Use Android device testing for gesture and live video correctness.
 - The screenshot workflow does not sign, tag, publish or install APKs. Only the separate, explicitly authorized MPV Alpha release workflow can publish updates.
+
+## ChatGPT / Work / Codex reusable workflows
+- For tasks spanning multiple conversations, ChatGPT Work, Codex, plugin authoring, scheduled automations, or MCP/App SDK tools, read [docs/AI_WORKFLOWS.md](docs/AI_WORKFLOWS.md). It is a workflow guide; `AGENTS.md`, `CONTRIBUTING.md`, and real source/build evidence remain authoritative.
+- At the start of interrupted work, verify the current branch, diff, CI/build results, and project documentation rather than assuming a previous assistant's summary is current. At the end of substantive changes, leave a grounded handoff (goal, completed work with evidence, tests, next step and blockers).
+- A private ChatGPT skill/plugin cannot itself grant GitHub or device permissions. Do not create automations, publish plugins, release APKs, or broaden tool access without the user's authorization.
