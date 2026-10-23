@@ -1,6 +1,7 @@
 package xyz.mpv.rex.ui.player.delegates
 
-import android.net.Uri
+import java.net.URI
+import java.util.Locale
 
 /** Prevents rotating signed HTTP URLs from being collapsed by file name. */
 internal object NewIntentMediaMatcher {
@@ -12,8 +13,12 @@ internal object NewIntentMediaMatcher {
     incomingFileName: String,
     currentFileName: String,
   ): Boolean {
-    val incomingScheme = incomingUri?.let { runCatching { Uri.parse(it).scheme }.getOrNull() }
-    val currentScheme = currentUri?.let { runCatching { Uri.parse(it).scheme }.getOrNull() }
+    val incomingScheme = incomingUri?.let {
+      runCatching { URI(it).scheme?.lowercase(Locale.ROOT) }.getOrNull()
+    }
+    val currentScheme = currentUri?.let {
+      runCatching { URI(it).scheme?.lowercase(Locale.ROOT) }.getOrNull()
+    }
     if (incomingScheme in setOf("http", "https") || currentScheme in setOf("http", "https")) {
       return !incomingUri.isNullOrBlank() && incomingUri == currentUri
     }
