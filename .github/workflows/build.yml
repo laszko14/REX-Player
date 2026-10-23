@@ -124,7 +124,7 @@ jobs:
     # Signing secrets and a write-capable GitHub token are NEVER exposed to PRs.
     # A specifically marked push to master can build a signed APK without browser login.
     # All ordinary pushes and pull requests continue to run unsigned CI only.
-    if: ${{ github.ref == 'refs/heads/master' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[mpv-alpha-apk]'))) }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.ref == 'refs/heads/master' && github.event_name == 'push' && contains(github.event.head_commit.message, '[mpv-alpha-apk]')) }}
     # Manual releases only need fast source validation, not a second unsigned Android build.
     needs: sources
     runs-on: ubuntu-latest
