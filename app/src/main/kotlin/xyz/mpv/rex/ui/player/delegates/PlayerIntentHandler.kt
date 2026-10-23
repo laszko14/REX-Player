@@ -404,15 +404,21 @@ class PlayerIntentHandler(
   fun handleNewIntent(intent: Intent) {
     activity.isAutoplayNextTriggered = false
     activity.pendingIntentExtras = true
+    val previousUri = activity.intent?.dataString
     activity.setIntent(intent)
 
     val hasIntentMedia = intent.data != null || intent.hasExtra("video_list") || parsePathFromIntent(intent) != null
     val incomingFileName = getFileName(intent).ifBlank { intent.data?.lastPathSegment ?: "" }
     val incomingMediaIdentifier = if (incomingFileName.isNotBlank()) activity.getMediaIdentifier(intent, incomingFileName) else ""
 
-    val isSameMedia = activity.isReady && hasIntentMedia &&
-      ((incomingMediaIdentifier.isNotBlank() && incomingMediaIdentifier == activity.mediaIdentifier) ||
-       (incomingFileName.isNotBlank() && incomingFileName == activity.fileName))
+    val isSameMedia = activity.isReady && hasIntentMedia && NewIntentMediaMatcher.isSame(
+      incomingUri = intent.dataString,
+      currentUri = previousUri,
+      incomingIdentifier = incomingMediaIdentifier,
+      currentIdentifier = activity.mediaIdentifier,
+      incomingFileName = incomingFileName,
+      currentFileName = activity.fileName,
+    )
 
     // If expanding active session without intent media, or if the exact same media is already active in foreground
     if (activity.isReady && (!hasIntentMedia || (isSameMedia && !activity.isInBackgroundPlayback && !activity.isManualBackgroundPlayback))) {
