@@ -13,6 +13,8 @@ import androidx.lifecycle.lifecycleScope
 import `is`.xyz.mpv.MPVLib
 import `is`.xyz.mpv.Utils
 import java.io.File
+import java.net.URI
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -25,6 +27,29 @@ import xyz.mpv.rex.ui.player.openContentFd
 import xyz.mpv.rex.ui.player.resolveUri
 import xyz.mpv.rex.utils.media.FolderPlaylistOps
 import xyz.mpv.rex.utils.media.HttpUtils
+
+internal object NewIntentMediaMatcher {
+  fun isSameMedia(
+    previousUri: String?,
+    incomingUri: String?,
+    incomingMediaIdentifier: String,
+    currentMediaIdentifier: String,
+    incomingFileName: String,
+    currentFileName: String,
+  ): Boolean {
+    if (incomingUri.isNetworkUri()) {
+      return previousUri != null && incomingUri == previousUri
+    }
+
+    return (incomingMediaIdentifier.isNotBlank() && incomingMediaIdentifier == currentMediaIdentifier) ||
+      (incomingFileName.isNotBlank() && incomingFileName == currentFileName)
+  }
+
+  private fun String?.isNetworkUri(): Boolean {
+    val scheme = runCatching { this?.let(::URI)?.scheme }.getOrNull() ?: return false
+    return scheme.lowercase(Locale.ROOT) == "http" || scheme.lowercase(Locale.ROOT) == "https"
+  }
+}
 
 /**
  * Controller responsible for parsing incoming launch intents, content URIs,
@@ -404,6 +429,7 @@ class PlayerIntentHandler(
   fun handleNewIntent(intent: Intent) {
     activity.isAutoplayNextTriggered = false
     activity.pendingIntentExtras = true
+    val previousUri = activity.intent?.dataString
     activity.setIntent(intent)
 
     val hasIntentMedia = intent.data != null || intent.hasExtra("video_list") || parsePathFromIntent(intent) != null
@@ -411,8 +437,14 @@ class PlayerIntentHandler(
     val incomingMediaIdentifier = if (incomingFileName.isNotBlank()) activity.getMediaIdentifier(intent, incomingFileName) else ""
 
     val isSameMedia = activity.isReady && hasIntentMedia &&
-      ((incomingMediaIdentifier.isNotBlank() && incomingMediaIdentifier == activity.mediaIdentifier) ||
-       (incomingFileName.isNotBlank() && incomingFileName == activity.fileName))
+      NewIntentMediaMatcher.isSameMedia(
+        previousUri = previousUri,
+        incomingUri = intent.dataString,
+        incomingMediaIdentifier = incomingMediaIdentifier,
+        currentMediaIdentifier = activity.mediaIdentifier,
+        incomingFileName = incomingFileName,
+        currentFileName = activity.fileName,
+      )
 
     // If expanding active session without intent media, or if the exact same media is already active in foreground
     if (activity.isReady && (!hasIntentMedia || (isSameMedia && !activity.isInBackgroundPlayback && !activity.isManualBackgroundPlayback))) {
