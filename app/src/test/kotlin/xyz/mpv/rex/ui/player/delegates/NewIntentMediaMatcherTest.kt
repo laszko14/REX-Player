@@ -21,6 +21,12 @@ class NewIntentMediaMatcherTest {
     assertTrue(NewIntentMediaMatcher.isSame(url, url, "id", "id", "index.m3u8", "index.m3u8"))
   }
 
+  @Test fun uppercaseHttpSchemeIsStillComparedByExactUrl() {
+    assertFalse(NewIntentMediaMatcher.isSame(
+      "HTTPS://cdn.example/index.m3u8?t=new", "HTTPS://cdn.example/index.m3u8?t=old",
+      "same", "same", "index.m3u8", "index.m3u8"))
+  }
+
   @Test fun localMediaKeepsLegacyIdentifierFallback() {
     assertTrue(NewIntentMediaMatcher.isSame("content://media/1", "content://media/1",
       "stable-id", "stable-id", "movie.mp4", "movie.mp4"))
