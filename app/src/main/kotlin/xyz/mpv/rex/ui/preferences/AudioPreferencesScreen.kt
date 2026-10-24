@@ -89,6 +89,8 @@ object AudioPreferencesScreen : Screen {
             val preferredLanguages by preferences.preferredLanguages.collectAsState()
             val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
             val volumeNormalization by preferences.volumeNormalization.collectAsState()
+            val speedBalanceEnabled by preferences.speedLoudnessBalance.collectAsState()
+            val speedBalanceGain by preferences.speedLoudnessGainDb.collectAsState()
             val drcEnabled by preferences.drcEnabled.collectAsState()
             val audioChannel by preferences.audioChannels.collectAsState()
             val volumeBoostCap by preferences.volumeBoostCap.collectAsState()
@@ -161,6 +163,45 @@ object AudioPreferencesScreen : Screen {
                     ) 
                   },
                 )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_audio_speed_loudness_title,
+              ) {
+                SwitchPreference(
+                  value = speedBalanceEnabled,
+                  onValueChange = { preferences.speedLoudnessBalance.set(it) },
+                  title = { Text(stringResource(R.string.pref_audio_speed_loudness_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_audio_speed_loudness_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                )
+              }
+
+              if (speedBalanceEnabled) {
+                GroupedPreferenceCard(
+                  position = GroupPosition.MIDDLE,
+                  highlightKey = R.string.pref_audio_speed_loudness_gain,
+                ) {
+                  SliderPreference(
+                    value = speedBalanceGain.toFloat(),
+                    onValueChange = { preferences.speedLoudnessGainDb.set(it.toInt().coerceIn(0, 8)) },
+                    title = { Text(stringResource(R.string.pref_audio_speed_loudness_gain)) },
+                    valueRange = 0f..8f,
+                    summary = {
+                      Text(
+                        stringResource(R.string.pref_audio_speed_loudness_gain_summary, speedBalanceGain),
+                        color = MaterialTheme.colorScheme.outline,
+                      )
+                    },
+                    onSliderValueChange = { preferences.speedLoudnessGainDb.set(it.toInt().coerceIn(0, 8)) },
+                    sliderValue = speedBalanceGain.toFloat(),
+                  )
+                }
               }
 
               GroupedPreferenceCard(
