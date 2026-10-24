@@ -307,6 +307,8 @@
     <string name="pref_audio_pitch_correction_summary">Zapobiega podwyższaniu tonacji przy szybszym odtwarzaniu i obniżaniu jej przy wolniejszym odtwarzaniu</string>
     <string name="pref_audio_volume_normalization_title">Normalizacja głośności</string>
     <string name="pref_audio_volume_normalization_summary">Automatycznie reguluj głośność dźwięku, aby utrzymać jej stały poziom</string>
+    <string name="pref_audio_original_mode_title">Oryginalny dźwięk (wyłącz nowe ulepszenia)</string>
+    <string name="pref_audio_original_mode_summary">Jednym kliknięciem pomija normalizację i wyrównanie przy przyspieszaniu. Po wyłączeniu przywraca ich zapisane ustawienia. EQ, DRC, Lua i korekcja wysokości głosu pozostają bez zmian.</string>
     <string name="pref_audio_speed_loudness_title">Wyrównanie głośności przy przyspieszeniu</string>
     <string name="pref_audio_speed_loudness_summary">Niezależna kompensacja spadku głośności od 1× do 3×. Nie włącza normalizacji ani DRC. Zbyt duże wzmocnienie może przesterować głośne nagrania.</string>
     <string name="pref_audio_speed_loudness_gain">Siła wyrównania</string>
