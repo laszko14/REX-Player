@@ -89,6 +89,7 @@ object AudioPreferencesScreen : Screen {
             val preferredLanguages by preferences.preferredLanguages.collectAsState()
             val audioPitchCorrection by preferences.audioPitchCorrection.collectAsState()
             val volumeNormalization by preferences.volumeNormalization.collectAsState()
+            val originalAudioMode by preferences.originalAudioMode.collectAsState()
             val speedBalanceEnabled by preferences.speedLoudnessBalance.collectAsState()
             val speedBalanceGain by preferences.speedLoudnessGainDb.collectAsState()
             val drcEnabled by preferences.drcEnabled.collectAsState()
@@ -150,11 +151,29 @@ object AudioPreferencesScreen : Screen {
 
               GroupedPreferenceCard(
                 position = GroupPosition.MIDDLE,
+                highlightKey = R.string.pref_audio_original_mode_title,
+              ) {
+                SwitchPreference(
+                  value = originalAudioMode,
+                  onValueChange = { preferences.originalAudioMode.set(it) },
+                  title = { Text(stringResource(R.string.pref_audio_original_mode_title)) },
+                  summary = {
+                    Text(
+                      stringResource(R.string.pref_audio_original_mode_summary),
+                      color = MaterialTheme.colorScheme.outline,
+                    )
+                  },
+                )
+              }
+
+              GroupedPreferenceCard(
+                position = GroupPosition.MIDDLE,
                 highlightKey = R.string.pref_audio_volume_normalization_title,
               ) {
                 SwitchPreference(
                   value = volumeNormalization,
                   onValueChange = { preferences.volumeNormalization.set(it) },
+                  enabled = !originalAudioMode,
                   title = { Text(stringResource(R.string.pref_audio_volume_normalization_title)) },
                   summary = { 
                     Text(
@@ -172,6 +191,7 @@ object AudioPreferencesScreen : Screen {
                 SwitchPreference(
                   value = speedBalanceEnabled,
                   onValueChange = { preferences.speedLoudnessBalance.set(it) },
+                  enabled = !originalAudioMode,
                   title = { Text(stringResource(R.string.pref_audio_speed_loudness_title)) },
                   summary = {
                     Text(
@@ -182,7 +202,7 @@ object AudioPreferencesScreen : Screen {
                 )
               }
 
-              if (speedBalanceEnabled) {
+              if (speedBalanceEnabled && !originalAudioMode) {
                 GroupedPreferenceCard(
                   position = GroupPosition.MIDDLE,
                   highlightKey = R.string.pref_audio_speed_loudness_gain,
