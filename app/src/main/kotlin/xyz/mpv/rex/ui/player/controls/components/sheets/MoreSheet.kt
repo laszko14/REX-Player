@@ -130,11 +130,13 @@ fun MoreSheet(
     stringResource(R.string.player_sheets_tab_gestures),
     stringResource(R.string.player_sheets_tab_settings),
     stringResource(R.string.player_sheets_tab_interaction),
+    stringResource(R.string.player_sheets_tab_all_settings),
   )
 
   val initialTab = remember { viewModel.lastMoreSheetTab.get().coerceIn(0, tabs.lastIndex) }
   val pagerState = rememberPagerState(initialPage = initialTab) { tabs.size }
   val scope = rememberCoroutineScope()
+  var fullAppSettingsOpen by remember { mutableStateOf(false) }
 
   // Persist tab change
   LaunchedEffect(pagerState) {
@@ -164,8 +166,9 @@ fun MoreSheet(
         tabs.forEachIndexed { index, title ->
           Tab(
             selected = pagerState.currentPage == index,
-            onClick = { 
-              scope.launch { pagerState.animateScrollToPage(index) }
+            onClick = {
+              if (index == 5) fullAppSettingsOpen = true
+              else scope.launch { pagerState.animateScrollToPage(index) }
             },
             selectedContentColor = MaterialTheme.colorScheme.primary,
             unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -181,6 +184,7 @@ fun MoreSheet(
                       1 -> Icons.Default.Palette
                       2 -> Icons.Default.TouchApp
                       3 -> Icons.Default.Settings
+                      5 -> Icons.Default.Settings
                       else -> Icons.Default.Tune
                   },
                   contentDescription = null,
@@ -224,11 +228,28 @@ fun MoreSheet(
             onShowSheet = onShowSheet,
           )
           4 -> InteractionTab()
+          5 -> Column(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = MaterialTheme.spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(MaterialTheme.spacing.medium),
+          ) {
+            Text(
+              text = stringResource(R.string.player_sheets_all_settings_description),
+              style = MaterialTheme.typography.bodyMedium,
+            )
+            Button(onClick = { fullAppSettingsOpen = true }) {
+              Icon(Icons.Default.Settings, contentDescription = null)
+              Spacer(modifier = Modifier.width(8.dp))
+              Text(stringResource(R.string.player_sheets_all_settings_open))
+            }
+          }
         }
       }
 
       Spacer(modifier = Modifier.height(MaterialTheme.spacing.medium))
     }
+  }
+  if (fullAppSettingsOpen) {
+    FullAppSettingsDialog(onDismissRequest = { fullAppSettingsOpen = false })
   }
 }
 
