@@ -19,6 +19,8 @@ class AudioPreferences(
   val rexEqBoost = preferenceStore.getInt("rex_equalizer_boost", 0)
   val automaticBackgroundPlayback = preferenceStore.getBoolean("automatic_background_playback", false)
   val volumeNormalization = preferenceStore.getBoolean("audio_volume_normalization", false)
+  // One-tap bypass for normalization + speed balance, preserving their saved settings.
+  val originalAudioMode = preferenceStore.getBoolean("audio_original_mode_bypass", false)
   // Independent from dynamic normalization, DRC, and system/mpv volume.
   // At 1x there is no gain; the chosen maximum is reached at 3x.
   val speedLoudnessBalance = preferenceStore.getBoolean("speed_loudness_balance_enabled", true)
