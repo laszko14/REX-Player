@@ -15,6 +15,7 @@ import xyz.mpv.rex.preferences.SubtitlesPreferences
 import xyz.mpv.rex.domain.anime4k.Anime4KManager
 import xyz.mpv.rex.ui.player.PlayerActivity.Companion.TAG
 import xyz.mpv.rex.ui.player.controls.RexDrcAudio
+import xyz.mpv.rex.ui.player.controls.SpeedLoudnessAudio
 import xyz.mpv.rex.ui.player.controls.components.panels.toColorHexString
 import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.KeyMapping
@@ -224,6 +225,7 @@ class MPVView(
 
   override fun postInitOptions() {
     MPVLifecycleLock.onNativeInitialized()
+    SpeedLoudnessAudio.resetForNewSession()
     // Covers headless playback too; the player controls handle live preference changes.
     RexDrcAudio.apply(audioPreferences.drcEnabled.get())
     when (decoderPreferences.debanding.get()) {
