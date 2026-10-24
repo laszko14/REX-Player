@@ -1095,6 +1095,10 @@
     <string name="player_sheets_tab_gestures">Gestures</string>
     <string name="player_sheets_tab_settings">Settings</string>
     <string name="player_sheets_tab_interaction">Interaction</string>
+    <string name="player_sheets_tab_all_settings" tools:ignore="MissingTranslation">All settings</string>
+    <string name="player_sheets_all_settings_description" tools:ignore="MissingTranslation">Every category and option from the app settings, without leaving playback.</string>
+    <string name="player_sheets_all_settings_open" tools:ignore="MissingTranslation">Open full settings</string>
+    <string name="player_sheets_all_settings_close" tools:ignore="MissingTranslation">Close settings</string>
     <string name="anime4k_not_available_high_res">Not available for 4K/8K video</string>
     <string name="player_sheets_extended_controls_title">Extended Controls</string>
     

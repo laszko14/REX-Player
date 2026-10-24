@@ -947,6 +947,10 @@
     <string name="player_sheets_tab_gestures">Gesty</string>
     <string name="player_sheets_tab_settings">Ustawienia</string>
     <string name="player_sheets_tab_interaction">Interakcje</string>
+    <string name="player_sheets_tab_all_settings">Wszystkie ustawienia</string>
+    <string name="player_sheets_all_settings_description">Wszystkie kategorie i opcje z głównych ustawień aplikacji — bez wychodzenia z odtwarzacza.</string>
+    <string name="player_sheets_all_settings_open">Otwórz pełne ustawienia</string>
+    <string name="player_sheets_all_settings_close">Zamknij ustawienia</string>
     <string name="anime4k_not_available_high_res">Niedostępne dla wideo 4K/8K</string>
     <string name="player_sheets_extended_controls_title">Rozszerzone sterowanie</string>
     <string name="storage_access_required">Wymagany dostęp do pamięci</string>

@@ -341,9 +341,11 @@ class MPVView(
     MPVLib.setOptionString("audio-pitch-correction", audioPreferences.audioPitchCorrection.get().toString())
     MPVLib.setOptionString("volume-max", (audioPreferences.volumeBoostCap.get() + 100).toString())
     
-    // Volume normalization using dynamic audio normalization filter
+    // Use the alternative boundary mode: the default 1.0 boundary gain causes
+    // an audible fade-in after seeking/recreating the filter on streams.
+    // Keep normalization opt-in and preserve the existing audio filter behavior.
     if (audioPreferences.volumeNormalization.get()) {
-      MPVLib.setOptionString("af", "dynaudnorm")
+      MPVLib.setOptionString("af", "dynaudnorm=b=1")
     }
   }
 
