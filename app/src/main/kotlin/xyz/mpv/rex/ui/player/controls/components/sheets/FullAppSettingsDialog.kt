@@ -42,12 +42,10 @@ fun FullAppSettingsDialog(onDismissRequest: () -> Unit) {
   @Suppress("UNCHECKED_CAST")
   val backstack = stack as NavBackStack<Screen>
 
-  funBack@ run {
-    // The regular PreferencesScreen uses removeLastOrNull() for its own back
-    // arrow. If it pops the root route, close the whole overlay.
-    LaunchedEffect(backstack.size) {
-      if (backstack.isEmpty()) onDismissRequest()
-    }
+  // The regular PreferencesScreen uses removeLastOrNull() for its back arrow.
+  // If that pops the root route, close the whole overlay.
+  LaunchedEffect(backstack.size) {
+    if (backstack.isEmpty()) onDismissRequest()
   }
 
   val navigateBack: () -> Unit = {
