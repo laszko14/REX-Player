@@ -16,6 +16,8 @@ import xyz.mpv.rex.domain.anime4k.Anime4KManager
 import xyz.mpv.rex.ui.player.PlayerActivity.Companion.TAG
 import xyz.mpv.rex.ui.player.controls.RexDrcAudio
 import xyz.mpv.rex.ui.player.controls.SpeedLoudnessAudio
+import xyz.mpv.rex.ui.player.controls.PlayerNormalizationAudio
+import xyz.mpv.rex.ui.player.controls.RecentAudioBypass
 import xyz.mpv.rex.ui.player.controls.components.panels.toColorHexString
 import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.KeyMapping
@@ -226,6 +228,13 @@ class MPVView(
   override fun postInitOptions() {
     MPVLifecycleLock.onNativeInitialized()
     SpeedLoudnessAudio.resetForNewSession()
+    PlayerNormalizationAudio.resetForNewSession()
+    PlayerNormalizationAudio.apply(
+      RecentAudioBypass.normalizationActive(
+        audioPreferences.originalAudioMode.get(),
+        audioPreferences.volumeNormalization.get(),
+      ),
+    )
     // Covers headless playback too; the player controls handle live preference changes.
     RexDrcAudio.apply(audioPreferences.drcEnabled.get())
     when (decoderPreferences.debanding.get()) {
@@ -343,12 +352,8 @@ class MPVView(
     MPVLib.setOptionString("audio-pitch-correction", audioPreferences.audioPitchCorrection.get().toString())
     MPVLib.setOptionString("volume-max", (audioPreferences.volumeBoostCap.get() + 100).toString())
     
-    // Use the alternative boundary mode: the default 1.0 boundary gain causes
-    // an audible fade-in after seeking/recreating the filter on streams.
-    // Keep normalization opt-in and preserve the existing audio filter behavior.
-    if (audioPreferences.volumeNormalization.get()) {
-      MPVLib.setOptionString("af", "dynaudnorm=b=1")
-    }
+    // The app-managed normalizer is now a named runtime filter, applied in
+    // postInitOptions(). Do not replace user Lua/other filters via 'af' here.
   }
 
   // Setup
