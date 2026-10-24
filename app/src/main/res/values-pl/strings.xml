@@ -307,6 +307,10 @@
     <string name="pref_audio_pitch_correction_summary">Zapobiega podwyższaniu tonacji przy szybszym odtwarzaniu i obniżaniu jej przy wolniejszym odtwarzaniu</string>
     <string name="pref_audio_volume_normalization_title">Normalizacja głośności</string>
     <string name="pref_audio_volume_normalization_summary">Automatycznie reguluj głośność dźwięku, aby utrzymać jej stały poziom</string>
+    <string name="pref_audio_speed_loudness_title">Wyrównanie głośności przy przyspieszeniu</string>
+    <string name="pref_audio_speed_loudness_summary">Niezależna kompensacja spadku głośności od 1× do 3×. Nie włącza normalizacji ani DRC. Zbyt duże wzmocnienie może przesterować głośne nagrania.</string>
+    <string name="pref_audio_speed_loudness_gain">Siła wyrównania</string>
+    <string name="pref_audio_speed_loudness_gain_summary">Maksymalnie +%1$d dB przy 3×; połowa przy 2×, brak wzmocnienia przy 1×.</string>
     <string name="pref_audio_drc_title">Kompresja dynamiki (DRC)</string>
     <string name="pref_audio_drc_summary">Wzmacnia ciche dialogi i łagodzi głośne dźwięki (tryb nocny)</string>
     <string name="pref_audio_channels">Kanały audio</string>
