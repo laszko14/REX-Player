@@ -1,24 +1,24 @@
-name: MPV Alpha v52 debug - normalization and full in-player settings on v51 base
+name: MPV Alpha v53 debug - speed loudness balance on v52 base
 
 on:
   push:
     branches:
-      - fix/v52-normalization-full-settings
+      - fix/v53-speed-loudness-balance
 
 permissions:
   contents: read
 
 concurrency:
-  group: mpv-alpha-v52-normalization-full-settings
+  group: mpv-alpha-v53-speed-loudness-balance
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Verify and sign v52 normalization and full settings update (v51 baseline)
+    name: Verify and sign v53 speed loudness update (v52 baseline)
     runs-on: ubuntu-latest
     timeout-minutes: 70
     steps:
-      - name: Checkout v51-based branch
+      - name: Checkout v52-based branch
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -49,6 +49,11 @@ jobs:
               app/src/main/res/values/strings.xml|\
               app/src/main/res/values-pl/strings.xml|\
               docs/v52-normalization-full-settings.md|\
+              docs/v53-speed-loudness-balance.md|\
+              app/src/main/kotlin/xyz/mpv/rex/preferences/AudioPreferences.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/preferences/AudioPreferencesScreen.kt|\
+              app/src/main/kotlin/xyz/mpv/rex/ui/player/controls/SpeedLoudnessAudio.kt|\
+              app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/SpeedLoudnessAudioTest.kt|\
               app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/HudLayoutTest.kt|\
               app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/HudNetworkTrafficTest.kt|\
               app/src/test/kotlin/xyz/mpv/rex/ui/player/controls/MiniProgressTest.kt|\
@@ -119,7 +124,7 @@ jobs:
           set -euo pipefail
           chmod +x ./gradlew
           ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon \
-            -PmpvAlphaVersionCode=100052 -PmpvAlphaVersionName=v52
+            -PmpvAlphaVersionCode=100053 -PmpvAlphaVersionName=v53
 
       - name: Validate signer, package, version and unique ARM64 artifact
         shell: bash
@@ -139,15 +144,15 @@ jobs:
           [[ "$actual_cert" == "$expected_cert" ]] || { echo "::error::Signing certificate mismatch"; exit 1; }
           package=$("$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" | grep '^package:')
           [[ "$package" == *"name='xyz.mpv.rex.debug'"* ]] || { echo "::error::Package mismatch"; exit 1; }
-          [[ "$package" == *"versionCode='1000522'"* ]] || { echo "::error::Version must exceed v51"; exit 1; }
-          [[ "$package" == *"versionName='v52'"* ]] || { echo "::error::Version name mismatch"; exit 1; }
+          [[ "$package" == *"versionCode='1000532'"* ]] || { echo "::error::Version must exceed v52"; exit 1; }
+          [[ "$package" == *"versionName='v53'"* ]] || { echo "::error::Version name mismatch"; exit 1; }
           mkdir -p dist
-          cp "$apk" dist/MPV-Alpha-v52-debug-normalization-full-settings-arm64-v8a.apk
+          cp "$apk" dist/MPV-Alpha-v53-debug-speed-loudness-arm64-v8a.apk
 
       - name: Upload signed debug update
         uses: actions/upload-artifact@v4
         with:
-          name: MPV-Alpha-v52-DEBUG-normalization-full-settings-update
-          path: dist/MPV-Alpha-v52-debug-normalization-full-settings-arm64-v8a.apk
+          name: MPV-Alpha-v53-DEBUG-speed-loudness-update
+          path: dist/MPV-Alpha-v53-debug-speed-loudness-arm64-v8a.apk
           if-no-files-found: error
           retention-days: 30
