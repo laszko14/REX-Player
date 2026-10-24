@@ -237,6 +237,20 @@ fun PlayerControls(
   val preciseDuration by viewModel.preciseDuration.collectAsState()
   val playbackSpeed by MPVLib.propFloat["speed"].collectAsState()
 
+  // Follow actual mpv speed, including changes performed by user Lua snippets.
+  // Never change the mpv/system volume; this named audio filter is independent.
+  val speedBalanceEnabled by audioPreferences.speedLoudnessBalance.collectAsState()
+  val speedBalanceMaxDb by audioPreferences.speedLoudnessGainDb.collectAsState()
+  LaunchedEffect(speedBalanceEnabled, speedBalanceMaxDb, playbackSpeed, rexEqMediaPath, seeking) {
+    if (seeking == true) return@LaunchedEffect
+    delay(170L)
+    SpeedLoudnessAudio.apply(
+      enabled = speedBalanceEnabled,
+      speed = playbackSpeed ?: 1f,
+      maxGainDb = speedBalanceMaxDb,
+    )
+  }
+
   val doubleTapSeekAmount by viewModel.doubleTapSeekAmount.collectAsState()
   val doubleTapSeekBasePos by viewModel.doubleTapSeekBasePos.collectAsState()
   val showDoubleTapOvals by playerPreferences.showDoubleTapOvals.collectAsState()
