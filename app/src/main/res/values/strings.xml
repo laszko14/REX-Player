@@ -335,6 +335,10 @@
     <string name="pref_audio_pitch_correction_summary">Prevents the audio from becoming high-pitched at faster speeds and low-pitched at slower speeds</string>
     <string name="pref_audio_volume_normalization_title">Volume normalization</string>
     <string name="pref_audio_volume_normalization_summary">Automatically adjust audio volume to maintain consistent loudness levels</string>
+    <string name="pref_audio_speed_loudness_title" tools:ignore="MissingTranslation">Balance loudness at faster speeds</string>
+    <string name="pref_audio_speed_loudness_summary" tools:ignore="MissingTranslation">Separate speed-based loudness gain from 1× to 3×. No automatic normalization or DRC. Excessive gain can clip loud material.</string>
+    <string name="pref_audio_speed_loudness_gain" tools:ignore="MissingTranslation">Loudness compensation strength</string>
+    <string name="pref_audio_speed_loudness_gain_summary" tools:ignore="MissingTranslation">Up to +%1$d dB at 3×; half at 2×, no gain at 1×.</string>
     <string name="pref_audio_drc_title" tools:ignore="MissingTranslation">Dynamic range compression (DRC)</string>
     <string name="pref_audio_drc_summary" tools:ignore="MissingTranslation">Boost quiet dialogue and tame loud sounds (night mode)</string>
     <string name="pref_audio_channels">Audio channels</string>
