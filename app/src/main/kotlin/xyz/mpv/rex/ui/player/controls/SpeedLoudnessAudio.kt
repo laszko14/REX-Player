@@ -54,9 +54,12 @@ object SpeedLoudnessAudio {
   private fun ensureFilter(): Boolean {
     if (!ready()) return false
     if (filterInstalled && isPresent() != false) return true
+    // Removing a missing filter can fail on the first launch; do not skip append.
+    if (isPresent() == true) {
+      runCatching { MPVLib.command("change-list", "af", "remove", FILTER_NAME) }
+    }
     return runCatching {
-      // Scoped removal/append: never overwrite user Lua/EQ/noise/voice filters.
-      MPVLib.command("change-list", "af", "remove", FILTER_NAME)
+      // Scoped append: never overwrite user Lua/EQ/noise/voice filters.
       MPVLib.command("change-list", "af", "append", FILTER_SPEC)
       filterInstalled = true
       currentGainDb = 0f
