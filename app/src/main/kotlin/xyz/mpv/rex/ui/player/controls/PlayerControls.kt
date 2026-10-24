@@ -239,13 +239,21 @@ fun PlayerControls(
 
   // Follow actual mpv speed, including changes performed by user Lua snippets.
   // Never change the mpv/system volume; this named audio filter is independent.
+  val originalAudioMode by audioPreferences.originalAudioMode.collectAsState()
+  val normalizationEnabled by audioPreferences.volumeNormalization.collectAsState()
+  LaunchedEffect(originalAudioMode, normalizationEnabled, rexEqMediaPath) {
+    delay(140L)
+    PlayerNormalizationAudio.apply(
+      RecentAudioBypass.normalizationActive(originalAudioMode, normalizationEnabled),
+    )
+  }
   val speedBalanceEnabled by audioPreferences.speedLoudnessBalance.collectAsState()
   val speedBalanceMaxDb by audioPreferences.speedLoudnessGainDb.collectAsState()
-  LaunchedEffect(speedBalanceEnabled, speedBalanceMaxDb, playbackSpeed, rexEqMediaPath, seeking) {
+  LaunchedEffect(originalAudioMode, speedBalanceEnabled, speedBalanceMaxDb, playbackSpeed, rexEqMediaPath, seeking) {
     if (seeking == true) return@LaunchedEffect
     delay(170L)
     SpeedLoudnessAudio.apply(
-      enabled = speedBalanceEnabled,
+      enabled = RecentAudioBypass.speedBalanceActive(originalAudioMode, speedBalanceEnabled, speedBalanceMaxDb),
       speed = playbackSpeed ?: 1f,
       maxGainDb = speedBalanceMaxDb,
     )
