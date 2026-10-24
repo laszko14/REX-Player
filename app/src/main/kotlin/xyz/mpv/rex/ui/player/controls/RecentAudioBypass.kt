@@ -37,12 +37,12 @@ object PlayerNormalizationAudio {
       MPVLib.getPropertyString("af")?.contains(FILTER_NAME) == true
     }.getOrDefault(false)
     if (enabled && (!installed || !present)) {
-      val ok = runCatching {
-        // Remove only our named filter, then append one instance.
-        MPVLib.command("change-list", "af", "remove", FILTER_NAME)
+      // A missing named filter is normal on a fresh libmpv session.
+      // Never let remove-not-found prevent the first append.
+      if (present) runCatching { MPVLib.command("change-list", "af", "remove", FILTER_NAME) }
+      installed = runCatching {
         MPVLib.command("change-list", "af", "append", FILTER_SPEC)
       }.isSuccess
-      installed = ok
     } else if (!enabled && (installed || present)) {
       val ok = runCatching {
         MPVLib.command("change-list", "af", "remove", FILTER_NAME)
