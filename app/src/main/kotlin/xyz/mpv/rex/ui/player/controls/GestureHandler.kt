@@ -154,7 +154,7 @@ fun GestureHandler(
   val horizontalSwipeSensitivity by playerPreferences.horizontalSwipeSensitivity.collectAsState()
   var isLongPressing by remember { mutableStateOf(false) }
   var isDynamicSpeedControlActive by remember { mutableStateOf(false) }
-  var dynamicSpeedStartX by remember { mutableStateOf(0f) }
+  var dynamicSpeedStartY by remember { mutableStateOf(0f) }
   var dynamicSpeedStartValue by remember { mutableStateOf(2f) }
   var lastAppliedSpeed by remember { mutableStateOf(2f) }
   var hasSwipedEnough by remember { mutableStateOf(false) }
@@ -572,7 +572,7 @@ fun GestureHandler(
                 isDynamicSpeedControlActive = true
                 hasSwipedEnough = false
                 hasIncrementedSpeedLockHint = false
-                dynamicSpeedStartX = startPosition.x
+                dynamicSpeedStartY = startPosition.y
                 dynamicSpeedStartValue = multipleSpeedGesture
                 lastAppliedSpeed = multipleSpeedGesture
                 viewModel.playerUpdate.update { PlayerUpdates.DynamicSpeedControl(multipleSpeedGesture, false) }
@@ -583,6 +583,8 @@ fun GestureHandler(
           }
 
           var gestureType: String? = null
+          var speedLockLastPosition = startPosition
+          val speedLockDetector = HoldSpeedLockDetector()
 
           do {
             val event = awaitPointerEvent()
@@ -623,7 +625,8 @@ fun GestureHandler(
                     // Initialize gesture-specific state
                     when (gestureType) {
                       "speed_control" -> {
-                        dynamicSpeedStartX = currentPosition.x
+                        speedLockLastPosition = startPosition
+                        dynamicSpeedStartY = currentPosition.y
                         // Use the configured preset, not a temporary intermediate ramp value.
                         dynamicSpeedStartValue = lastAppliedSpeed
                       }
@@ -662,36 +665,41 @@ fun GestureHandler(
                         change.consume()
 
                         val speedPresets = holdSpeedGesturePresets(holdSpeedQuarterSteps)
-                        val screenWidth = size.width.toFloat()
-
-                        val deltaX = currentPosition.x - dynamicSpeedStartX
-                        val deltaY = currentPosition.y - startPosition.y
+                        val verticalDrag = currentPosition.y - dynamicSpeedStartY
                         val swipeDetectionThreshold = 10.dp.toPx()
                         val lockThreshold = 60.dp.toPx()
 
-                        // Vertical swipe to lock/unlock (Always available immediately after long press triggers)
-                        if (abs(deltaY) > lockThreshold) {
-                            if (deltaY < -lockThreshold && !viewModel.isSpeedLocked.value) {
-                                // Swipe Up -> Lock
-                                viewModel.isSpeedLocked.value = true
-                                playerTutorialManager.markSpeedLockCompleted()
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.playerUpdate.update { PlayerUpdates.SpeedLockHint(lastAppliedSpeed, true) }
-                            } else if (deltaY > lockThreshold && viewModel.isSpeedLocked.value) {
-                                // Swipe Down -> Unlock
-                                viewModel.isSpeedLocked.value = false
-                                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                                viewModel.playerUpdate.update { PlayerUpdates.SpeedLockHint(lastAppliedSpeed, false) }
-                            }
+                        // Lock after a deliberate horizontal swipe, even if vertical speed
+                        // adjustment happened first. Do not treat diagonal movement as a lock.
+                        val moveX = currentPosition.x - speedLockLastPosition.x
+                        val moveY = currentPosition.y - speedLockLastPosition.y
+                        speedLockLastPosition = currentPosition
+                        when (speedLockDetector.onMove(
+                          deltaX = moveX,
+                          deltaY = moveY,
+                          lockThresholdPx = lockThreshold,
+                          isLocked = viewModel.isSpeedLocked.value,
+                        )) {
+                          HoldSpeedLockAction.Lock -> {
+                            viewModel.isSpeedLocked.value = true
+                            playerTutorialManager.markSpeedLockCompleted()
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.playerUpdate.update { PlayerUpdates.SpeedLockHint(lastAppliedSpeed, true) }
+                          }
+                          HoldSpeedLockAction.Unlock -> {
+                            viewModel.isSpeedLocked.value = false
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            viewModel.playerUpdate.update { PlayerUpdates.SpeedLockHint(lastAppliedSpeed, false) }
+                          }
+                          HoldSpeedLockAction.None -> Unit
                         }
 
-                        if (!hasSwipedEnough && abs(deltaX) >= swipeDetectionThreshold) {
+                        if (!hasSwipedEnough && abs(verticalDrag) >= swipeDetectionThreshold) {
                           hasSwipedEnough = true
                         }
 
                         if (hasSwipedEnough) {
-                          val presetsRange = speedPresets.size - 1
-                          val indexDelta = (deltaX / screenWidth) * presetsRange * 3.5f
+                          val indexDelta = holdSpeedIndexDelta(verticalDrag, size.height.toFloat(), speedPresets.size)
 
                           val startIndex = speedPresets.indexOfFirst {
                             abs(it - dynamicSpeedStartValue) < 0.01f
@@ -710,7 +718,7 @@ fun GestureHandler(
                           }
                         }
 
-                        // Smart Hint Logic: only show "Swipe up to lock" after 2 seconds of holding
+                        // Smart Hint Logic: only show "Swipe right to lock" after 2 seconds of holding
                         val holdDuration = System.currentTimeMillis() - longPressStartTime
                         val isLocked = viewModel.isSpeedLocked.value
                         val shouldShowLockHint = isLocked || (holdDuration > 2000L && playerTutorialManager.shouldShowSpeedLockHint())
