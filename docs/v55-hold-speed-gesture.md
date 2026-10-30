@@ -15,3 +15,4 @@
 **Stan:** zmiany w PR #63, bez merge do master. Sam sukces CI nie zastępuje testu na urządzeniu.
 
 **Bezpieczne wydanie:** to aktualizacja istniejącej aplikacji debug, a nie osobny pakiet. Nie publikować APK bez zielonego całego workflow, dokładnego certyfikatu i sprawdzonego pliku artefaktu.
+
