@@ -337,7 +337,7 @@
     <string name="audit_previous">Poprzedni</string>
     <string name="audit_next">Następny</string>
     <string name="audit_speed_locked">Prędkość zablokowana</string>
-    <string name="audit_swipe_up_to_lock">Przesuń w górę, aby zablokować</string>
+    <string name="audit_swipe_right_to_lock">Przesuń w prawo, aby zablokować</string>
     <string name="audit_clear_loop">Wyczyść pętlę</string>
     <string name="audit_previous_frame">Poprzednia klatka</string>
     <string name="audit_take_screenshot">Zrób zrzut ekranu</string>

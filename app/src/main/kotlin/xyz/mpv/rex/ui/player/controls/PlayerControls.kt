@@ -1837,7 +1837,7 @@ fun PlayerControls(
         ) {
           if (currentPlayerUpdate is PlayerUpdates.SpeedLockHint) {
             val update = currentPlayerUpdate as PlayerUpdates.SpeedLockHint
-            LockHint(text = if (update.isLocked) stringResource(R.string.audit_speed_locked) else stringResource(R.string.audit_swipe_up_to_lock))
+            LockHint(text = if (update.isLocked) stringResource(R.string.audit_speed_locked) else stringResource(R.string.audit_swipe_right_to_lock))
           }
         }
 

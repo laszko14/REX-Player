@@ -339,7 +339,7 @@
     <string name="audit_previous">Previous</string>
     <string name="audit_next">Next</string>
     <string name="audit_speed_locked">Speed locked</string>
-    <string name="audit_swipe_up_to_lock">Swipe up to lock</string>
+    <string name="audit_swipe_right_to_lock">Swipe right to lock</string>
     <string name="audit_clear_loop">Clear loop</string>
     <string name="audit_previous_frame">Previous frame</string>
     <string name="audit_take_screenshot">Take screenshot</string>
