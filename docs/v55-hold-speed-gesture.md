@@ -13,3 +13,5 @@
 **Test telefonu po instalacji:** cztery kierunki, w górę potem blokada w prawo, ukośne ruchy, puszczenie palca, pion/poziom, gesty głośności/jasności/przewijania, napisy, Lua, balans głośności v53, streaming.
 
 **Stan:** zmiany w PR #63, bez merge do master. Sam sukces CI nie zastępuje testu na urządzeniu.
+
+**Bezpieczne wydanie:** to aktualizacja istniejącej aplikacji debug, a nie osobny pakiet. Nie publikować APK bez zielonego całego workflow, dokładnego certyfikatu i sprawdzonego pliku artefaktu.
