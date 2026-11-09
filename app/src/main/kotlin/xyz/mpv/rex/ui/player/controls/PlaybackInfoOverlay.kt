@@ -80,6 +80,7 @@ internal fun PlaybackInfoOverlay(
   val showIcons by preferences.hudShowIcons.collectAsState()
   val paddingDp by preferences.hudPaddingDp.collectAsState()
   val backgroundOpacity by preferences.hudBackgroundOpacity.collectAsState()
+  val contentTransparency by preferences.hudContentTransparencyPercent.collectAsState()
   val fontWeightPercent by preferences.hudFontWeightPercent.collectAsState()
   val luaFontId by preferences.luaButtonTypeface.collectAsState()
   val outlinePercent by preferences.hudOutlinePercent.collectAsState()
@@ -201,6 +202,7 @@ internal fun PlaybackInfoOverlay(
           Modifier
         }
       )
+      .groupVisualAlpha(if (editMode) 1f else groupAlpha(contentTransparency))
       .clip(RoundedCornerShape(radiusDp.coerceIn(0, 48).dp))
       .background(background)
       .padding(contentPadding)

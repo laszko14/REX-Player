@@ -85,6 +85,7 @@ fun LuaButtonGrid(
     val columns by preferences.luaPanelColumns.collectAsState()
     val scale by preferences.luaButtonScalePercent.collectAsState()
     val transparency by preferences.luaButtonBackgroundTransparency.collectAsState()
+    val groupTransparency by preferences.luaControlsTransparencyPercent.collectAsState()
     val rowGap by preferences.luaButtonRowGap.collectAsState()
     val columnGap by preferences.luaButtonColumnGap.collectAsState()
     val buttonWidth by preferences.luaButtonWidth.collectAsState()
@@ -266,7 +267,7 @@ fun LuaButtonGrid(
             )
             val drawingModifier = boundModifier
                 .graphicsLayer {
-                    this.alpha = when {
+                    this.alpha = (if (editMode) 1f else groupAlpha(groupTransparency)) * when {
                         isDragging -> .25f
                         !minimalSoft || editMode -> 1f
                         else -> if (softV2) {

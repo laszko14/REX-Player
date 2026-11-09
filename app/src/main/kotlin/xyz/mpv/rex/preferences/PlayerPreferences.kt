@@ -199,6 +199,10 @@ class PlayerPreferences(
   val playerGradientOpacity = preferenceStore.getFloat("player_gradient_opacity", 1.0f)
   // 0 hides the entire on-video controls layer, 100 keeps its original appearance.
   val playerOverlayOpacityPercent = preferenceStore.getInt("player_overlay_opacity_percent", 100)
+  // Additional visual attenuation; existing background and global visibility settings stay intact.
+  val luaControlsTransparencyPercent = preferenceStore.getInt("lua_controls_transparency_percent", 0)
+  val mpvControlsTransparencyPercent = preferenceStore.getInt("mpv_controls_transparency_percent", 0)
+  val hudContentTransparencyPercent = preferenceStore.getInt("hud_content_transparency_percent", 0)
   val playerTimeToDisappear = preferenceStore.getInt("player_time_to_disappear", 4000)
 
   val defaultVideoZoom = preferenceStore.getFloat("default_video_zoom", 0f)

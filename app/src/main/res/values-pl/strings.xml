@@ -1,5 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
+    <string name="player_group_transparency_header">Przezroczystość elementów</string>
+    <string name="player_lua_transparency">Przyciski Lua</string>
+    <string name="player_mpv_transparency">Sterowanie MPV</string>
+    <string name="player_hud_transparency">Nakładka HUD</string>
+    <string name="player_group_transparency_restore">Przywróć</string>
+    <string name="player_group_transparency_summary">Ustawienia zmieniają przezroczystość całych grup elementów bez zmiany ich funkcji i automatycznego ukrywania.</string>
     <string name="generic_reset">Resetuj</string>
     <string name="generic_share">Udostępnij</string>
     <string name="open_with_mini_player">Otwórz w miniodtwarzaczu</string>

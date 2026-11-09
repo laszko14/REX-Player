@@ -37,4 +37,6 @@ Nowe sceny z pliku `PlayerLayoutScreenshots.kt` używają **produkcyjnego kompon
 
 Sceny używają sztucznych danych i wyłącznie syntetycznych teł. Renderują rzeczywiste **wewnętrzne układy** przycisków i HUD, ale nie odtwarzają pełnej nakładki `PlayerControls` ani prawdziwego odtwarzania mpv. Nie zastępują testów gestów, przeciągania, zasłaniania przez inne kontrolki i rzeczywistej orientacji telefonu. Własne ustawienia użytkownika nie są pobierane ani przesyłane.
 
+Podglądy 23–26 pokazują produkcyjny `LuaButtonGrid` z lewą i prawą kolumną przy przezroczystości grupy 25%, 50%, 75% i 95%. Wcześniejsze sceny zachowują wartość 0%. Są to podglądy wyglądu, bez testu dotyku, odtwarzania wideo i nadrzędnej widoczności.
+
 Kiedy zmieniasz rozmieszczenie Lua/HUD, aktualizuj wspólne produkcyjne komponenty oraz sceny; przy zmianach położenia w `PlayerControls` potrzebne są jeszcze testy całego ekranu na urządzeniu.

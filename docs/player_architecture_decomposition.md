@@ -51,3 +51,32 @@ These classes manage player state and background tasks:
 - `PlayerActivity.kt` went from ~3,900 lines down to ~2,600 lines.
 - `PlayerViewModel.kt` went from ~2,200 lines down to ~1,990 lines.
 - Around 1,500 lines of code were moved into small, focused files that are much easier to understand and maintain.
+
+## MPV Alpha vv55: transparency of player groups
+
+`PlayerPreferences` stores three additive integer preferences, each defaulting to 0:
+`lua_controls_transparency_percent`, `mpv_controls_transparency_percent`, and
+`hud_content_transparency_percent`. The Estetyka screen provides independent
+0–95% sliders and reset buttons. Values read by the renderer are clamped to
+0–95%; visual alpha is `1 - percent / 100`. No existing preferences are migrated
+or reset.
+
+Lua applies the factor once at each rendered button's existing graphics layer,
+after its own appearance alpha is calculated. Edit mode keeps buttons and drop
+targets readable. The HUD applies the factor to its measured panel, including
+background and text, without fading its full-screen positioning container.
+Standard MPV controls apply it at their top/bottom/seekbar groups. The persistent
+Back button fades only its arrow while retaining its 48 dp hit target and layer
+priority. The independent mini progress bar remains outside this group.
+
+The existing `player_overlay_opacity_percent` still controls the whole on-video
+overlay and removes it at 0%; the Back button and settings recovery path remain.
+The new factors take effect when their groups are displayed, including after
+orientation and media changes because they are stored preferences.
+
+Verification: JVM tests cover defaults, independent values, reset, saved legacy
+settings, and alpha at 0/25/50/75/95% plus invalid inputs. Compose preview
+scenes cover representative Lua transparency. Build, lint, workflow validation,
+CI status, and device interaction results are reported in the associated PR.
+Live playback, gesture behavior, and actual appearance on a Nothing Phone (1)
+still require device testing; host-side tests do not establish those results.

@@ -13,6 +13,43 @@ import xyz.mpv.rex.preferences.preference.PreferenceStore
 
 class PlayerPreferencesTest {
 
+  @Test
+  fun groupTransparency_isIndependentAndPreservesOlderSettings() {
+    val prefs = PlayerPreferences(InMemoryPreferenceStore())
+    val lua = prefs.luaControlsTransparencyPercent
+    val mpv = prefs.mpvControlsTransparencyPercent
+    val hud = prefs.hudContentTransparencyPercent
+    assertEquals("lua_controls_transparency_percent", lua.key())
+    assertEquals("mpv_controls_transparency_percent", mpv.key())
+    assertEquals("hud_content_transparency_percent", hud.key())
+    listOf(lua, mpv, hud).forEach { assertEquals(0, it.get()) }
+    assertEquals(100, prefs.playerOverlayOpacityPercent.get())
+
+    prefs.customButtons.set("saved Lua")
+    prefs.playerOverlayOpacityPercent.set(0)
+    prefs.hudBackgroundOpacity.set(45)
+    lua.set(75)
+    mpv.set(95)
+    hud.set(25)
+    assertEquals(listOf(75, 95, 25), listOf(lua.get(), mpv.get(), hud.get()))
+    lua.set(0)
+    assertEquals(listOf(0, 95, 25), listOf(lua.get(), mpv.get(), hud.get()))
+    assertEquals(0, prefs.playerOverlayOpacityPercent.get())
+    assertEquals(45, prefs.hudBackgroundOpacity.get())
+    assertEquals("saved Lua", prefs.customButtons.get())
+    listOf(Triple(75, 0, 25), Triple(0, 95, 50), Triple(50, 50, 50)).forEach { (l, m, h) ->
+      lua.set(l)
+      mpv.set(m)
+      hud.set(h)
+      assertEquals(listOf(l, m, h), listOf(lua.get(), mpv.get(), hud.get()))
+      assertEquals(0, prefs.playerOverlayOpacityPercent.get())
+    }
+    lua.delete()
+    mpv.delete()
+    hud.delete()
+    assertEquals(listOf(0, 0, 0), listOf(lua.get(), mpv.get(), hud.get()))
+  }
+
   private class InMemoryPreference<T>(
     private val key: String,
     private val defaultValue: T,
