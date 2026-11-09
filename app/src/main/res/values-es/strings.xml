@@ -1,4 +1,11 @@
 <resources>
+    <string name="player_group_transparency_header">Transparencia de los elementos</string>
+    <string name="player_lua_transparency">Botones Lua</string>
+    <string name="player_mpv_transparency">Controles de MPV</string>
+    <string name="player_hud_transparency">Superposición HUD</string>
+    <string name="player_group_transparency_restore">Restablecer</string>
+    <string name="player_group_transparency_summary">Estos ajustes cambian la transparencia de grupos completos sin alterar sus funciones ni la ocultación automática.</string>
+
 
     <string name="generic_reset">Restablecer</string>
     <string name="generic_share">Compartir</string>

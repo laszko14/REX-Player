@@ -690,6 +690,9 @@ fun AestheticsTab() {
 
   val whiteSeekBar by playerPreferences.whiteSeekBar.collectAsState()
   val overlayOpacityPercent by playerPreferences.playerOverlayOpacityPercent.collectAsState()
+  val luaTransparency by playerPreferences.luaControlsTransparencyPercent.collectAsState()
+  val mpvTransparency by playerPreferences.mpvControlsTransparencyPercent.collectAsState()
+  val hudTransparency by playerPreferences.hudContentTransparencyPercent.collectAsState()
   val enableBounceAnimation by appearancePreferences.enableBounceAnimation.collectAsState()
   val hideBackground by appearancePreferences.hidePlayerButtonsBackground.collectAsState()
   val enableGlass by appearancePreferences.enableGlassPlayerControls.collectAsState()
@@ -740,6 +743,23 @@ fun AestheticsTab() {
         Text(stringResource(R.string.audit_restore_100))
       }
     }
+
+    Text(
+      stringResource(R.string.player_group_transparency_header),
+      style = MaterialTheme.typography.titleMedium,
+      modifier = Modifier.padding(top = MaterialTheme.spacing.small),
+    )
+    GroupTransparencySetting(stringResource(R.string.player_lua_transparency), luaTransparency,
+      playerPreferences.luaControlsTransparencyPercent::set)
+    GroupTransparencySetting(stringResource(R.string.player_mpv_transparency), mpvTransparency,
+      playerPreferences.mpvControlsTransparencyPercent::set)
+    GroupTransparencySetting(stringResource(R.string.player_hud_transparency), hudTransparency,
+      playerPreferences.hudContentTransparencyPercent::set)
+    Text(
+      stringResource(R.string.player_group_transparency_summary),
+      style = MaterialTheme.typography.bodySmall,
+      color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
 
     InteractionSwitch(
       label = stringResource(R.string.pref_appearance_hide_player_buttons_background_title),
@@ -798,6 +818,32 @@ fun AestheticsTab() {
         ).show()
       }
     )
+  }
+}
+
+@Composable
+private fun GroupTransparencySetting(title: String, value: Int, onChange: (Int) -> Unit) {
+  val clamped = value.coerceIn(0, 95)
+  Column {
+    Row(
+      modifier = Modifier.fillMaxWidth(),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+      Text(title, style = MaterialTheme.typography.bodyLarge)
+      Text("$clamped%", fontWeight = FontWeight.Bold)
+    }
+    Slider(
+      value = clamped.toFloat(),
+      onValueChange = { onChange(it.roundToInt().coerceIn(0, 95)) },
+      valueRange = 0f..95f,
+      steps = 94,
+    )
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+      TextButton(onClick = { onChange(0) }) {
+        Text(stringResource(R.string.player_group_transparency_restore))
+      }
+    }
   }
 }
 

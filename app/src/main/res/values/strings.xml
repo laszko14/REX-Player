@@ -1,4 +1,10 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="player_group_transparency_header">Element transparency</string>
+    <string name="player_lua_transparency">Lua buttons</string>
+    <string name="player_mpv_transparency">MPV controls</string>
+    <string name="player_hud_transparency">HUD overlay</string>
+    <string name="player_group_transparency_restore">Restore</string>
+    <string name="player_group_transparency_summary">These settings change the transparency of entire groups without changing their functions or automatic hiding.</string>
     <string name="app_name" translatable="false">mpv α</string>
     <string name="author_name" translatable="false">Sakhawat</string>
 

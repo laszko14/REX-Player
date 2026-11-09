@@ -1,4 +1,11 @@
 <resources>
+    <string name="player_group_transparency_header">Elementlərin şəffaflığı</string>
+    <string name="player_lua_transparency">Lua düymələri</string>
+    <string name="player_mpv_transparency">MPV idarəetmələri</string>
+    <string name="player_hud_transparency">HUD örtüyü</string>
+    <string name="player_group_transparency_restore">Bərpa et</string>
+    <string name="player_group_transparency_summary">Bu ayarlar element qruplarının şəffaflığını dəyişir, onların funksiyalarını və avtomatik gizlənməsini dəyişmir.</string>
+
 
     <string name="generic_reset">Sıfırla</string>
     <string name="generic_share">Paylaş</string>

@@ -68,6 +68,7 @@ private fun PreviewRealLua(
     outlined: Boolean = true, bold: Boolean = true,
     weightPercent: Int = if (bold) 60 else 0,
     outlinePercent: Int = if (outlined) 50 else 0,
+    groupTransparency: Int = 0,
 ) {
     val slots = remember(populatedExtra) {
         demoSlots().toMutableList().also { result ->
@@ -82,7 +83,7 @@ private fun PreviewRealLua(
         }
     }
     val store = remember { ScreenshotPreferenceStore() }
-    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, populatedExtra, outlined, bold, weightPercent, outlinePercent) {
+    val prefs = remember(store, slots, edit, columns, scale, buttonWidth, buttonHeight, rowGap, columnGap, populatedExtra, outlined, bold, weightPercent, outlinePercent, groupTransparency) {
         PlayerPreferences(store).also {
             it.customButtons.set(Json.encodeToString(CustomButtonSlots(slots)))
             it.luaPanelColumns.set(columns)
@@ -97,6 +98,7 @@ private fun PreviewRealLua(
             it.luaButtonBoldText.set(bold)
             it.luaButtonFontWeightPercent.set(weightPercent)
             it.luaButtonOutlinePercent.set(outlinePercent)
+            it.luaControlsTransparencyPercent.set(groupTransparency)
         }
     }
     val buttons = remember(slots) {
@@ -123,6 +125,46 @@ private fun PreviewRealLua(
         onButtonClick = {},
         onButtonLongClick = {},
     )
+}
+
+@PreviewTest
+@Preview(name = "23 Lua group transparency 75", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaGroupTransparency75Screenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / przezroczystosc 75% / obie kolumny") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            populatedExtra = true, groupTransparency = 75)
+    }
+}
+
+@PreviewTest
+@Preview(name = "25 Lua group transparency 25", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaGroupTransparency25Screenshot() {
+    LayoutBackdrop(bright = true, title = "LUA / przezroczystosc 25%") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            populatedExtra = true, groupTransparency = 25)
+    }
+}
+
+@PreviewTest
+@Preview(name = "26 Lua group transparency 50", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaGroupTransparency50Screenshot() {
+    LayoutBackdrop(bright = false, title = "LUA / przezroczystosc 50%") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            populatedExtra = true, groupTransparency = 50)
+    }
+}
+
+@PreviewTest
+@Preview(name = "24 Lua group transparency 95", widthDp = 950, heightDp = 570)
+@Composable
+fun LuaGroupTransparency95Screenshot() {
+    LayoutBackdrop(bright = false, title = "LUA / przezroczystosc 95%") {
+        PreviewRealLua(edit = false, columns = 5, scale = 100,
+            populatedExtra = true, groupTransparency = 95)
+    }
 }
 
 /** Same production FlowRow HUD component; only clock/battery/movie data are fixed. */

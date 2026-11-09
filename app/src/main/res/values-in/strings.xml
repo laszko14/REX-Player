@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">Transparansi elemen</string>
+    <string name="player_lua_transparency">Tombol Lua</string>
+    <string name="player_mpv_transparency">Kontrol MPV</string>
+    <string name="player_hud_transparency">Hamparan HUD</string>
+    <string name="player_group_transparency_restore">Pulihkan</string>
+    <string name="player_group_transparency_summary">Pengaturan ini mengubah transparansi seluruh kelompok elemen tanpa mengubah fungsi atau penyembunyian otomatisnya.</string>
+
     <string name="generic_reset">Mengatur ulang</string>
     <string name="generic_share">Membagikan</string>
     <string name="open_with_mini_player">Buka dengan pemutar mini</string>

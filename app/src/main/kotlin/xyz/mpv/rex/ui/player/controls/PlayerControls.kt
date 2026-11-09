@@ -222,6 +222,8 @@ fun PlayerControls(
   val playerGradientOpacity by playerPreferences.playerGradientOpacity.collectAsState()
   val playerOverlayOpacityPercent by playerPreferences.playerOverlayOpacityPercent.collectAsState()
   val playerOverlayAlpha = (playerOverlayOpacityPercent.coerceIn(0, 100) / 100f)
+  val mpvTransparency by playerPreferences.mpvControlsTransparencyPercent.collectAsState()
+  val mpvControlsAlpha = groupAlpha(mpvTransparency)
   val interactionSource = remember { MutableInteractionSource() }
   val controlsShown by viewModel.controlsShown.collectAsState()
   val areControlsLocked by viewModel.areControlsLocked.collectAsState()
@@ -1016,6 +1018,7 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(playerPauseButton) {
                 if (isPlaybackControlsAtBottom) {
                   start.linkTo(parent.start)
@@ -1396,6 +1399,7 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(seekbar) {
                 if (isPortrait) {
                   if (bottomControlsBelowSeekbar) {
@@ -1548,6 +1552,7 @@ fun PlayerControls(
               )
               // Back button/title render above persistent Lua and HUD overlays.
               .zIndex(20f)
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(topLeftControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
                 // Reserve the left edge for the independent 48.dp back button.
@@ -1627,6 +1632,7 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(topRightControls) {
                 top.linkTo(parent.top, if (isPortrait) spacing.extraLarge else spacing.small)
                 end.linkTo(parent.end, spacing.large)
@@ -1688,6 +1694,7 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(bottomRightControls) {
                 if (isPortrait) {
                   if (bottomControlsBelowSeekbar) {
@@ -1790,6 +1797,7 @@ fun PlayerControls(
                   Modifier
                 }
               )
+              .groupVisualAlpha(mpvControlsAlpha)
               .constrainAs(bottomLeftControls) {
                 if (bottomControlsBelowSeekbar) {
                   // Bottom controls at very bottom - more margin for navigation bar
@@ -1845,7 +1853,7 @@ fun PlayerControls(
           visible = isABLoopExpanded,
           enter = fadeIn(tween(200)) + slideInHorizontally(initialOffsetX = { it }),
           exit = fadeOut(tween(200)) + slideOutHorizontally(targetOffsetX = { it }),
-          modifier = Modifier.constrainAs(floatingABLoop) {
+          modifier = Modifier.groupVisualAlpha(mpvControlsAlpha).constrainAs(floatingABLoop) {
             end.linkTo(parent.end, spacing.extraLarge)
             top.linkTo(parent.top)
             bottom.linkTo(parent.bottom)
@@ -1949,6 +1957,7 @@ fun PlayerControls(
           enter = fadeIn(tween(200)) + slideInHorizontally(initialOffsetX = { it }),
           exit = fadeOut(tween(200)) + slideOutHorizontally(targetOffsetX = { it }),
           modifier = Modifier
+            .groupVisualAlpha(mpvControlsAlpha)
             .constrainAs(floatingFrameNav) {
               end.linkTo(parent.end, spacing.extraLarge)
               top.linkTo(parent.top)
@@ -2110,6 +2119,7 @@ fun PlayerControls(
     ) {
       PersistentPlayerBackButton(
         onBackPress = onBackPress,
+        visualAlpha = mpvControlsAlpha,
         modifier = Modifier
           .align(Alignment.TopStart)
           .padding(
@@ -2265,6 +2275,7 @@ fun PlayerControls(
 internal fun PersistentPlayerBackButton(
   onBackPress: () -> Unit,
   modifier: Modifier = Modifier,
+  visualAlpha: Float = 1f,
 ) {
   Box(
     modifier = modifier
@@ -2277,18 +2288,20 @@ internal fun PersistentPlayerBackButton(
       ),
     contentAlignment = Alignment.Center,
   ) {
-    // Glyph-shaped 1dp shadow keeps the white arrow legible on bright scenes.
-    Icon(
-      imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-      contentDescription = null,
-      tint = Color.Black.copy(alpha = .75f),
-      modifier = Modifier.size(28.dp).offset(y = 1.dp),
-    )
-    Icon(
-      imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-      contentDescription = stringResource(R.string.back),
-      tint = Color.White,
-      modifier = Modifier.size(27.dp),
-    )
+    Box(modifier = Modifier.groupVisualAlpha(visualAlpha), contentAlignment = Alignment.Center) {
+      // Glyph-shaped 1dp shadow keeps the white arrow legible on bright scenes.
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = null,
+        tint = Color.Black.copy(alpha = .75f),
+        modifier = Modifier.size(28.dp).offset(y = 1.dp),
+      )
+      Icon(
+        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+        contentDescription = stringResource(R.string.back),
+        tint = Color.White,
+        modifier = Modifier.size(27.dp),
+      )
+    }
   }
 }
