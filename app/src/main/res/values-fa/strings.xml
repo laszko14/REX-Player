@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">شفافیت عناصر</string>
+    <string name="player_lua_transparency">دکمه‌های Lua</string>
+    <string name="player_mpv_transparency">کنترل‌های MPV</string>
+    <string name="player_hud_transparency">پوشش HUD</string>
+    <string name="player_group_transparency_restore">بازیابی</string>
+    <string name="player_group_transparency_summary">این تنظیمات شفافیت کل گروه‌های عناصر را بدون تغییر عملکرد یا پنهان شدن خودکار آن‌ها تغییر می‌دهند.</string>
+
     <string name="generic_reset">بازنشانی کنید</string>
     <string name="generic_share">اشتراک گذاری</string>
     <string name="open_with_mini_player">با مینی پلیر باز کنید</string>

@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">Прозрачность элементов</string>
+    <string name="player_lua_transparency">Кнопки Lua</string>
+    <string name="player_mpv_transparency">Элементы управления MPV</string>
+    <string name="player_hud_transparency">Наложение HUD</string>
+    <string name="player_group_transparency_restore">Восстановить</string>
+    <string name="player_group_transparency_summary">Эти настройки изменяют прозрачность целых групп элементов, не меняя их функции и автоматическое скрытие.</string>
+
 	<string name="generic_reset">Сбросить</string>
 	<string name="generic_share">Поделиться</string>
 	<string name="open_with_mini_player">Открыть с помощью мини-плеера</string>

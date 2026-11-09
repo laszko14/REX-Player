@@ -1,4 +1,11 @@
 <resources>
+    <string name="player_group_transparency_header">شفافية العناصر</string>
+    <string name="player_lua_transparency">أزرار Lua</string>
+    <string name="player_mpv_transparency">عناصر تحكم MPV</string>
+    <string name="player_hud_transparency">طبقة HUD</string>
+    <string name="player_group_transparency_restore">استعادة</string>
+    <string name="player_group_transparency_summary">تغيّر هذه الإعدادات شفافية مجموعات العناصر بالكامل دون تغيير وظائفها أو الإخفاء التلقائي.</string>
+
     <string name="generic_reset">إعادة الضبط</string>
     <string name="generic_share">مشاركة</string>
     <string name="generic_confirm">تأكيد</string>

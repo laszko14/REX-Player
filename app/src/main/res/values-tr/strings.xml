@@ -1,4 +1,11 @@
 <resources>
+    <string name="player_group_transparency_header">Öğelerin saydamlığı</string>
+    <string name="player_lua_transparency">Lua düğmeleri</string>
+    <string name="player_mpv_transparency">MPV kontrolleri</string>
+    <string name="player_hud_transparency">HUD katmanı</string>
+    <string name="player_group_transparency_restore">Geri yükle</string>
+    <string name="player_group_transparency_summary">Bu ayarlar, işlevlerini veya otomatik gizlenmelerini değiştirmeden öğe gruplarının saydamlığını ayarlar.</string>
+
 
     <string name="generic_reset">Sıfırla</string>
     <string name="generic_share">Paylaş</string>

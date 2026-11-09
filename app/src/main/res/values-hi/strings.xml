@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">तत्वों की पारदर्शिता</string>
+    <string name="player_lua_transparency">Lua बटन</string>
+    <string name="player_mpv_transparency">MPV नियंत्रण</string>
+    <string name="player_hud_transparency">HUD ओवरले</string>
+    <string name="player_group_transparency_restore">पुनर्स्थापित करें</string>
+    <string name="player_group_transparency_summary">ये सेटिंग पूरे समूहों की पारदर्शिता बदलती हैं, उनके कार्यों या अपने आप छिपने के व्यवहार को बदले बिना।</string>
+
     <string name="generic_reset">रीसेट करें</string>
     <string name="generic_share">शेयर करना</string>
     <string name="open_with_mini_player">मिनी प्लेयर से खोलें</string>

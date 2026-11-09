@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">Transparência dos elementos</string>
+    <string name="player_lua_transparency">Botões Lua</string>
+    <string name="player_mpv_transparency">Controles do MPV</string>
+    <string name="player_hud_transparency">Sobreposição HUD</string>
+    <string name="player_group_transparency_restore">Restaurar</string>
+    <string name="player_group_transparency_summary">Estas configurações alteram a transparência de grupos inteiros sem mudar suas funções nem a ocultação automática.</string>
+
     <string name="open_with_mini_player">Abrir com miniplayer</string>
     <string name="generic_confirm">Confirmar</string>
     <string name="generic_cancel">Cancelar</string>

@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">Transparenz der Elemente</string>
+    <string name="player_lua_transparency">Lua-Schaltflächen</string>
+    <string name="player_mpv_transparency">MPV-Steuerung</string>
+    <string name="player_hud_transparency">HUD-Overlay</string>
+    <string name="player_group_transparency_restore">Wiederherstellen</string>
+    <string name="player_group_transparency_summary">Diese Einstellungen ändern die Transparenz ganzer Elementgruppen, ohne ihre Funktionen oder das automatische Ausblenden zu ändern.</string>
+
     <string name="open_with_mini_player">Mit Miniplayer öffnen</string>
     <string name="generic_confirm">Bestätigen</string>
     <string name="generic_cancel">Abbrechen</string>

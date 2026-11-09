@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">Прозорість елементів</string>
+    <string name="player_lua_transparency">Кнопки Lua</string>
+    <string name="player_mpv_transparency">Елементи керування MPV</string>
+    <string name="player_hud_transparency">Накладка HUD</string>
+    <string name="player_group_transparency_restore">Відновити</string>
+    <string name="player_group_transparency_summary">Ці налаштування змінюють прозорість цілих груп елементів, не змінюючи їхні функції чи автоматичне приховування.</string>
+
 
 	<string name="generic_reset">Скинути</string>
 	<string name="generic_share">Поділитися</string>

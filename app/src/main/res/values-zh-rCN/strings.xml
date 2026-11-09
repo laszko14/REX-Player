@@ -1,4 +1,11 @@
 <resources>
+    <string name="player_group_transparency_header">元素透明度</string>
+    <string name="player_lua_transparency">Lua 按钮</string>
+    <string name="player_mpv_transparency">MPV 控件</string>
+    <string name="player_hud_transparency">HUD 叠加层</string>
+    <string name="player_group_transparency_restore">恢复</string>
+    <string name="player_group_transparency_summary">这些设置会调整整组元素的透明度，而不改变其功能或自动隐藏行为。</string>
+
 
     <string name="generic_reset">重置</string>
     <string name="generic_share">分享</string>

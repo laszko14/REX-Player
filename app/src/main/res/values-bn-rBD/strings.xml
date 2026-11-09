@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="player_group_transparency_header">উপাদানের স্বচ্ছতা</string>
+    <string name="player_lua_transparency">Lua বোতাম</string>
+    <string name="player_mpv_transparency">MPV নিয়ন্ত্রণ</string>
+    <string name="player_hud_transparency">HUD ওভারলে</string>
+    <string name="player_group_transparency_restore">পুনরুদ্ধার করুন</string>
+    <string name="player_group_transparency_summary">এই সেটিংস পুরো উপাদান গোষ্ঠীর স্বচ্ছতা বদলায়, তাদের কাজ বা স্বয়ংক্রিয়ভাবে লুকানোর আচরণ না বদলে।</string>
+
     <string name="generic_share">শেয়ার</string>
     <string name="generic_confirm">নিশ্চিত করুন</string>
     <string name="generic_cancel">বাতিল</string>
