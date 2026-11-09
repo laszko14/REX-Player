@@ -55,6 +55,12 @@ internal object AutoAudioStreamAnalyzer {
       var nativeSource: AutoAudioPcmSource? = null
       var streamVad: AutoAudioStreamingVad? = null
       var vadSpeechFraction: Double? = null
+      var vadWindows: List<AutoAudioVadWindowDiagnostics> = emptyList()
+      var pcmForNeural: List<ShortArray>? = null
+      var bridgeError: String? = null
+      var pollingError: String? = null
+      var nativeStatus: String? = null
+      var polledCount = 0
 
       fun drainVadPackets() {
         if (nativeSource == null || streamVad == null) return
@@ -62,14 +68,19 @@ internal object AutoAudioStreamAnalyzer {
           // Bounded polling: avoid unbounded JNI work when decoding 3x speed.
           for (index in 0 until 96) {
             val pcm = nativeSource?.poll() ?: break
+            polledCount++
             streamVad?.accept(pcm)
           }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+          pollingError = "JNI poll: " + e.javaClass.simpleName
+          nativeStatus = streamVad?.captureStatus()
           nativeSource?.close()
           nativeSource = null
           streamVad?.close()
           streamVad = null
-        } catch (_: LinkageError) {
+        } catch (e: LinkageError) {
+          pollingError = "JNI poll: " + e.javaClass.simpleName
+          nativeStatus = streamVad?.captureStatus()
           nativeSource?.close()
           nativeSource = null
           streamVad?.close()
@@ -104,7 +115,9 @@ internal object AutoAudioStreamAnalyzer {
           ?: error("Brak czasu odtwarzania. Nie można wyznaczyć długości próbek streamingu.")
         // The old native AAR has no PCM export and returns null here.
         // Never treat astats metadata as evidence of detected speech.
-        nativeSource = AutoAudioNativePcmBridge.openOrNull()
+        val opened = AutoAudioNativePcmBridge.openWithStatus()
+        nativeSource = opened.source
+        bridgeError = opened.error
         streamVad = nativeSource?.let { AutoAudioStreamingVad(windows) }
         var previousPosition = startAt
         var lastElapsed = SystemClock.elapsedRealtime()
@@ -137,6 +150,9 @@ internal object AutoAudioStreamAnalyzer {
         }
         drainVadPackets()
         vadSpeechFraction = streamVad?.speechFraction()
+        vadWindows = streamVad?.windowDiagnostics().orEmpty()
+        pcmForNeural = streamVad?.pcmWindows()
+        nativeStatus = streamVad?.captureStatus() ?: nativeStatus
       } finally {
         nativeSource?.close()
         streamVad?.close()
@@ -150,8 +166,17 @@ internal object AutoAudioStreamAnalyzer {
           "Brak pomiarów astats. Ten build FFmpeg może nie udostępniać ametadata."
         }
         val metrics = StreamAstatsParser.parse(file.readText(), windows)
+        // Infer AFTER native PCM capture and JNI teardown. A slow TFLite/ONNX
+        // model cannot stall libmpv's real-time decoder / 3x playback.
+        // No incomplete, dropped or discontinuous PTS samples reach AI.
+        val neural = pcmForNeural?.let { AutoAudioNeuralCompare.analyze(context, it) }
         metrics.copy(
           vadSpeechFraction = vadSpeechFraction,
+          vadWindows = vadWindows,
+          neuralReport = neural,
+          vadCaptureStatus = listOfNotNull(bridgeError, pollingError, nativeStatus,
+            if (polledCount == 0) "Brak paczek JNI" else null,
+          ).joinToString(" • ").ifBlank { "Natywny PCM: brak wyniku" },
           vadModel = if (vadSpeechFraction != null) "WebRTC VAD • oryginalny PCM mpv" else null,
           sourceDescription = "Streaming • PCM przed filtrami audio • sprawdzona ciągłość PTS (bez ponownego pobierania)",
         )
@@ -252,9 +277,13 @@ internal object StreamAstatsParser {
     val selected = byWindow.flatten()
     val rmsDb = selected.map { it.rms }.sorted()
     val active = rmsDb.filter { it > -55.0 }
-    require(active.size >= 20) { "W próbce dominuje cisza. Nie zmieniono filtrów." }
+    // Previously threw away a complete PCM/VAD scan when audio was silent.
+    // Preserve full PTS/window validation above, but report silence as a
+    // diagnostic-only result so the real WebRTC vote can be inspected.
+    val silenceDominant = active.size < 20
     val noiseDb = quantile(rmsDb, 0.18)
-    val dynamic = (quantile(active, 0.90) - quantile(active, 0.20)).coerceAtLeast(0.0)
+    val dynamic = if (silenceDominant) 0.0 else
+      (quantile(active, 0.90) - quantile(active, 0.20)).coerceAtLeast(0.0)
     // Activity ratio based on PCM energy only; NOT voice activity detection.
     val activeFraction = selected.count { it.rms > noiseDb + 6.0 && it.rms > -48.0 }.toDouble() / selected.size
     val voiceHint = if (activeFraction > 0.35 && dynamic > 7.0) {
@@ -298,6 +327,7 @@ internal object StreamAstatsParser {
       spectralFlatness = spectralMedian(selected) { it.flatness },
       spectralRolloffHz = spectralMedian(selected) { it.rolloff },
       segments = perWindow,
+      silenceDominant = silenceDominant,
       sourceDescription = "Streaming • PCM przed filtrami",
     )
   }

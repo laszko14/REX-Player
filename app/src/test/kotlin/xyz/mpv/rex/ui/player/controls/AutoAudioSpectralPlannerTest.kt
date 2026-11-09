@@ -160,6 +160,90 @@ class AutoAudioSpectralPlannerTest {
     assertEquals(null, metrics.verifiedSpeechProbability)
   }
 
+  @Test fun v47StreamingVadHundredPercentDoesNotAuthorizeSpeechFiltersOrClaimDifferentWindows() {
+    // First real ARM64 native PCM tap screenshot: 3 × 10 s, nearly identical
+    // windows. 100% is a fraction of WebRTC positive frames, not confidence.
+    val metrics = spectrum(
+      centroid = 1695.0, flatness = 0.04, rolloff = 2578.0,
+      floor = -24.5, dynamics = 9.0,
+    ).copy(vadSpeechFraction = 1.0, verifiedSpeechProbability = null)
+    val original = before.copy(
+      dialogue = 5, drcOn = true, drcLevel = 3, noise = 7,
+      trebleLevel = 1,
+    )
+    val plan = AutoAudioPlanner.plan(metrics, original)
+    assertTrue(plan.findings.any { it.contains("WebRTC VAD wykrył 100%") })
+    assertTrue(plan.findings.any { it.contains("Żaden z 3 fragmentów") })
+    assertFalse(plan.findings.any { it.contains("Fragmenty różnią się") })
+    assertEquals(2, plan.after.drcLevel)
+    assertEquals(5, plan.after.dialogue)
+    assertEquals(7, plan.after.noise)
+    assertEquals(1, plan.after.trebleLevel)
+    assertEquals(1, plan.changes.size)
+    assertEquals("DRC", plan.changes.single().name)
+  }
+
+  @Test fun instrumentalWithNinetySevenPercentFalseVadMustNotTriggerSpeechChanges() {
+    // Real negative-control streaming test on Nothing Phone (1), 3 × 10 s:
+    // instrumental only, yet WebRTC marked 95%, 97%, 99% as speech.
+    // These are binary frame votes, not verified probability.
+    val metrics = spectrum(
+      centroid = 1509.0, flatness = 0.03, rolloff = 2713.0,
+      floor = -29.3, dynamics = 19.2,
+    ).copy(
+      rmsDb = -12.8,
+      vadSpeechFraction = 0.97,
+      verifiedSpeechProbability = null,
+      segments = listOf(
+        AutoAudioSegmentMetrics(
+          rmsDb = -13.0, noiseFloorDb = -29.5, dynamicRangeDb = 19.2,
+          spectralCentroidHz = 1500.0, spectralFlatness = 0.04,
+          spectralRolloffHz = 2735.0, frameCount = 500,
+        ),
+        AutoAudioSegmentMetrics(
+          rmsDb = -13.2, noiseFloorDb = -29.3, dynamicRangeDb = 19.0,
+          spectralCentroidHz = 1509.0, spectralFlatness = 0.03,
+          spectralRolloffHz = 2606.0, frameCount = 500,
+        ),
+        AutoAudioSegmentMetrics(
+          rmsDb = -12.9, noiseFloorDb = -29.3, dynamicRangeDb = 19.3,
+          spectralCentroidHz = 1526.0, spectralFlatness = 0.03,
+          spectralRolloffHz = 2778.0, frameCount = 500,
+        ),
+      ),
+    )
+    val current = before.copy(
+      dialogue = 5, drcOn = true, drcLevel = 2,
+      noise = 0, voiceLevel = 0, trebleLevel = 0,
+      eqOn = true, eqBoost = 0,
+    )
+    val plan = AutoAudioPlanner.plan(metrics, current)
+    assertEquals(current, plan.after)
+    assertTrue(plan.changes.isEmpty())
+    assertTrue(plan.findings.any { it.contains("WebRTC VAD wykrył 97%") })
+    assertTrue(plan.findings.any { it.contains("Żaden z 3 fragmentów") })
+    assertFalse(plan.findings.any { it.contains("Fragmenty różnią się") })
+  }
+
+  @Test fun diagnosticSilenceCannotChangeFiltersEvenWithHundredPercentFalseVad() {
+    val existing = before.copy(dialogue = 5, drcOn = true, drcLevel = 3,
+      voiceLevel = 4, trebleLevel = 2, noise = 7)
+    val silent = spectrum(5500.0, 0.45, 12000.0)
+      .copy(rmsDb = -100.0, silenceDominant = true, vadSpeechFraction = 1.0,
+        verifiedSpeechProbability = null)
+    val result = AutoAudioPlanner.plan(silent, existing)
+    assertEquals(existing, result.after)
+    assertTrue(result.changes.isEmpty())
+    assertTrue(result.findings.any { it.contains("dominuje cisza") })
+    assertTrue(result.findings.any { it.contains("100%") && it.contains("diagnostyka") })
+
+    val unknownVad = AutoAudioPlanner.plan(silent.copy(vadSpeechFraction = null), existing)
+    assertEquals(existing, unknownVad.after)
+    assertTrue(unknownVad.changes.isEmpty())
+    assertTrue(unknownVad.findings.any { it.contains("brak pełnych danych") })
+    assertFalse(unknownVad.findings.any { it.contains("0%") })
+  }
+
   @Test fun extremeDialogueAndDrcCanOfferGentlerDialogueWhenDynamicsNotLow() {
     val metrics = spectrum(1675.0, 0.04, 2555.0, dynamics = 20.0)
     val strong = before.copy(dialogue = 5, drcOn = true, drcLevel = 3)

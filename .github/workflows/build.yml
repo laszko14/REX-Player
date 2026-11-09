@@ -103,9 +103,46 @@ jobs:
           echo "Lint baseline jest zapisany w repozytorium. Nowe problemy beda wykrywane."
 
       - name: Build, testy jednostkowe i Android Lint
+        shell: bash
         run: |
+          set -euo pipefail
           chmod +x ./gradlew
-          ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
+          tasks=(:app:assembleDebug :app:testDebugUnitTest :app:lintDebug)
+          if [[ "${GITHUB_HEAD_REF:-}" == "feature/v47-arm64-native-vad-integration" ]]; then
+            tasks+=(:app:assembleAudio)
+          fi
+          ./gradlew "${tasks[@]}" --stacktrace --no-daemon
+
+      # The independent Audio install is a distinct Android app (.audio),
+      # leaving the existing signed MPV Alpha and its local data untouched.
+      - name: Potwierdz nazwe, osobny pakiet i podpis APK Audio
+        if: ${{ github.head_ref == 'feature/v47-arm64-native-vad-integration' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/audio/*arm64-v8a*audio.apk)
+          if (( ${#apks[@]} != 1 )); then
+            echo "::error::Oczekiwano 1 APK Audio ARM64, znaleziono ${#apks[@]}"
+            exit 1
+          fi
+          apk="${apks[0]}"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify "$apk"
+          "$ANDROID_HOME/build-tools/36.0.0/aapt" dump badging "$apk" > "$RUNNER_TEMP/mpv-alpha-audio-badging.txt"
+          grep -Fq "name='xyz.mpv.rex.audio'" "$RUNNER_TEMP/mpv-alpha-audio-badging.txt"
+          grep -Fq "application-label:'MPV Alpha Audio'" "$RUNNER_TEMP/mpv-alpha-audio-badging.txt"
+          mkdir -p dist
+          cp "$apk" "dist/MPV-Alpha-Audio-v47-ARM64.apk"
+          echo "OK: oddzielne Audio APK, pakiet xyz.mpv.rex.audio, nazwa MPV Alpha Audio."
+
+      - name: MPV Alpha Audio v47 - APK ARM64 (osobna aplikacja)
+        if: ${{ github.head_ref == 'feature/v47-arm64-native-vad-integration' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA
+          path: dist/MPV-Alpha-Audio-v47-ARM64.apk
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Zapisz raport Lint przy bledzie
         if: failure()

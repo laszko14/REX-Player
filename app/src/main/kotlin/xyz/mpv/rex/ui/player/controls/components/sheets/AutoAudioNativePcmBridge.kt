@@ -21,17 +21,26 @@ internal interface AutoAudioPcmSource : AutoCloseable {
   fun poll(): AutoAudioPcmPacket?
 }
 
+internal data class AutoAudioPcmOpenResult(val source: AutoAudioPcmSource? = null, val error: String? = null)
+
 internal object AutoAudioNativePcmBridge {
-  fun openOrNull(): AutoAudioPcmSource? {
+  fun openOrNull(): AutoAudioPcmSource? = openWithStatus().source
+
+  fun openWithStatus(): AutoAudioPcmOpenResult {
     val clazz = MPVLib::class.java
-    val start = runCatching { clazz.getMethod("vadTapStart") }.getOrNull() ?: return null
-    val stop = runCatching { clazz.getMethod("vadTapStop") }.getOrNull() ?: return null
-    val poll = runCatching { clazz.getMethod("vadTapPoll") }.getOrNull() ?: return null
+    val start = runCatching { clazz.getMethod("vadTapStart") }.getOrNull() ?: return AutoAudioPcmOpenResult(error = "JNI: brak metody vadTapStart")
+    val stop = runCatching { clazz.getMethod("vadTapStop") }.getOrNull() ?: return AutoAudioPcmOpenResult(error = "JNI: brak metody vadTapStop")
+    val poll = runCatching { clazz.getMethod("vadTapPoll") }.getOrNull() ?: return AutoAudioPcmOpenResult(error = "JNI: brak metody vadTapPoll")
     val instance = MPVLib
     // Includes JNI UnsatisfiedLinkError in case the Java class is present but
     // the Android native library and patched libmpv are not paired.
-    if (runCatching { start.invoke(instance) }.isFailure) return null
-    return object : AutoAudioPcmSource {
+    val started = runCatching { start.invoke(instance) }
+    if (started.isFailure) {
+      val issue = started.exceptionOrNull()?.cause ?: started.exceptionOrNull()
+      return AutoAudioPcmOpenResult(error = "JNI: nieudany start (" +
+        (issue?.javaClass?.simpleName ?: "nieznany") + ")")
+    }
+    return AutoAudioPcmOpenResult(source = object : AutoAudioPcmSource {
       private var closed = false
       override fun poll(): AutoAudioPcmPacket? {
         if (closed) return null
@@ -50,6 +59,6 @@ internal object AutoAudioNativePcmBridge {
           runCatching { stop.invoke(instance) }
         }
       }
-    }
+    })
   }
 }

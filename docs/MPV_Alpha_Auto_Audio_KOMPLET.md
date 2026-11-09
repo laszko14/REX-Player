@@ -370,3 +370,317 @@ Sprawdzić właściwy AAR z wydania i jego SHA256, przejść `assembleDebug`, `t
 - Testowa aplikacja ma osobny `applicationIdSuffix=".debug"`; nie zastępuje podpisanego produkcyjnego `xyz.mpv.rex`, nie podmienia istniejących danych/ustawień i nie rezerwuje numeru wydania `v47`.
 - To artefakt diagnostyczny do przyszłego testu urządzenia i streamingu, **nie instalacyjna aktualizacja właściwego MPV Alpha**. Nie twierdzić, że WebRTC VAD przeszedł test na telefonie, dopóki użytkownik nie prześle wyników.
 
+
+
+## 21. Auto Audio v47 — release ARM64 opublikowany i start testów integracyjnych (18.10.2026)
+
+- Natywny build po scaleniu PR #1, [run 39164435452](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39164435452), zakończył się **success** na `master` (`076cd06f86dd7647dde38bd006c5bfdd3354ea39`) dla ARM64.
+- Odrębny workflow [Publish verified MPV Alpha ARM64 library #39165343330](https://github.com/laszko14/mpvRex-libmpv/actions/runs/39165343330) również zakończył się **success**. W jego logice sprawdzane są `libmpv.so`, `libplayer.so`, `classes.jar`, pojedyncze ABI oraz eksporty `mpv_rex_set_pcm_sink` i `vadTapStart/Stop/Poll`.
+- Faktycznie opublikowano [GitHub Release native-v47-arm64-r1](https://github.com/laszko14/mpvRex-libmpv/releases/tag/native-v47-arm64-r1). Asset: `mpvRex-libmpv-native-v47-arm64-r1.aar`, rozmiar **25 165 798 B**; GitHub API zgłasza SHA-256 **`4e8b8e2a7cafebf6bd6656f22bb396421d8e6a82670dbe6224c18a7ea3103c8f`**. Towarzyszący `.aar.sha256` został również opublikowany. Są to dane faktycznie istniejącego wydania, a nie przewidywany artefakt.
+- W przygotowanej gałęzi aplikacji `feature/v47-arm64-native-vad-integration` wskazano ten niezmiennie nazwany AAR przez Gradle Ivy. Następnym krokiem jest sprawdzenie rozwiązywania nowej zależności, kompilacji `assembleDebug`, `testDebugUnitTest`, `lintDebug`, testów workflow oraz udostępnienia diagnostycznego APK z `.debug`. **Nie scalać zmian aplikacji, zanim CI będzie zielone.**
+- AAR i zakończenie natywnego CI **nie potwierdzają rozpoznania mowy podczas odtwarzania HTTP/HLS/DASH**. Wymagane są testy na Nothing Phone (1), szczególnie 1,5×–3×, próby 15 s i 3×10 s, ciągłość PTS, status droppedChunks, jakość rozróżniania dialogów/szumu/muzyki oraz brak ingerencji w filtry i odtwarzanie. Produkcyjny podpisany APK v47 nadal **nie jest wydany**.
+
+
+## 22. Auto Audio v47 — pierwszy test urządzenia 3×10 s i korekta komunikatów (18.10.2026)
+
+**Źródło:** cztery zrzuty ekranu użytkownika z testowej aplikacji ARM64 v47 `xyz.mpv.rex.debug` podczas odtwarzania strumienia; tryb **szczegółowy 3 × 10 s** (30 s materiału). **Użytkownik potwierdził następnie**, że materiał to **wywiad na ulicy, wiele osób, mowa niemal nieprzerwanie, obecne również szum i hałas**. Wynik WebRTC VAD 100% jest zatem możliwy w tym materiale, ale sam nie potwierdza trafności odróżniania mowy od hałasu i muzyki.
+
+### Faktycznie zaobserwowane pomiary
+
+- Natychmiast po udanej analizie: **WebRTC VAD • oryginalny PCM mpv: 100% pozytywnych ramek** (model binarny, **nie** prawdopodobieństwo ani wiarygodność rozpoznania). Ta wartość z ekranu potwierdza, że aplikacja otrzymuje i przetwarza native PCM z działającego streamingu, przy spełnionych warunkach kompletności VAD; sam procent **nie** potwierdza rozróżniania mowy od muzyki / szumu.
+- RMS **−19,0 dBFS**, orientacyjne tło **−24,5 dBFS**, dynamika **9,0 dB**, kanały **nieznane** (ogólne metadane astats), jasność (centroid) **1695 Hz**, płaskość **0,04**, rolloff **2578 Hz**.
+- Trzy fragmenty: centroid **1696 / 1710 / 1682 Hz**; płaskość **0,04 / 0,04 / 0,04**; rolloff **2648 / 2578 / 2555 Hz**; tło **−24,0 / −24,0 / −25,4 dBFS**; dynamika **8,9 / 8,8 / 8,4 dB**. Są do siebie **bardzo zbliżone**, nie zaobserwowano dużej rozbieżności.
+- Zgodność progów jasnego/ciemnego/szumopodobnego widma **0/3, 0/3, 0/3** oznacza tylko brak przekroczenia **zdefiniowanych progów**, a nie brak zgodności między fragmentami. Płaskość 0,04 **nie** uzasadnia samodzielnie włączenia RNNoise.
+- Na zrzutach widoczne są aktywne filtry użytkownika (m.in. EQ, Dialogue Enhance, DRC, Szum Lua 7/7; w źródłowym ciągu `af` widoczne jest `mix=0.95`). Analityczny PCM jest sprzed filtrów; wyniku źródłowego nie wolno przypisywać tym efektom.
+- Jedyna zaproponowana zmiana: **DRC 3/3 → 2/3**, jako odwracalny test A/B przy dynamice źródła ~9 dB i już działającym mocnym DRC. **Brak** automatycznej aktywacji filtrów zależnych od mowy, EQ wysokich, Dialogue Enhance czy odszumiania.
+
+### Dwie udokumentowane usterki opisu, naprawiane w tym samym PR #55
+
+1. Dialog równocześnie pokazuje `Prawdziwy VAD … 100%` i nieprawdziwy historyczny komunikat `obecna analiza nie ma osobnego modelu VAD`. Zmieniono napis zależnie od dostępności `vadSpeechFraction`: model może być obecny, ale **jego trafność na kontrolach nie została jeszcze potwierdzona**.
+2. Planer dotychczas wyświetlał `Fragmenty różnią się lub brak zgodności 2/3` także przy trzech bardzo podobnych fragmentach i 0/3 we wszystkich progach. Teraz jasno informuje, że żaden fragment nie przekracza progów, **bez deklarowania różnic między nimi**.
+3. Dodano regresyjny test jednostkowy reprodukujący odczyt v47 (trzy neutralne widmowo fragmenty, VAD 100%, DRC 3/3) i wymagający jedynie odwracalnej propozycji **DRC 3 → 2**. Nie modyfikowano klasyfikatora, progów bezpieczeństwa, ścieżki native PCM, pozostałych funkcji mpv ani numeru APK. CI jeszcze do sprawdzenia.
+
+### Następny punkt decyzyjny — konieczna próbka kontrolna
+
+Użytkownik potwierdził dominację prawie ciągłej mowy podczas wywiadu ulicznego; nie powtarzać tego pytania. Następnie uruchomić w tej samej testowej aplikacji **3 × 10 s na materiale bez mowy** (np. fragment instrumentalny lub cisza/szum tła) i porównać wynik WebRTC VAD. Jeśli mimo braku mowy ponownie jest ~100%, podejść do VAD metodyką Systematic Debugging (kontrola PCM, trybu modelu, mono downmix, rate/PTS, rzeczywistych przerw i negatywnych testów) **bez automatycznej korekty filtrów**. Scalenie PR #55 i produkcyjny podpisany APK v47 wymagają zielonego CI po obecnych zmianach oraz dalszego testu na urządzeniu.
+
+
+
+## 23. Auto Audio v47 — test kontrolny instrumentalu: 99% WebRTC VAD i diagnostyka PCM (19.10.2026)
+
+### Wynik fizycznego testu użytkownika
+
+- Diagnostyczne APK ARM64 `xyz.mpv.rex.debug` na Nothing Phone (1); bieżący streaming, **dokładne 3 × 10 s**. Materiał to **muzyka instrumentalna bez słów / dialogów** (negatywna kontrola VAD).
+- Odczyt: **99% ramek WebRTC VAD oznaczono jako mowę**, mimo braku dialogów. RMS źródła **−13,0 dBFS**, szacowane tło **−29,9 dBFS**, dynamika **19,4 dB**, centroid **1496 Hz**, flatness **0,03**, rolloff **2692 Hz**.
+- Osobne okna: F1 centroid 1507 Hz / tło −30,4 dBFS / dynamika 19,8 dB; F2 1469 Hz / −28,9 dBFS / 18,3 dB; F3 1496 Hz / −30,7 dBFS / 19,9 dB.
+- Aktywne EQ, DRC 3/3, Dialogue Enhance 5/5, Szum Lua OFF. Propozycja Dialogue Enhance **5→4** wynikała wyłącznie z ostrożnej reguły nadmiernego przetwarzania, **nie** ze zweryfikowanego wykrycia mowy.
+- Kontrola dodatnia z poprzedniego testu: wywiad uliczny z niemal stałą mową i hałasem uzyskał **100%**. Zestawienie 100% / 99% dowodzi, że taki wynik VAD **nie rozróżnia wiarygodnie tych dwóch materiałów**. Nie wolno traktować tego procentu jako prawdopodobieństwa obecności dialogu.
+
+### Przegląd implementacji (Systematic Debugging, bez zgadywania progów)
+
+1. `AutoAudioVadPcm.kt` odbiera *faktyczne* mono PCM16, resampluje do **16 kHz**, zbiera **320 próbek na 20 ms** i wywołuje klasyfikator WebRTC; nie podaje statystyk FFT jako PCM. Użyte `Mode.AGGRESSIVE`, `speechDurationMs=0`, `silenceDurationMs=0` — analiza źródła `gkonovalov/android-vad` v2.0.10 wykazała, że zero wyłącza podtrzymywanie, dając surowe binarne decyzje modelu. **Nie zidentyfikowano dotąd błędu wymiaru ramek ani stałego wyniku true w wrapperze**.
+2. JNI `mpvRex-libmpv/app/src/main/jni/vad_tap.cpp` dostaje dekodowany sygnał przed `af`, wykonuje downmix, ogranicza kolejkę, raportuje droppedChunks; Kotlin odrzuca nieciągłe PTS i niepełne okna. Przy ponad dwóch kanałach JNI wciąż **zakłada kanał o indeksie 2 jako center**; poprawność dla niestandardowych układów trzeba zbadać osobno, bez nieuzasadnionych zmian natywnych.
+3. WebRTC VAD (lekki model GMM) może klasyfikować tonalne instrumenty jako mowę; 99% przy muzyce wymaga jednak niezależnego sprawdzenia wejścia PCM i próbek na różnych materiałach. **Przyczyna źródłowa wciąż NIE jest potwierdzona**: ograniczenia modelu vs. amplituda/downmix/format/źródło.
+4. Niczego nie „naprawiono” podbijaniem losowych progów czy zmianą agresywności VAD. Wyniki pozostają **diagnostyczne**; `verifiedSpeechProbability=null`, a sterowanie filtrami zależne od mowy jest zablokowane.
+
+### Minimalna zmiana diagnostyczna w tym samym PR #55
+
+- `AutoAudioVadPcm` liczy **z samych 320-próbkowych ramek PCM16 wysłanych do WebRTC**: RMS i szczyt w dBFS, udział próbek bliskich ciszy (|PCM|≤32), udział bliskich pełnej skali (|PCM|≥32604), liczbę ramek i liczbę pozytywnych klasyfikacji. Nie zapisuje nagrania ani nie otwiera żadnego połączenia.
+- `AutoAudioStreamingVad.windowDiagnostics()` zwraca osobne pomiary F1/F2/F3 **tylko gdy wszystkie okna spełniają wcześniejsze wymagania kompletności i PTS**. Przy zgubionych pakietach / niekompletnej analizie nie generuje diagnostyki pozornie poprawnej.
+- W panelu Auto Audio dodano sekcję **„Kontrola wejścia VAD”**, gdzie widać źródłową częstotliwość próbkowania, frakcję pozytywnych ramek każdego fragmentu i parametry PCM przekazanego modelowi. Doprecyzowano tekst „diagnostyczny VAD” i komunikat o braku kompletnego wyniku streamingu.
+- Testy jednostkowe obejmują resampling **44,1 kHz → 16 kHz**, poprawne RMS/peak dla sygnału stałego, ciszę mimo sztucznego pozytywnego wyniku klasyfikatora, pełną skalę, trzy niezależne okna i brak wyniku przy zgubionym pakiecie. To **testy toru PCM z fałszywym klasyfikatorem**, nie certyfikacja rozpoznawania muzyki przez rzeczywisty WebRTC.
+- Nie zmieniano natywnego AAR, trybów 15 s / 3×10 s, filtrów Lua, RNNoise, EQ, prędkości 1,5–3×, A/B, streamingu, podpisu ani numeru APK. Nie wydano produkcyjnego v47.
+
+### Dalsza walidacja — wymagane przed scaleniem / produkcyjną aktualizacją
+
+1. Sprawdzić nowy commit i wyniki GitHub Actions: `assembleDebug`, `testDebugUnitTest`, `lintDebug`, `check_workflows` (stan CI notować **po zakończeniu**, nie przewidywać).
+2. Powtórzyć **3 × 10 s** na **tym samym instrumentalu i wywiadzie**, a także na ciszy, jednostajnym szumie oraz materiale mieszanym. Porównać *F1/F2/F3* i źródłowe **sample rate / PCM RMS / peak / near-silence / near-full-scale**, sprawdzić, czy wartości odpowiadają rzeczywistemu typowi materiału. Test obejmuje realny streaming i prędkości 1,5×–3×.
+3. Jeśli sygnał PCM jest poprawny, przetestować **drugi niezależny klasyfikator** / detekcję muzyki na tych samych pięciu kontrolach **bez zmiany filtrów**; dopiero po pomiarze fałszywych wykryć i przeoczeń rozważać reguły sterowania.
+4. Nie scalać PR #55 ani nie wydawać podpisanego v47 wyłącznie na podstawie testów jednostkowych i diagnostyki.
+
+
+## 24. Auto Audio v47 — kolejny test wywiadu ulicznego i usterka prezentacji diagnostyki (19.10.2026)
+
+### Test rzeczywisty z nowym panelem PCM (5 zrzutów użytkownika)
+
+- Źródło: **wywiad uliczny**, bieżący streaming na Nothing Phone (1), szczegółowa analiza **3 × 10 s**; raport pokazuje **30,0 s** i ciągłość PTS. Wariant diagnostyczny ARM64 v47 z nową sekcją kontroli wejścia VAD.
+- Pomiar źródłowy **FFmpeg/astats** (nie jest to pomiar wejścia PCM do WebRTC): RMS **−19,3 dBFS**, tło szacunkowe **−24,8 dBFS**, dynamika **9,0 dB**, centroid **1792 Hz**, spectral flatness **0,04**, rolloff **2766 Hz**, kanały nieznane.
+- Oddzielne fragmenty metryk widmowych: F1 centroid **1915 Hz**, flatness **0,05**, rolloff **2906 Hz**, tło **−22,7 dBFS**, dynamika **6,2 dB**; F2 **1853 Hz / 0,04 / 2906 Hz / −25,1 dBFS / 7,8 dB**; F3 **1655 Hz / 0,04 / 2555 Hz / −26,4 dBFS / 11,9 dB**.
+- WebRTC VAD ponownie **100% pozytywnych ramek**, a raport nowej diagnostyki pokazuje **48000 Hz → 16000 Hz i 500 ramek w każdym z trzech 10-sekundowych okien**. To nie oznacza potwierdzonego wykrycia dialogów, zwłaszcza wobec poprzedniego wyniku **99% na instrumentalu bez słów**.
+- Na panelu aktywne EQ, DRC 3/3 i Dialogue Enhance 5/5, Szum Lua OFF; źródłowy łańcuch af widoczny na zrzucie. Odwracalna propozycja **DRC 3→2** wynika z niewielkiej dynamiki źródła, a nie z potwierdzonego VAD. Nie potwierdzono, że użytkownik zastosował tę zmianę lub ocenił odsłuch A/B.
+
+### Reprodukcja i przyczyna błędu UI (Systematic Debugging)
+
+- Na zdjęciach w sekcji „Kontrola wejścia VAD” literalnie pozostają `VAD %.0f%%`, `RMS %.1f`, `szczyt %.1f`. Pokazywane jest też `prawie cisza 100,0%` i `blisko przesterowania −19,5%` / `−20,7%` / `−18,3%`, co jest fizycznie niedopuszczalnym ujemnym udziałem procentowym.
+- Odczyt źródła `AutoAudioDialog.kt` wykazał, że **`.format(...)` wiązało się tylko z ostatnim literałem String** (operator `+`), więc pierwsze trzy placeholdery nie były formatowane, a pozostałe dwa otrzymywały argumenty `positiveFraction` i `rmsDbfs`, zamiast `nearSilenceFraction` i `nearFullScaleFraction`.
+- To błąd **prezentacji**, a nie dowód awarii JNI, VAD, resamplingu lub obliczeń w `AutoAudioVadPcm`. **Wartości rzeczywiste** wejściowego RMS/szczytu oraz udziałów ciszy/przesterowania **nie są możliwe do odzyskania z tych zrzutów**. Należy powtórzyć pomiar po poprawce.
+
+### Minimalna poprawka w istniejącym PR #55
+
+- Wyodrębniono `formatVadWindow(index, window, locale)` w `AutoAudioVadPcm.kt`; **jedno wywołanie** `String.format(locale, cały_szablon, wszystkie_argumenty)` obejmuje nazwę fragmentu, source sample rate, liczbę ramek, VAD%, wejściowe RMS/peak, nearSilence% i nearFullScale%. `AutoAudioDialog.kt` korzysta bezpośrednio z funkcji.
+- Dodano test regresyjny `diagnosticTextUsesAllFiveNumericFieldsInCorrectOrder`: sprawdza poprawną kolejność, usunięcie surowych placeholderów, przykładowe **100%, −19,5 dBFS, −4,1 dBFS, 0,2% i 0,1%**, a także formatowanie PL/EN. Nie zmieniono algorytmu klasyfikacji, audio PCM ani sterowania filtrami.
+- Nadal **nie** można scalić PR #55 ani wydać produkcyjnego APK v47 przed zielonym CI zmian i porównaniem próbek kontrolnych na urządzeniu.
+
+### Kolejny punkt kontrolny
+
+1. Sprawdzić status CI po zmianie oraz komplet `assembleDebug/testDebugUnitTest/lintDebug/check_workflows`. Zamieścić wynik w dokumentacji, gdy będzie potwierdzony.
+2. Z nowego **diagnostycznego** APK powtórzyć ten sam wywiad i **instrumental bez słów**. Odczytać już prawidłowe PCM RMS/peak/near-silence/near-full-scale **osobno w F1/F2/F3** i zobaczyć, czy oba materiały mają fizycznie rozsądne dane.
+3. Potem cisza/szum/mieszany materiał, dopiero na koniec ocena ograniczeń WebRTC i ewentualna niezależna klasyfikacja mowy/muzyki; bez automatycznych zmian filtrów.
+
+
+## 25. Auto Audio v47 — prawidłowe pomiary PCM na instrumentalu, 97% fałszywego VAD (19.10.2026)
+
+### Potwierdzony status kodu i kompilacji przed nowym testem
+
+- Bazowy diagnostyczny build z poprawką formatowania, [GitHub Actions #39173959680](https://github.com/laszko14/REX-Player/actions/runs/39173959680), commit `821c7277fcd5961fb27429a28c9f7d83949ce113`, zakończył się **completed/success**. W jobach zielone były sprawdzanie workflow/Python/Lua, `assembleDebug`, `testDebugUnitTest`, `lintDebug` i publikacja oddzielnego diagnostycznego APK ARM64 `.debug`. Zadanie produkcyjnego podpisanego APK zostało pominięte (skipped).
+- **PR aplikacji #55** pozostaje otwarty; nie scalamy go na podstawie samego zielonego CI. Dotychczasowa natywna biblioteka `native-v47-arm64-r1` bez zmian.
+
+### Faktyczne wyniki nowej kontroli negatywnej
+
+- Materiał: **muzyka instrumentalna bez słów**, ten sam typ kontrolny co wcześniej, odtwarzany jako streaming na telefonie. Ponownie analizowano **3 × 10 s**, po poprawieniu wyświetlania danych wejścia WebRTC.
+- Zbiorczy pomiar FFmpeg/astats (oryginalny sygnał przed filtrami): **RMS −12,8 dBFS**, orientacyjne tło **−29,3 dBFS**, dynamika **19,2 dB**, centroid **1509 Hz**, flatness **0,03**, rolloff **2713 Hz**. `channelCount=0` oznacza nieznany rozkład kanałów w pomiarze astats; **nie** należy interpretować jako faktycznego braku kanałów.
+- **WebRTC: 97% pozytywnych ramek łącznie, mimo braku wypowiedzi.** Poszczególne 10-sekundowe okna mają pełne 500 ramek po 20 ms, konwersja źródłowego **44100 Hz → 16000 Hz**:
+  
+  | Okno | WebRTC „mowa” | RMS PCM do VAD | Szczyt PCM | Próbki niemal ciche | Próbki blisko pełnej skali |
+  |---|---:|---:|---:|---:|---:|
+  | F1 | **95%** | **−13,0 dBFS** | −0,4 dBFS | 1,6% | 0,0% |
+  | F2 | **97%** | **−13,2 dBFS** | −0,3 dBFS | 1,5% | 0,0% |
+  | F3 | **99%** | **−12,9 dBFS** | −0,3 dBFS | 1,5% | 0,0% |
+
+- Metryki widmowe niezależnych od VAD fragmentów: **F1** centroid 1500 Hz, flatness 0,04, rolloff 2735 Hz, tło −29,5 dBFS, dynamika 19,2 dB; **F2** 1509 Hz / 0,03 / 2606 Hz / −29,3 dBFS / 19,0 dB; **F3** 1526 Hz / 0,03 / 2778 Hz / −29,3 dBFS / 19,3 dB. Wszystkie trzy bardzo zbliżone, a **0/3** progów jasnego/ciemnego/szumopodobnego widma oznacza tylko brak przekroczeń progów.
+- Aktywne na zrzutach: istniejące EQ, **DRC 2/3**, Dialogue Enhance 5/5, **Szum Lua OFF**. Panel słusznie nie proponował zmiany: DRC nie jest już na poziomie 3/3, a sam wysoki procent VAD **nie** daje zgody na uruchomienie filtrów rozpoznających mowę.
+
+### Wnioski zgodne z Systematic Debugging
+
+1. **Poprawka błędu prezentacji z sekcji 24 została zweryfikowana na urządzeniu**: wartości liczbowe RMS, szczytu i udziałów procentowych są teraz czytelne, kompletne i należą do właściwych pól.
+2. Wejściowy PCM do WebRTC ma **fizycznie możliwe poziomy**, znikomą liczbę próbek bliskich ciszy, brak próbek bliskich pełnej skali, właściwą liczbę ramek i stałą liczbę próbek mimo resamplingu 44,1→16 kHz. To mocny argument przeciwko **prostemu** błędowi formatu/ramki lub stałej ciszy, ale samo nie potwierdza wierności sygnału (np. porządku kanałów, aliasingu czy ograniczeń modelu).
+3. WebRTC GMM na tym materiale ewidentnie jest **niewiarygodnym detektorem dialogów**: instrumental bez mowy dał kolejny nieakceptowalnie wysoki wynik **97%** (wcześniej 99%). Wywiad uliczny dawał 100%. Frakcja pozytywnych ramek nie jest kalibrowaną pewnością.
+4. Brak wniosków o rzeczywistej jakości dźwięku po filtrach i brak dowodów, że odszumianie byłoby potrzebne. **`verifiedSpeechProbability=null` i blokada decyzji zależnych od VAD muszą pozostać.**
+5. Jest jeszcze niespójność opisu w UI: komunikat przy pustej liście propozycji twierdził `Gdy trzy fragmenty się różnią...`, mimo trzech podobnych segmentów. Poprawiono go na neutralny komunikat o braku przesłanek (bez twierdzenia o rozbieżności okien).
+6. Dodano test `instrumentalWithNinetySevenPercentFalseVadMustNotTriggerSpeechChanges` odwzorowujący metryki 3×10 s oraz istniejący stan DRC 2/3. Musi potwierdzić brak nowych propozycji, niezmieniony stan filtrów i opis „żaden z trzech fragmentów” zamiast fałszywej różnicy.
+
+### Następny kierunek, bez niezweryfikowanej automatyzacji
+
+- Najpierw sprawdzić nowy CI po dwóch poprawkach w tym PR (UI i test instrumentalu). Produkcyjnego APK ani nowej wersji AAR nie wydawać.
+- Kolejne kontrole: **cisza, jednostajny szum, mieszanka mowy i muzyki**, najlepiej na tym samym bieżącym strumieniu przed filtrami, z rezultatami F1/F2/F3. Zachować testy HTTP/HLS/DASH i 1,5×–3×.
+- Przy wiarygodnym sygnale PCM ocenić **niezależny model klasyfikacji mowa/muzyka/cisza** (np. speech detector odporniejszy na muzykę, rozważenie Silero, po zweryfikowaniu dostępności modelu, zasobów ARM64 i licencji). Model porównawczy ma działać tylko diagnostycznie na dokładnie tych samych oknach, bez drugiego pobierania filmu, bez ingerencji w audio i bez wpływu na filtry.
+- Dopiero faktyczny zestaw kontroli pozytywnych i negatywnych oraz odsłuch A/B może uzasadnić zmianę polityki doboru filtrów.
+
+
+## 26. Auto Audio v47 — test filmu sci-fi i ciszy, zachowanie diagnostyki VAD (19.10.2026)
+
+### Stan przed zmianą
+
+- [GitHub Actions #39176301252](https://github.com/laszko14/REX-Player/actions/runs/39176301252) na commicie `8ed9306f70d04b202f879086ebcc680c449f4940`: **completed / success**. Testowano istniejący wariant ARM64 `.debug`; nie został wydany podpisany v47 produkcyjny. PR #55 pozostawał otwarty.
+- Przed zmianą `StreamAstatsParser.parse` wykonywał `require(active.size >= 20) { "W próbce dominuje cisza. Nie zmieniono filtrów." }` **po** próbie pobrania natywnego VAD, przez co przerwanie parsera **ukrywało** procent z WebRTC nawet przy pełnym PCM. Brak procentu na zrzucie oznacza **niezaobserwowany VAD**, nie potwierdzone 0%.
+
+### Test sci-fi „Tears of Steel” — materiał mieszany (nowe zdjęcia użytkownika)
+
+- Materiał: streaming filmu sci-fi z dialogami, muzyką i efektami; **3 × 10 s**, **30 s łącznie**. Nie ma dokładnych oznaczeń czasu, które pozwalałyby przypisać każdy fragment wyłącznie do dialogu, muzyki lub efektu.
+- Statystyki sygnału przed filtrami: **RMS −16,5 dBFS**, tło **−25,1 dBFS**, dynamika **11,5 dB**, centroid **1849 Hz**, flatness **0,06**, rolloff **3338 Hz**.
+- WebRTC VAD: **95%** pozytywnych ramek łącznie, osobno **F1 88%**, **F2 99%**, **F3 100%**. Źródło **44100 Hz → 16000 Hz**, trzy pełne zestawy **500 ramek**.
+- Diagnostyka rzeczywistego PCM do WebRTC:
+  
+  | Fragment | WebRTC mowa | PCM RMS | PCM peak | Prawie cisza | Próbki bliskie pełnej skali |
+  |---|---:|---:|---:|---:|---:|
+  | F1 | 88% | −20,0 dBFS | −1,7 dBFS | 2,5% | 0,0% |
+  | F2 | 99% | −22,3 dBFS | −4,1 dBFS | 1,3% | 0,0% |
+  | F3 | 100% | −16,2 dBFS | −1,4 dBFS | 0,9% | 0,0% |
+
+- Różnice widma trzech fragmentów: F1 centroid **1900 Hz**, flatness **0,07**, rolloff **3381 Hz**, tło **−31,1 dBFS**, dynamika **13,8 dB**; F2 **2510 Hz**, **0,10**, **7020 Hz**, **−24,7 dBFS**, **6,5 dB**; F3 **609 Hz**, **0,02**, **818 Hz**, **−22,2 dBFS**, **14,3 dB**.
+- W planie `jasne 0/3, ciemne 1/3, szumopodobne 0/3` oraz **brak propozycji zmian**. Stan z ekranu: EQ, DRC **2/3**, Dialogue Enhance, Szum Lua OFF. Przy takim pomiarze nie można z procentu VAD wywieść jakości dialogu. Oznaczenie F2/F3 jako „mowa” w 99–100% nie dowodzi, że akurat w tych przedziałach wypowiadano słowa.
+
+### Test ciszy — wynik z urządzenia
+
+- Materiał: 60-sekundowy strumień MP3 cyfrowej ciszy z rzeczywistą ścieżką audio. Uruchomiono **dokładną analizę 3 × 10 s**. Ekran pokazuje dosłowny komunikat **„W próbce dominuje cisza. Nie zmieniono filtrów.”**
+- **Potwierdzone:** zabezpieczenie przed nieuzasadnioną propozycją korekt zadziałało, nie ma zaproponowanych zmian filtrów.
+- **Niepotwierdzone:** czy WebRTC oznaczył 0%, 100% lub inną część ramek jako mowę. Komunikat wyjątku z parsowania metadanych odcinał dostęp do już policzonej diagnostyki; nie wolno utożsamiać ciszy w `astats` z klasyfikacją WebRTC.
+- Kluczowe dla projektu: nie można ocenić czułości i fałszywych alarmów detektora na prawdziwej ciszy bez ujawnienia **oryginalnych** wyników jego ramek.
+
+### Zmiana diagnostyczna na tej samej gałęzi PR #55
+
+1. `AutoAudioMetrics`: dodano flagę `silenceDominant=false` (wartość domyślna zachowuje poprzednią logikę dla innych źródeł).
+2. `StreamAstatsParser`: po **niezmienionych** kontrolach kompletności trzech okien i PTS, gdy mniej niż 20 ramek metadanych ma RMS ponad −55 dBFS, zwraca pełny raport z `silenceDominant=true` i dynamiką 0, zamiast wyjątku. Diagnostyka VAD nadal jest **nieobecna** bez kompletnych, nieprzerwanych danych z natywnego PCM (nie ustawia się sztucznego 0%).
+3. `AutoAudioPlanner`: wczesne, twarde zabezpieczenie dla `silenceDominant` — `after=before`, pusta lista zmian nawet przy **100% fałszywie dodatnich ramek WebRTC** albo niepełnym VAD.
+4. `AutoAudioDialog`: nowy czytelny opis ciszy i wyraźne rozróżnienie niezależnego wyniku WebRTC od faktycznego dialogu. Można wyświetlić trzy okna diagnostyki PCM oraz procent ramek VAD, jeśli są kompletne.
+5. Testy regresji: poprawnie kompletny 34-sekundowy streaming ciszy (`-inf` RMS i peak), odrzucenie ciszy przy brakujących PTS, oraz niezmienność filtrów z pełnym fałszywym VAD 100% i z VAD niedostępnym. Żadne wcześniejsze reguły streamingu lub odtwarzania nie zostały celowo rozluźnione.
+
+### Dalszy etap
+
+- Uruchomić i potwierdzić nowe `assembleDebug`, `testDebugUnitTest`, `lintDebug` oraz kontrolę workflow. Dopóki CI nie jest zielony, **nie** dostarczać poprawionej aplikacji diagnostycznej do testu.
+- Ponowić **dokładną analizę tej samej minuty cyfrowej ciszy** na nowym APK; odczytać prawdziwy VAD F1/F2/F3 albo brak kompletnych danych PCM, a nie wymyślać 0%.
+- Następnie na **identycznych oknach** porównać WebRTC z drugim niezależnym modelem odróżniającym mowę od muzyki, nadal tylko diagnostycznie. Natywny AAR, normalne filtry i mechanizmy A/B pozostają bez zmian.
+
+## 27. Auto Audio v47 — diagnostyka porównawcza Silero VAD + YAMNet (20.10.2026)
+
+### Podstawa decyzji
+
+- Punktem wyjścia jest zweryfikowane fałszywe wykrycie WebRTC **97%** na instrumentalu bez wypowiedzi; istniejąca blokada `verifiedSpeechProbability=null` i sterowania filtrami pozostaje nienaruszona.
+- Porównano: WebRTC GMM (dotychczasowy baseline), Silero VAD DNN (offline ONNX) i YAMNet (offline TensorFlow Lite, klasy AudioSet). Zgodnie z dokumentacją Silero jest lekkim detektorem aktywności mowy, a YAMNet klasyfikuje także muzykę i inne zdarzenia dźwiękowe; żaden nie jest miernikiem zrozumiałości dialogów.
+- Dla minimalizacji kosztu integracji wybrano dodatkowe moduły istniejącej biblioteki `com.github.gkonovalov.android-vad` **2.0.10**: `silero` i `yamnet`. Bazowy moduł `webrtc` jest już używany. Biblioteka Silero 2.0.10 używa ONNX Runtime Android 1.22.0 i modelu `silero_vad.onnx`; moduł YAMNet używa TensorFlow Lite Task Audio 0.4.4 i `yamnet.tflite`. Modele mają być dostarczone jako zasoby APK, **bez pobierania ich podczas odtwarzania**. Należy rozpoznać rzeczywiste wersje modeli z dostarczonych AAR przed oceną skuteczności, bez nazywania wariantu Silero najnowszym.
+- Źródła implementacji i API: https://github.com/gkonovalov/android-vad/tree/2.0.10, https://github.com/snakers4/silero-vad, https://github.com/tensorflow/models/tree/master/research/audioset/yamnet. Silero i biblioteka Android VAD: MIT; sprawdzić dodatkowo transytywne notice/licencje modeli i runtime przy przyszłym wydaniu produkcyjnym. W repozytorium biblioteki zgłaszano problem z crashem Silero 2.0.10 na innym telefonie (issue #39) — wdrożenie na Nothing Phone (1) wymaga osobnego testu.
+
+### Zmiany na aktualnej gałęzi PR #55 — bez zmiany mpv/JNI
+
+1. Istniejący `AutoAudioVadPcm` przekazuje opcjonalnej funkcji obserwującej **te same przeliczone na 16 kHz ramki PCM16**, które dostał WebRTC. Nie tworzono osobnego toru resamplingu, dekodowania ani połączenia HTTP.
+2. `AutoAudioStreamingVad` buforuje kopię PCM **wyłącznie w ograniczonych oknach** 15 s lub 3 × 10 s: maksymalnie około 480 000 próbek, tj. około 0,92 MiB surowego PCM (plus narzut Kotlin/Java). Udostępnia kopię tylko po wcześniejszej kontroli kompletności, prawidłowych PTS i braku utraty pakietów JNI. Dane są ulotne i nie trafiają do pliku ani mikrofonu.
+3. `AutoAudioNeuralCompare` startuje **po zakończeniu przechwytywania JNI**, aby inferencja nie blokowała wywołań `poll()` podczas dekodowania 1,5×–3×. Silero analizuje ramki 512 próbek (32 ms) i jest resetowany na każde oddzielne okno. YAMNet analizuje ramki 15 600 próbek (0,975 s); odczytywane są osobno wyniki klas `Speech` i `Music`, nie tylko kategoria top-1.
+4. Na panelu analizatora dodano porównanie per fragment: dotychczasowy WebRTC oraz Silero i YAMNet, z jawnymi informacjami o różnej semantyce wyników. Dodatkowa diagnostyka czasu inferencji, CPU wątku i zmiany sterty JVM służy orientacji, **nie** jest jeszcze testem całkowitego CPU, RSS ani baterii.
+5. Awaria niezależnego modułu AI nie może zostać zinterpretowana jako 0% mowy. Brak wyniku / wyjątek raportowany jest jako niedostępność modelu. Właściwe ustawienia filtrów, A/B, DRC, EQ, Głos, Szum, Dialogue Enhance i `mpv af` pozostają bez zmian.
+6. Dodano testy regresji buforowania pełnych okien, odrzucania fragmentów niekompletnych i diagnostycznych udziałów ramek.
+
+### Status walidacji i wymagane następne etapy
+
+- **Implementacja kodu jest w toku; wyniki nowego CI i testów na telefonie nie zostały jeszcze potwierdzone w chwili tego wpisu.** Nie przypisywać Silero/YAMNet wartości 0%, 100% ani wyższej skuteczności bez pomiarów.
+- W CI: `check_workflows`, `assembleDebug`, `testDebugUnitTest`, `lintDebug`, weryfikacja konfliktów Android .so i pakietowanych modeli oraz oddzielny diagnostyczny APK `.debug`. Jeśli CI ujawni błąd, analizować faktyczną pierwszą przyczynę, a nie stroić progi na ślepo.
+- Telefon Nothing Phone (1): uruchomić ponownie **wywiad uliczny, instrumental bez słów, cyfrową ciszę, Tears of Steel** (ten sam początek odcinków) i jednostajny szum; zbierać F1/F2/F3 oraz błędy modelu. Sprawdzić zmianę prędkości 1,5×, 2×, 3×, HLS/DASH, seek, brak zacięć, zużycie CPU i RAM w profilerze systemowym, czas analizy i brak wpływu na filtry.
+- Przy wyniku pozytywnym na dialogach i negatywnym na instrumentalu dopiero rozważyć nowe reguły; obecny etap jest **wyłącznie diagnostyczny**. Nie scalać PR #55 ani nie wydawać podpisanego v47 przed walidacją.
+
+
+### Korekta po pierwszym CI diagnostyki neuronowej (20.10.2026)
+
+- GitHub Actions [39459861529](https://github.com/laszko14/REX-Player/actions/runs/39459861529) zakończył się `failure`, pomimo sukcesu kontroli YAML/Python/Lua. Pierwszą przyczyną w `:app:compileDebugKotlin` były `Unresolved reference 'tensorflow'`, `AudioClassifier` i `TensorAudio` w `AutoAudioNeuralCompare.kt`. **Nie był to błąd inferencji na urządzeniu.**
+- Zależność `yamnet:2.0.10` deklaruje TensorFlow Task Audio jako `implementation`, więc samo dołączenie modułu YAMNet nie daje źródłom aplikacji dostępu do klas `org.tensorflow.lite...`. Commit [c8abc32](https://github.com/laszko14/REX-Player/commit/c8abc32786f7fc73694876675e27b4dd95b42ed1) dodaje jawnie `implementation("org.tensorflow:tensorflow-lite-task-audio:0.4.4")`.
+- Przed zielonym ponownym CI **nie podawać diagnostycznego APK jako gotowego**. Nie zmieniano w tej korekcie istniejących filtrów, JNI, planera ani modeli.
+
+
+## 28. MPV Alpha Audio v47 — osobna aplikacja instalacyjna dla PR #55 (20.10.2026)
+
+### Wymaganie użytkownika
+
+- Użytkownik chce jednocześnie zachować **zwykły MPV Alpha v39** oraz zainstalować testowy **MPV Alpha Audio** z bieżącego PR #55; to muszą być dwie różne aplikacje Android, a nie aktualizacja tej samej.
+- Dodano osobny wariant Gradle **audio**, dziedziczący diagnostyczny `debug`, ale o własnym identyfikatorze **`xyz.mpv.rex.audio`**, wersji z sufiksem `-audio-v47` oraz nazwie ikony launchera **MPV Alpha Audio** (nadpisany `app_name` w `app/src/audio/res/values/strings.xml`). Dla porównania: dotychczasowy testowy debug pozostaje `xyz.mpv.rex.debug`, a zwykła produkcyjna aplikacja `xyz.mpv.rex`.
+- Zachowano wszystkie zmiany PR #55 dotyczące WebRTC, Silero, YAMNet, niefiltrowanego PCM, streamingu oraz bezpieczeństwa planera. Nie scalono PR, nie wydano produkcyjnego v47, nie zmieniono natywnego AAR ani istniejącego release signing.
+
+### Kompilacja i dowody zamiast założeń
+
+- Bazowy stan PR #55 przed wydzieleniem wariantu: [CI 39460986000](https://github.com/laszko14/REX-Player/actions/runs/39460986000) **completed/success** z artefaktem debug, ale dotychczasowym identyfikatorem `xyz.mpv.rex.debug` i nazwą `mpv α` — nie jest to docelowy Audio APK.
+- Na PR #55 GitHub Actions dodatkowo uruchamia `assembleAudio` przy zachowaniu `assembleDebug`, `testDebugUnitTest`, `lintDebug`. Przed publikacją nowego artefaktu wymaga `apksigner verify`, dokładnego pakietu `xyz.mpv.rex.audio`, etykiety `MPV Alpha Audio` i obecności pojedynczego ARM64 APK.
+- Docelowy wynik po zielonym CI: artefakt `MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA` z plikiem `MPV-Alpha-Audio-v47-ARM64.apk`. **Wynik nowej kompilacji i działanie na fizycznym telefonie pozostają niepotwierdzone do zakończenia CI oraz testów.**
+- Wariant jest na razie **diagnostyczny** i podpisywany kluczem debug w PR CI; z uwagi na możliwą zmianę klucza między uruchomieniami nie należy obiecywać aktualizacji kolejnych APK Audio bez odinstalowania. W przyszłości do trwałych aktualizacji Audio trzeba odrębnie zapewnić stały klucz podpisu, bez udostępniania sekretów w jobie PR.
+
+### Test na telefonie
+
+- Zainstalować Audio obok MPV Alpha v39 i sprawdzić dwie ikony, oddzielne ustawienia, odtwarzanie streamu oraz wyniki WebRTC/Silero/YAMNet w 15 s i 3 × 10 s. W razie błędów zbierać objawy i logi, nie uruchamiać automatycznych filtrów przed wiarygodnym porównaniem mowy, muzyki i ciszy.
+
+
+### Potwierdzenie kompilacji osobnego APK Audio (20.10.2026)
+
+- **Potwierdzone GitHub Actions:** [run #39465414955](https://github.com/laszko14/REX-Player/actions/runs/39465414955), commit [ae9013c](https://github.com/laszko14/REX-Player/commit/ae9013c6683e05719f921fed5334a96ea63adc15), status `completed/success`. Joby `YAML, Python i Lua` oraz `Android - build, testy, lint` zakończono `success`; produkcyjny podpisany APK `skipped` zgodnie z blokadą PR.
+- Testy `assembleDebug`, `assembleAudio`, `testDebugUnitTest`, `lintDebug` zakończono sukcesem. Osobny krok **`Potwierdz nazwe, osobny pakiet i podpis APK Audio`** zakończył się `success`: kontrola `apksigner verify`, `aapt` dla `xyz.mpv.rex.audio`, `application-label:'MPV Alpha Audio'` oraz jednego ARM64 APK.
+- **Gotowy artefakt testowy:** [MPV-Alpha-Audio-v47-ARM64-OSOBNA-APLIKACJA (artifact ID 12286175620)](https://github.com/laszko14/REX-Player/actions/runs/39465414955/artifacts/12286175620), ZIP z `MPV-Alpha-Audio-v47-ARM64.apk`. Artefakt jest osobny od zwykłej wersji v39, nie podmienia jej ustawień. ZIP GitHub Actions raportuje SHA-256 `2690c8bdafc1f9facc902aec0041c20a9e0e56b3f42f7d5da5ac4949dc1da62f` (digest archiwum artefaktu, **nie** samego APK).
+- **Niepotwierdzone** do czasu instalacji na Nothing Phone (1): wykonanie Silero/YAMNet, wydajność strumieni przy 1,5–3×, brak błędów po stronie modelu i wyniki F1/F2/F3 na instrumentalu/ciszy/mowie. Nadal **nie scalać PR #55** na podstawie samego CI i **nie wydawać podpisanej produkcyjnej v47**. Audio jest oddzielnym diagnostycznym APK z podpisem debug; bez stałego klucza nie gwarantuje nadpisania przyszłą kompilacją Audio.
+
+
+## 29. MPV Alpha Audio v47 — wynik na wywiadzie podczas protestu w Londynie (20.10.2026)
+
+### Test fizyczny zgłoszony przez użytkownika (4 zrzuty ekranu)
+
+- Źródło: **„Wywiad podczas protestu — Londyn”**, odtwarzane jako streaming w oddzielnej aplikacji **MPV Alpha Audio v47**, kompilacja z [CI #39465414955](https://github.com/laszko14/REX-Player/actions/runs/39465414955) (wariant `xyz.mpv.rex.audio`). Na pasku podczas testu widoczne **1,00×**.
+- Tryb szczegółowy: **3 × 10 s = 30,0 s** ocenionego materiału, trzy okna FFmpeg `astats/aspectralstats` z kompletną ciągłością PTS i bez drugiego pobierania streamingu.
+- Metryki zbiorcze: **RMS −19,2 dBFS**, orientacyjne **tło −22,8 dBFS**, **dynamika 6,6 dB**, **centroid 1753 Hz**, **spectral flatness 0,04**, **rolloff 2719 Hz**. Liczba kanałów: **nieznane** (nie oznacza mono ani 0 kanałów).
+- F1: centroid **1706 Hz**, flatness **0,03**, rolloff **2695 Hz**, tło **−22,2 dBFS**, dynamika **6,6 dB**.
+- F2: centroid **1761 Hz**, flatness **0,04**, rolloff **2719 Hz**, tło **−22,7 dBFS**, dynamika **5,5 dB**.
+- F3: centroid **1772 Hz**, flatness **0,04**, rolloff **2742 Hz**, tło **−23,3 dBFS**, dynamika **7,2 dB**.
+- **Kluczowy problem:** panel zgłasza `VAD: brak kompletnego wyniku z natywnego PCM (np. brak danych, luki PTS, przepełnienie kolejki lub niedostępne JNI)`. Sekcja mowy pokazuje **`Mowa: niepotwierdzona`**, nie ma liczbowych okien WebRTC ani wyników **Silero/YAMNet**. Z tych zrzutów **nie wynika**, że któreś z modeli poprawnie wykryło/odrzuciło mowę, ani że PCM do modeli w ogóle dotarł.
+- Aktywne filtry odtwarzania w osobnym oknie: EQ (`@rex_visual_eq`), DRC **2/3** (`@mpv_alpha_drc`) oraz Dialogue Enhance (`@mpv_alpha_dialogue`); Szum Lua OFF. Jest to informacja o rzeczywistym łańcuchu efektów, a nie o zanieczyszczeniu sygnału astats — ten drugi analizowany jest przed efektami.
+- Planer **nie zaproponował zmian**, co jest zgodne z zasadą fail-closed bez pewnej klasyfikacji. Sama podobna jasność/płaskość trzech fragmentów nie potwierdza ani nie wyklucza dialogów.
+
+### Systematic Debugging — co potwierdza kod, czego nie wiemy
+
+- `AutoAudioStreamAnalyzer` niezależnie gromadzi metadane `astats` oraz opcjonalnie wywołuje `AutoAudioNativePcmBridge.openOrNull()` i `AutoAudioStreamingVad`. Dlatego **sukces 30 s + PTS w UI dowodzi kompletności pomiaru FFmpeg, NIE kompletności ramek z osobnego natywnego źródła JNI**.
+- `AutoAudioNativePcmBridge.openOrNull()` zwraca `null` przy błędzie refleksji lub uruchomienia JNI; `drainVadPackets()` zamyka źródło i kasuje diagnostykę przy wyjątkach; `AutoAudioStreamingVad` odrzuca skan przy gubionych paczkach, niestałym sample rate, nieprawidłowym lub skokowym PTS, krótkich/niepełnych oknach. **Bieżący panel skleja wszystkie przyczyny w jeden ogólny komunikat; nie można wybrać konkretnej zrzutami.**
+- Nie znaleziono wystarczającego dowodu na winę formatu Opus/WebM, architektury ARM64, przeciążenia JNI, samego modelu ani konkretnej wtyczki audio. Nie zmieniać progów filtrów, klasyfikatora, sygnału wejściowego ani natywnego AAR na podstawie samych tych zrzutów.
+
+### Następny etap
+
+1. Dla rozróżnienia usterki ogólnej od zależnej od źródła: przetestować na tym samym APK i przy **1,00×** krótki materiał **instrumentalny bez wypowiedzi** w trybie 3×10 s. Zwrócić uwagę, czy pojawiają się ramki VAD F1/F2/F3 oraz Silero/YAMNet, czy dokładnie ten sam komunikat.
+2. Jeśli native PCM znów będzie niekompletny, minimalna kolejna zmiana powinna ujawnić **przyczynę fail-closed**: powodzenie `vadTapStart`, liczba odebranych paczek i ramek, drop count, pierwszy/ostatni PTS, zmiany sample rate i powód unieważnienia skanu; dane liczbowe i komunikat błędu diagnostycznego, bez zapisania próbek i bez ingerencji w tor odtwarzania.
+3. Po zweryfikowanej kompletności natywnego PCM dopiero porównać WebRTC, Silero i YAMNet na identycznych próbkach; automatyczne zmiany filtrów pozostają wyłączone, PR #55 nadal **nie scalać** przed testami.
+
+
+## 30. Aktualizacje MPV Alpha Audio — obowiązkowa zgodność instalacyjna (20.10.2026)
+
+### Nowe wymaganie użytkownika (po pierwszym fizycznym teście Audio v47)
+
+- **Wszystkie kolejne testowe wersje MPV Alpha Audio mają instalować się jako aktualizacja poprzedniej aplikacji Audio**, bez odinstalowywania i bez kasowania jej ustawień. Zwykły MPV Alpha ma pozostać nietknięty.
+- Wariant zachowuje **niezmienny identyfikator pakietu `xyz.mpv.rex.audio`** oraz widoczną nazwę **MPV Alpha Audio**; każda kolejna kompilacja dostaje **wyższy `versionCode`**, a wersje `v48, v49, ...` muszą być unikalne.
+- **Warunek niezbędny: wszystkie kolejne APK Audio muszą być podpisane jednym trwałym kluczem**. Dotychczasowy testowy Audio v47 został utworzony w jobie PR `pull_request`, bez sekretów podpisu release, dlatego używa standardowego klucza **debug runnera GitHub Actions**; nie potwierdzono dostępu do tego samego prywatnego klucza po zakończeniu CI.
+- **Uczciwe ograniczenie:** jeśli certyfikatu starego v47 nie da się powtórzyć przy kolejnym buildzie, Android **nie pozwoli go nadpisać** innym podpisem. Nie obiecywać aktualizacji v47 w miejscu bez porównania odcisków certyfikatów. W takim wypadku konieczna może być **jednorazowa reinstalacja** pierwszej wersji Audio ze stałym podpisem; dopiero wszystkie następne będą aktualizacjami. Nie można obejść wymogu Androida samą zmianą nazwy pliku czy `versionCode`.
+- Dla podpisanej gałęzi Audio użyć bezpiecznego procesu publikacji, który otrzymuje sekrety wyłącznie w **zaufanym jobie**, nie w `pull_request` z potencjalnie niezweryfikowanym kodem. Można zastosować istniejący stały klucz repozytorium wyłącznie z odrębnym identyfikatorem `xyz.mpv.rex.audio`, jeśli projekt i workflow są do tego przygotowane. Zachować niezmienioną zwykłą aplikację.
+- Podczas CI **sprawdzać `apksigner verify --print-certs`, identyfikator pakietu i `versionCode` względem poprzedniego Audio APK**; nie deklarować sukcesu aktualizacji na telefonie przed rzeczywistą instalacją nad poprzednim buildem.
+
+### Kolejność działań
+
+1. **Nie budować jeszcze nowej wersji:** użytkownik zapowiedział kolejne wyniki testów tego samego Audio v47 na instrumentalu bez mowy; potrzebna jest diagnoza źródłowej usterki native PCM / VAD.
+2. Po wynikach połączyć diagnostykę źródła PCM z przygotowaniem trwałego podpisu Audio i następnym nieużytym numerem wersji.
+3. Jeśli do aktualizacji starego v47 brakuje jego pierwotnego prywatnego klucza, uprzedzić użytkownika przed kompilacją; zbudować pierwsze trwale podpisane Audio i dopiero od tego wydania zapewnić instalowanie kolejnych wersji bez odinstalowania.
+
+
+## 31. Auto Audio v47 — SoundHelix i powtarzalny brak natywnego PCM (20.10.2026)
+
+### Wynik testu urządzenia: SoundHelix instrumentalny, MP3 / streaming
+
+- MPV Alpha Audio v47, Nothing Phone (1), prędkość **1,00×**, analiza **3 × 10 s = 30,0 s**.
+- Wyniki astats: **RMS −11,4 dBFS**, tło **−20,6 dBFS**, dynamika **12,2 dB**, centroid **1730 Hz**, płaskość **0,04**, rolloff **3747 Hz**, kanały nieznane.
+- F1: centroid 1272 Hz, flatness 0,03, rolloff 2455 Hz, tło −22,3 dBFS, dynamika 13,7 dB.
+- F2: centroid 1397 Hz, flatness 0,03, rolloff 3015 Hz, tło −21,2 dBFS, dynamika 13,0 dB.
+- F3: centroid 2844 Hz, flatness 0,06, rolloff 7235 Hz, tło −18,4 dBFS, dynamika 10,0 dB.
+- **Drugi niezależny streaming po londyńskim wywiadzie** pokazuje komunikat „VAD: brak kompletnego wyniku z natywnego PCM”, mimo prawidłowego raportu FFmpeg. Nie ma wyników WebRTC, Silero ani YAMNet; oznacza to brak wiarygodnego sygnału do oceny, **nie 0% mowy**. Planer nie zaproponował zmian.
+- Aktywne w odtwarzaniu: EQ, DRC 2/3, Dialogue Enhance; Szum Lua wyłączony. Brak dowodu, że filtry spowodowały usterkę, ponieważ analiza astats jest wpinana przed efektami.
+
+### Systematic Debugging
+
+- Działający `astats` i PTS jego okien **nie potwierdzają** poprawności oddzielnego toru JNI. `AutoAudioNativePcmBridge` może nie wystartować, `poll()` może zgłosić wyjątek, `AutoAudioStreamingVad` może odrzucić dane przy skokach PTS, `droppedChunks`, zmianie sample rate albo niepełnych oknach.
+- Potrzebna jest instrumentacja **konkretnej pierwszej przyczyny** zamiast wspólnego ogólnego komunikatu: start JNI, liczba odebranych paczek/próbek, Hz, pierwszy i ostatni PTS, licznik ramek w oknach, pierwszy powód odrzucenia. Nie zapisywać surowych PCM i nie zmieniać toru odtwarzania.
+- Bez testu z nowym instrumentowanym buildem nie wiadomo, co jest przyczyną. Nie zmieniać na ślepo progów Silero/YAMNet ani reguł filtrów.
+- **Wymaganie instalacyjne:** następny Audio APK ma aktualizować obecną aplikację; potrzebny jest ten sam `applicationId`, wyższy `versionCode` i **identyczny certyfikat podpisu**. Dotychczasowy v47 używał nietrwałego podpisu debug z CI, więc aktualizacji nad nim nie wolno obiecywać bez odzyskania odpowiadającego klucza; może być nieunikniona jedna migracja na stały klucz.
+
+
+### Implementacja diagnostyki po obu nieudanych testach (20.10.2026)
+
+- W bieżącym PR #55, po teście SoundHelix, dodano `AutoAudioNativePcmBridge.openWithStatus()`: rozróżnia brak metod JNI `vadTapStart/vadTapStop/vadTapPoll` i nieudany start. `openOrNull()` pozostaje jako kompatybilna metoda pomocnicza.
+- `AutoAudioStreamingVad.captureStatus()` udostępnia liczby otrzymanych paczek, próbek, częstotliwość, zakres PTS, liczbę ramek w F1/F2/F3 i pierwszy powód odrzucenia, np. utracone paczki `droppedChunks`, nieciągłość PTS, zmianę sample rate, niewystarczającą długość lub błąd dekodowania VAD. Brak ingerencji w istniejący PCM, WebRTC, Silero i YAMNet.
+- `AutoAudioStreamAnalyzer` przechwytuje powód niepowodzenia JNI `poll` przed zamknięciem źródła. Dodano do `AutoAudioMetrics` opcjonalne `vadCaptureStatus`, wyświetlane w panelu Auto Audio także przy niedostępnym modelu. Dotychczasowe `verifiedSpeechProbability=null` i blokada automatyzacji pozostają bez zmian.
+- `AutoAudioStreamingVadTest`: nowy test poprawnego pełnego okna, utraconych paczek, skoku PTS i niekompletnego fragmentu. Pełny test Android CI: [run #39475121295](https://github.com/laszko14/REX-Player/actions/runs/39475121295) rozpoczęty po zmianach, **wynik końcowy niezweryfikowany w chwili wpisu**. Zautomatyzowane testy nie potwierdzają, że fizyczny JNI działa.
+- **Podpis APK zweryfikowany bezpośrednio z dotychczasowego `MPV-Alpha-Audio-v47-ARM64.apk`**: certyfikat Android Debug, SHA-256 `04ba2a881aa7487eeab91d1b4c3002eeb9dc49ce2be83920d8e4ccb192f71fcd`. Stały certyfikat podpisu z `.github/mpv-alpha-signing-certificate.sha256`: `468ba9659efacab50398621737df4f5e7aed729b1a541f9bc396da547faebdfb` — **inny podpis**. Nie da się obiecać bezpośredniej aktualizacji obecnej v47 nowym APK podpisanym obecnym stałym kluczem. Wymagany jest oryginalny prywatny klucz debug starego runnera lub jednorazowa migracja na stały podpis. Nie publikować nowej paczki jako „aktualizacja”, dopóki nie spełnia tego warunku.
