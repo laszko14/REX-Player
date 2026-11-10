@@ -54,3 +54,13 @@ Aktualna gałąź: `docs/mpvrex-v32-stage05-systematic-debugging-20261110`, utwo
 
 **Status zapisany w commicie: CI_PENDING (snapshot, nie live PASS).** Przed ukończeniem etapu sprawdź aktualny HEAD na tej gałęzi oraz SOURCE i Android CI na **dokładnym końcowym SHA**, attempt i każdy wymagany job. W przypadku FAIL odczytaj dokładne logi i usuń przyczynę w etapie 5. Nie uruchamiaj etapu 6 bez weryfikacji. Po zakończeniu etapu 5 kolejne `DALEJ` rozpocznie **6/10 — bramki jakości**.
 
+
+## Etap 6/10 — automatyczne bramki jakości (aktywny)
+
+Etap 5/10 Systematic Debugging jest **CODE_VERIFIED** na dokładnym SHA `3d8611e981fe993a1ced867bf7509fa40f92550a`; workflow `42746110283`, attempt 1, oba wymagane joby SOURCE i Android SUCCESS, podpis APK skipped. Wynik i HEAD sprawdzono na żywo przed etapem 6.
+
+Gałąź robocza: `docs/mpvrex-v32-stage06-quality-gates-20261110` (od `3d8611e981fe993a1ced867bf7509fa40f92550a`). W etapie 6 zapisano `docs/ai/QUALITY_GATES.md`, skrypt `.github/scripts/mpvrex_quality.py`, testy pozytywne i negatywne, walidację w źródłowym CI oraz korekty fixture testów, aby prawidłowo obsługiwały kolejne etapy. Zakres nie obejmuje aplikacji, APK, certyfikatów, merge ani zmian zabezpieczeń.
+
+**Checkpoint w commicie: CI_PENDING (snapshot).** Nie stanowi dowodu końcowego PASS. Przed zgłoszeniem `CODE_VERIFIED` sprawdź rzeczywisty pełny HEAD gałęzi i zakończony run/attempt na tym SHA: job `YAML, Python i Lua` oraz `Android - build, testy, lint` muszą mieć SUCCESS. Na FAIL odczytaj krok i log, napraw przyczynę oraz przetestuj nowy SHA. Nie uruchamiaj etapu 7 bez zweryfikowanego sukcesu.
+
+Po zakończeniu i następnym zatwierdzonym poleceniu **DALEJ**: etap **7/10 — modernizacja SOURCE CI i PR CI**. W tej aktualizacji nie uruchamiano podpisanego APK ani testu na urządzeniu. Historyczne wpisy rejestru błędów zachowują statusy i dawną dokumentację FAIL; nie wprowadzaj fikcyjnych wpisów.

@@ -65,6 +65,10 @@ jobs:
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
         run: python3 .github/scripts/mpvrex_debugging.py validate
 
+      - name: MPVRex quality gates - validate contracts
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
+        run: python3 .github/scripts/mpvrex_quality.py validate
+
       - name: Sprawdz skladnie workflow i osadzonego Pythona
         run: python3 .github/scripts/check_workflows.py
 

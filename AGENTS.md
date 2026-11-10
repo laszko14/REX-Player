@@ -39,6 +39,10 @@ required CI live with the GitHub connector before starting another stage.
 
 For each new or recurring failure, follow [docs/ai/DEBUGGING_PROTOCOL.md](docs/ai/DEBUGGING_PROTOCOL.md): sanitize symptom, reproduce, inspect exact workflow/run/attempt/job/step/log, classify category and confidence, confirm root cause, make the smallest fix, run diagnostic and regression tests, verify both required CI jobs at the final SHA, and update the **single** [docs/ai/ERROR_CASES.json](docs/ai/ERROR_CASES.json). Before writing, detect existing fingerprints; do not count retries as independent defects. After two identical failures without new evidence, change the hypothesis or diagnostic method. The read-only tool `python3 .github/scripts/mpvrex_debugging.py validate` is an **offline structural check, not live CI evidence**. Never infer verified status or device tests from saved records.
 
+## Quality gates (stage 6)
+
+Run the offline, read-only structural contract `python3 .github/scripts/mpvrex_quality.py validate` according to [docs/ai/QUALITY_GATES.md](docs/ai/QUALITY_GATES.md). It checks the canonical checkpoint and error registry, required documentation, active task/parent SHA, asserting regressions, SOURCE/Android CI wiring and guards against bypassing tests. The gate must actually fail for missing evidence, tests, documentation or jobs; never lower thresholds, skip required checks or equate the gate's offline PASS with live GitHub CI success. Inspect the final full HEAD SHA and both mandatory source/Android jobs live before reporting CODE_VERIFIED. This policy does not authorize signed APKs, release, merge or destructive changes.
+
 ## Repository landmarks
 - Main Android app: `app/src/main/kotlin/xyz/mpv/rex/` (Kotlin + Jetpack Compose).
 - Player and its managers: `ui/player/`; player controls: `ui/player/controls/`.

@@ -21,7 +21,7 @@ class CheckpointTests(unittest.TestCase):
         return copy.deepcopy(self.canonical)
 
     def test_canonical_valid(self):
-        self.assertEqual(5, validate(self.new())["active"]["stage"])
+        self.assertEqual(len(self.new()["completed"]) + 1, validate(self.new())["active"]["stage"])
 
     def test_wrong_repo_denied(self):
         v = self.new()
@@ -68,15 +68,22 @@ class CheckpointTests(unittest.TestCase):
 
     def test_active_stage_must_follow_verified(self):
         v = self.new()
-        v["active"]["stage"] = 6
+        v["active"]["stage"] = len(v["completed"]) + 2
         with self.assertRaisesRegex(CheckpointError, "immediately"):
             validate(v)
 
     def test_stage4_verified_history_preserved(self):
-        last = self.new()["completed"][-1]
+        last = next(x for x in self.new()["completed"] if x["stage"] == 4)
         self.assertEqual(4, last["stage"])
         self.assertEqual("b6ba374ca057d74babe434c6a8ec06543e76c0ad", last["sha"])
         self.assertEqual(42743439273, last["evidence"]["run_id"])
+        self.assertEqual(1, last["evidence"]["attempt"])
+        self.assertEqual("success", last["evidence"]["result"])
+
+    def test_stage5_verified_history_preserved(self):
+        last = next(x for x in self.new()["completed"] if x["stage"] == 5)
+        self.assertEqual("3d8611e981fe993a1ced867bf7509fa40f92550a", last["sha"])
+        self.assertEqual(42746110283, last["evidence"]["run_id"])
         self.assertEqual(1, last["evidence"]["attempt"])
         self.assertEqual("success", last["evidence"]["result"])
 
@@ -127,7 +134,7 @@ class CheckpointTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps(self.new()), encoding="utf-8")
             with patch("mpvrex_checkpoint.assert_writable_checkout") as guard:
-                result = record(root, expected_head="c"*40, stage=5,
+                result = record(root, expected_head="c"*40, stage=self.new()["active"]["stage"],
                                 status="CI_BLOCKED", next_action="Fix missing job.",
                                 summary="Reason documented.")
                 guard.assert_called_once()
@@ -142,7 +149,7 @@ class CheckpointTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps(self.new()), encoding="utf-8")
             with self.assertRaisesRegex(CheckpointError, "another stage"):
-                record(root, expected_head="c"*40, stage=6, status="CI_PENDING",
+                record(root, expected_head="c"*40, stage=self.new()["active"]["stage"] + 1, status="CI_PENDING",
                        next_action="check CI", summary="stage 4 premature")
             self.assertEqual(self.new(), json.loads(path.read_text()))
 
@@ -167,7 +174,7 @@ class CheckpointTests(unittest.TestCase):
             path.parent.mkdir(parents=True)
             path.write_text(json.dumps(self.new()), encoding="utf-8")
             with self.assertRaisesRegex(CheckpointError, "external live CI"):
-                record(root, expected_head="c"*40, stage=5, status="CODE_VERIFIED",
+                record(root, expected_head="c"*40, stage=self.new()["active"]["stage"], status="CODE_VERIFIED",
                        next_action="next stage", summary="not actually verified")
 
     def test_historical_handoff_preserved_as_archive(self):

@@ -24,7 +24,7 @@ class SystematicDebuggingTests(unittest.TestCase):
     def case(self, status="FIXED_UNVERIFIED", confidence="confirmed", fix="Minimal fix"):
         return {"status": status, "confidence": confidence, "fix": fix}
 
-    def make_root(self, cases=None, stage=5):
+    def make_root(self, cases=None, stage=None):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         root = Path(self.temp.name)
@@ -32,9 +32,8 @@ class SystematicDebuggingTests(unittest.TestCase):
         if cases is not None:
             registry["cases"] = cases
         checkpoint = copy.deepcopy(self.checkpoint)
-        checkpoint["active"]["stage"] = stage
-        if stage == 5:
-            pass
+        if stage is not None:
+            checkpoint["active"]["stage"] = stage
         (root / PATH).parent.mkdir(parents=True)
         (root / PATH).write_text(json.dumps(registry), encoding="utf-8")
         (root / STATE_PATH).write_text(json.dumps(checkpoint), encoding="utf-8")
