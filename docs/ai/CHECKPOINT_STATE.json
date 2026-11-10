@@ -38,14 +38,30 @@
           "Android - build, testy, lint"
         ]
       }
+    },
+    {
+      "stage": 3,
+      "branch": "docs/mpvrex-v32-stage03-checkpoints-20261110",
+      "sha": "002215acc5decc8d25c93f7bd150666a0a9e46b7",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42737573772,
+        "attempt": 1,
+        "sha": "002215acc5decc8d25c93f7bd150666a0a9e46b7",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
     }
   ],
   "active": {
-    "stage": 3,
-    "branch": "docs/mpvrex-v32-stage03-checkpoints-20261110",
+    "stage": 4,
+    "branch": "docs/mpvrex-v32-stage04-error-registry-20261110",
     "status": "CI_PENDING",
-    "parent_sha": "4e7db043b4d9a8d6cce47d134b141e14fecc592d",
-    "next_action": "Verify final stage-3 commit and required source/Android CI live on exact SHA before starting stage 4.",
-    "summary": "Checkpoint policy, validated state registry and safe local recording; no player or APK changes."
+    "parent_sha": "002215acc5decc8d25c93f7bd150666a0a9e46b7",
+    "next_action": "Check final stage-4 source and Android CI live on exact pushed SHA before reporting completion.",
+    "summary": "Error registry schema, duplicate detection, guarded local record, tests and source CI; no changes to player or APK."
   }
 }

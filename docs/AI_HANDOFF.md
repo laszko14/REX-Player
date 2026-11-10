@@ -1,56 +1,36 @@
-# MPVRex — AI handoff / wznowienie V3.2
+# MPVRex — AI HANDOFF / kontynuacja V3.2
 
-**Kanoniczny rejestr:** [CHECKPOINT_STATE.json](ai/CHECKPOINT_STATE.json).
-**Zachowana historia 1–2:** [archiwum checkpointu](ai/archive/AI_HANDOFF_STAGE1_2.md), bez utraty szczegółów wcześniejszych runów.
-**Zasady:** [CHECKPOINT_POLICY.md](ai/CHECKPOINT_POLICY.md).
-**Preflight:** [STARTUP_PREFLIGHT.md](ai/STARTUP_PREFLIGHT.md).
+**Kanoniczny rejestr stanu:** docs/ai/CHECKPOINT_STATE.json.
+**Zasady checkpointu:** docs/ai/CHECKPOINT_POLICY.md.
+**Preflight:** docs/ai/STARTUP_PREFLIGHT.md.
+**Nowy rejestr błędów:** docs/ai/ERROR_CASES.json; instrukcje docs/ai/ERROR_LEARNING.md.
+**Historia etapów 1–2:** docs/ai/archive/AI_HANDOFF_STAGE1_2.md.
 
-## Produkt i bezpieczeństwo
-- Repozytorium: `laszko14/REX-Player`; właściciel używa MPV Alpha **v56 debug**.
-- Zatwierdzona baza: `build/player-transparency-v56`, commit
-  `74b059ab0d2c5492451c42f88ff993128a2e45c9`.
-- `master` jest rozbieżny — nie zastępuje v56 ani nie jest celem merge.
-- **Nie** zmieniaj kodu odtwarzacza, podpisu APK, danych, sekretów ani
-  publikacji bez osobnego zlecenia.
+## Baza i bezpieczeństwo
+- Repo: laszko14/REX-Player; właściciel korzysta z MPV Alpha v56 debug.
+- Zatwierdzona baza: build/player-transparency-v56, commit 74b059ab0d2c5492451c42f88ff993128a2e45c9.
+- master jest rozbieżny. Nie wykonuj merge/rebase do master, release, force-push, zmian sekretów/certyfikatu ani podpisywanego APK bez osobnej zgody.
+- Nie zmieniaj funkcjonalności odtwarzacza, Lua, HUD, gestów, zapisanych ustawień, konfiguracji ani danych użytkownika.
 
-## Ostatnie etapy — potwierdzone przed zapisem tego dokumentu
-- 1/10: v56 instrukcje, zakończone na
-  `99d19f3daaeba5c037a947b508e481fac2c82088`.
-  Workflow `42729647590`, attempt 1, źródła i Android **SUCCESS**.
-- 2/10: preflight, zakończony na
-  `4e7db043b4d9a8d6cce47d134b141e14fecc592d`.
-  Workflow `42734552364`, attempt 1, źródła i Android **SUCCESS**;
-  podpis APK pominięty. Weryfikowano bezpośrednio w GitHub na tym SHA.
-- 3/10: **w trakcie** na `docs/mpvrex-v32-stage03-checkpoints-20261110`, od końcowego SHA 2/10.
-  Cel: trwały checkpoint, zapis lokalny, walidator, testy.
-  **Nie deklaruj CODE_VERIFIED dla 3/10 przed końcowym CI.**
+## Zakończone i potwierdzone etapy
+1/10: bazowa dokumentacja v56; SHA 99d19f3daaeba5c037a947b508e481fac2c82088, run 42729647590, attempt 1, źródła i Android SUCCESS.
+2/10: automatyczny preflight; SHA 4e7db043b4d9a8d6cce47d134b141e14fecc592d, run 42734552364, attempt 1, źródła i Android SUCCESS.
+3/10: trwałe checkpointy; SHA 002215acc5decc8d25c93f7bd150666a0a9e46b7, run 42737573772, attempt 1, źródła i Android SUCCESS, podpisany APK skipped. Przed etapem 4 ponownie sprawdzono HEAD, CI i pochodzenie od zatwierdzonej v56.
 
-## Wznowienie (nie ufaj samemu checkpointowi)
-1. Odczytaj **live HEAD** właściwej gałęzi w GitHubie oraz pełną historię
-   run/attempt/job i wszystkie wymagane wyniki na **końcowym SHA**.
-2. Odczytaj `AGENTS.md`, `CONTRIBUTING.md`, ten plik, JSON i politykę
-   **z dokładnie tego SHA**; uruchom/zweryfikuj preflight na checkout.
-3. Z `CHECKPOINT_STATE.json` wybierz ostatni zweryfikowany etap i `active`.
-   `CI_PENDING` w snapshotcie nie oznacza, że live CI nadal trwa.
-4. Wszelkie błędy źródeł/Androida naprawiaj w ramach tego samego zadania,
-   potem ponownie sprawdzaj końcowe SHA. Bez sztucznego PASS.
-5. Nie zaczynaj następnego etapu bez zweryfikowania poprzedniego.
+## Etap aktywny: 4/10 — rejestr błędów
+Gałąź: docs/mpvrex-v32-stage04-error-registry-20261110.
+Punkt wyjścia: 002215acc5decc8d25c93f7bd150666a0a9e46b7.
+Zakres: wersjonowany JSON, schemat i walidacja, fingerprinty, wykrywanie powtórzeń, chroniony lokalny zapis, statusy hipoteza/potwierdzenie/ponowne wystąpienie, testy pozytywne i negatywne, odczyt w GitHub Actions. Nie wprowadzono żadnych domniemanych błędów do rejestru: początkowo jest pusty. To nie jest jeszcze automatyczna telemetria ani autonomiczne pobieranie logów.
+**Snapshot active=CI_PENDING oznacza stan zapisany przed zakończeniem własnego CI. Nie jest potwierdzeniem sukcesu ani dowodem, że CI nadal trwa po zakończeniu runu.**
 
-## Plan zatwierdzony przez właściciela
-1. Instrukcje v56; 2. Preflight; 3. Checkpointy; 4. Rejestr błędów;
-5. Systematic Debugging; 6. Bramki jakości; 7. SOURCE/PR CI;
-8. Bezpieczne APK (odrębna zgoda); 9. Integracja ChatGPT;
-10. Audyt końcowy.
+## Wymagana końcowa kontrola etapu 4
+1. Odczytaj live HEAD gałęzi i sprawdź, że pochodzi od zatwierdzonej v56.
+2. Zweryfikuj workflow na dokładnym końcowym SHA, attempt, wymagany job YAML/Python/Lua (w tym preflight, checkpoint, nowy rejestr i testy) oraz Android build, testy jednostkowe, Lint. Oba joby muszą zakończyć się SUCCESS.
+3. Nie uruchamiaj podpisywanego APK. Nie deklaruj testów urządzenia, które nie miały miejsca.
+4. Na FAIL odczytaj konkretny job/krok/log, napraw przyczynę w tym etapie i sprawdź nowe końcowe SHA. Przy CI_PENDING nie zgłaszaj CODE_VERIFIED.
+5. Po zielonym CI zgłoś wynik. Nie twórz cyklicznych commitów wyłącznie dla zapisania wyniku CI samego commita. Przy następnej komendzie DALEJ przenieś zweryfikowany etap 4 do historii completed i dopiero rozpocznij etap 5/10 na osobnej gałęzi.
 
-## Następna czynność
-Po zmianach etapu 3 sprawdź na **dokładnym końcowym SHA** testy Python
-(w tym pozytywne/negatywne checkpointy), źródła, Android assembleDebug /
-testDebugUnitTest / lintDebug oraz brak uruchomienia podpisu APK.
-Jeżeli zakończone sukcesem: etap 3/10 może być zgłoszony jako
-`CODE_VERIFIED` z linkiem do bieżącego runu. Dopiero polecenie
-„Dalej” rozpoczyna etap 4/10.
+## Zatwierdzony plan 10 etapów
+1. Instrukcje v56; 2. Preflight; 3. Checkpointy; 4. Rejestr błędów; 5. Systematic Debugging; 6. Bramki jakości; 7. SOURCE/PR CI; 8. Bezpieczne APK — osobna zgoda; 9. Integracja ChatGPT; 10. Końcowy audyt i regresje.
 
-**Uwaga o cyklicznym zapisie:** sam nowy commit checkpointu zmienia SHA.
-Nie wykonuj nieskończonych commitów tylko po to, by wpisać wynik własnego CI.
-Prawdziwy wynik końcowy jest w GitHub Actions i w raporcie; JSON promuje go
-do historii przy następnym autoryzowanym etapie.
+**Zasada wznowienia:** żywy GitHub i dokumenty z konkretnego SHA mają pierwszeństwo przed zapisanym snapshotem i starymi źródłami projektu. Nie korzystaj z instrukcji Zavro Clean zamiast zasad MPVRex.

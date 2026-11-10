@@ -57,6 +57,10 @@ jobs:
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
         run: python3 .github/scripts/mpvrex_checkpoint.py validate
 
+      - name: MPVRex rejestr bledow - waliduj schemat
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
+        run: python3 .github/scripts/mpvrex_errors.py validate
+
       - name: Sprawdz skladnie workflow i osadzonego Pythona
         run: python3 .github/scripts/check_workflows.py
 
