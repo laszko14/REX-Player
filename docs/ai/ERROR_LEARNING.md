@@ -32,3 +32,7 @@ Komenda wymaga poprawnego aktywnego checkpointu, gałęzi MPVRex v56, pełnego i
 
 ## Prywatność, zakres i przyszłe etapy
 Nie zapisuj haseł, cookie, tokenów, kluczy, certyfikatów, pełnych logów, adresów prywatnych, URL-i streamingu, danych historii odtwarzania ani surowych danych użytkownika. Używaj zanonimizowanych sygnatur i nazw komponentów, bez telemetrii. W CI uruchamiaj tylko read-only validate, nie record. Pełne Systematic Debugging, bramki jakości i SOURCE/PR CI zostaną rozwinięte w etapach 5–7. Kod odtwarzacza i proces podpisu APK w etapie 4 pozostają bez zmian.
+
+## Systematic Debugging — etap 5
+
+Szczegółowy, obowiązkowy proces diagnozy i reagowania na nawroty znajduje się w [DEBUGGING_PROTOCOL.md](DEBUGGING_PROTOCOL.md). Narzędzie `.github/scripts/mpvrex_debugging.py` identyfikuje fingerprint i proponuje następne kroki bez zmian danych. Dwa identyczne FAIL bez nowych dowodów wymagają zmiany metody, nie mechanicznego retry. Każdy przypadek pozostaje w jedynym rejestrze `ERROR_CASES.json`; walidacja offline nie zastępuje sprawdzenia live GitHub CI.

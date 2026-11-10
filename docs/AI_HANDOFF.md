@@ -45,3 +45,12 @@ Zakres: wersjonowany JSON, schemat i walidacja, fingerprinty, wykrywanie powtór
 1. Instrukcje v56; 2. Preflight; 3. Checkpointy; 4. Rejestr błędów; 5. Systematic Debugging; 6. Bramki jakości; 7. SOURCE/PR CI; 8. Bezpieczne APK — osobna zgoda; 9. Integracja ChatGPT; 10. Końcowy audyt i regresje.
 
 **Zasada wznowienia:** żywy GitHub i dokumenty z konkretnego SHA mają pierwszeństwo przed zapisanym snapshotem i starymi źródłami projektu. Nie korzystaj z instrukcji Zavro Clean zamiast zasad MPVRex.
+
+## Kontynuacja etapu 5/10 — Systematic Debugging
+
+Poprzedni etap 4/10 **CODE_VERIFIED** na `b6ba374ca057d74babe434c6a8ec06543e76c0ad` (workflow `42743439273`, attempt 1; źródła i Android SUCCESS, podpis APK skipped). Potwierdzono przez live GitHub przed rozpoczęciem etapu 5. Historyczne FAIL etapu 4 pozostają w jedynym rejestrze jako `FIXED_UNVERIFIED` według chwili ich zapisu; późniejszy sukces CI nie uzasadnia nadpisania historii dowodu.
+
+Aktualna gałąź: `docs/mpvrex-v32-stage05-systematic-debugging-20261110`, utworzona bezpośrednio od powyższego SHA. Zatwierdzony zakres: `docs/ai/DEBUGGING_PROTOCOL.md`, read-only `.github/scripts/mpvrex_debugging.py` (validate, match, triage), testy, kontrola struktury procesu w SOURCE CI, aktualizacja `AGENTS.md` i `ERROR_LEARNING.md`. Brak zmian aplikacji, certyfikatu i APK.
+
+**Status zapisany w commicie: CI_PENDING (snapshot, nie live PASS).** Przed ukończeniem etapu sprawdź aktualny HEAD na tej gałęzi oraz SOURCE i Android CI na **dokładnym końcowym SHA**, attempt i każdy wymagany job. W przypadku FAIL odczytaj dokładne logi i usuń przyczynę w etapie 5. Nie uruchamiaj etapu 6 bez weryfikacji. Po zakończeniu etapu 5 kolejne `DALEJ` rozpocznie **6/10 — bramki jakości**.
+

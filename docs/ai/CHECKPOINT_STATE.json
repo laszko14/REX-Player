@@ -54,14 +54,30 @@
           "Android - build, testy, lint"
         ]
       }
+    },
+    {
+      "stage": 4,
+      "branch": "docs/mpvrex-v32-stage04-error-registry-20261110",
+      "sha": "b6ba374ca057d74babe434c6a8ec06543e76c0ad",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42743439273,
+        "attempt": 1,
+        "sha": "b6ba374ca057d74babe434c6a8ec06543e76c0ad",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
     }
   ],
   "active": {
-    "stage": 4,
-    "branch": "docs/mpvrex-v32-stage04-error-registry-20261110",
+    "stage": 5,
+    "branch": "docs/mpvrex-v32-stage05-systematic-debugging-20261110",
     "status": "CI_PENDING",
-    "parent_sha": "002215acc5decc8d25c93f7bd150666a0a9e46b7",
-    "next_action": "Check final stage-4 source and Android CI live on exact pushed SHA before reporting completion.",
-    "summary": "Error registry schema, duplicate detection, guarded local record, tests and source CI; no changes to player or APK."
+    "parent_sha": "b6ba374ca057d74babe434c6a8ec06543e76c0ad",
+    "next_action": "Verify stage-5 debugging tool, regression tests, sources and Android CI live on final task SHA.",
+    "summary": "Systematic debugging workflow and read-only triage/quality gate integrated with canonical MPVRex error registry. No player/APK modifications."
   }
 }

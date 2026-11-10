@@ -35,6 +35,10 @@ it never commits/pushes. Do not rewrite `CODE_VERIFIED` into the currently
 committed SHA to chase CI in a circular commit loop. Confirm final SHA and
 required CI live with the GitHub connector before starting another stage.
 
+## Systematic Debugging (stage 5)
+
+For each new or recurring failure, follow [docs/ai/DEBUGGING_PROTOCOL.md](docs/ai/DEBUGGING_PROTOCOL.md): sanitize symptom, reproduce, inspect exact workflow/run/attempt/job/step/log, classify category and confidence, confirm root cause, make the smallest fix, run diagnostic and regression tests, verify both required CI jobs at the final SHA, and update the **single** [docs/ai/ERROR_CASES.json](docs/ai/ERROR_CASES.json). Before writing, detect existing fingerprints; do not count retries as independent defects. After two identical failures without new evidence, change the hypothesis or diagnostic method. The read-only tool `python3 .github/scripts/mpvrex_debugging.py validate` is an **offline structural check, not live CI evidence**. Never infer verified status or device tests from saved records.
+
 ## Repository landmarks
 - Main Android app: `app/src/main/kotlin/xyz/mpv/rex/` (Kotlin + Jetpack Compose).
 - Player and its managers: `ui/player/`; player controls: `ui/player/controls/`.
