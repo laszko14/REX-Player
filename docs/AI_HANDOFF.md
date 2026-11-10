@@ -93,4 +93,8 @@ Etap 8/10 CODE_VERIFIED na pełnym SHA `bf9190b3ebad11a6a31027eaa7ad0b47df77a105
 
 Gałąź etapu 9: `docs/mpvrex-v32-stage09-chatgpt-integration-20261110`, bezpośredni rodzic `bf9190b3ebad11a6a31027eaa7ad0b47df77a105`. Zakres: `docs/ai/CHATGPT_INTEGRATION.md`, `.github/scripts/mpvrex_chat_context.py`, negatywne testy `test_mpvrex_chat_context.py`, rozszerzenie bramki jakości i odrębna kontrola kontekstu w SOURCE/PR CI. Weryfikacja lokalnego checkoutu ani JSON z danymi CI nie zastępują sprawdzania rzeczywistych runów z konektora. Bez zmian odtwarzacza, APK, certyfikatu lub GitHub Secrets.
 
-**Status zapisany w commicie: CI_PENDING, nie oznacza rzeczywistego wyniku CI.** Przed ogłoszeniem CODE_VERIFIED odczytaj live HEAD, run/attempt SOURCE i PR oraz oba obowiązkowe joby na dokładnym końcowym SHA, a dla PR również merge checkout. Nie zaczynaj 10/10 bez zamknięcia wymaganego CI i polecenia DALEJ. 
+**Status zapisany w commicie: CI_PENDING, nie oznacza rzeczywistego wyniku CI.** Przed ogłoszeniem CODE_VERIFIED odczytaj live HEAD, run/attempt SOURCE i PR oraz oba obowiązkowe joby na dokładnym końcowym SHA, a dla PR również merge checkout. Nie zaczynaj 10/10 bez zamknięcia wymaganego CI i polecenia DALEJ.
+
+### Etap 9 — błąd testu negatywnego MPV-ERR-0004
+
+SOURCE run `42757240129` i PR run `42757259526`, attempt 1, SHA `b3f7af6c6ba31954f8f0c2346886990a8977c1ac`: test `test_cli_ci_check_without_github_actions_rejected` zakończył się `AssertionError: 1 != 0`; inne testy Python przeszły. Przyczyna potwierdzona w obu logach: fixture bez izolacji korzystał z prawdziwego `GITHUB_ACTIONS=true`, więc narzędzie słusznie zwracało sukces. Poprawiono wyłącznie test przez lokalne ustawienie `GITHUB_ACTIONS=false`, zachowując rzeczywisty warunek odmowy poza CI. Wpis `MPV-ERR-0004` w kanonicznym rejestrze, status `FIXED_UNVERIFIED` do czasu kontroli finalnego CI.

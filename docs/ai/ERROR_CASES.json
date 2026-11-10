@@ -115,6 +115,45 @@
           "sha": "ac48d6d7d5e1cf6ed328804558d565832e1c7600"
         }
       ]
+    },
+    {
+      "id": "MPV-ERR-0004",
+      "fingerprint": "93014068bbfdcde9d7a060b925c438999105236c927a5b32e0d3138a9e1a4daf",
+      "stage": 9,
+      "category": "test_fixture",
+      "component": "chat_context_tests",
+      "signature": "cli_ci_environment_leak",
+      "symptom": "Stage 9 SOURCE and PR CI failed one Python negative fixture with AssertionError 1 != 0",
+      "condition": "The negative CLI test inherited GITHUB_ACTIONS=true from the real Actions runner",
+      "confidence": "confirmed",
+      "root_cause": "Test assumed a non-CI environment and did not isolate GITHUB_ACTIONS when calling ci-check",
+      "fix": "Explicitly patch GITHUB_ACTIONS=false inside the negative CLI fixture, preserving the production CI guard",
+      "diagnostic_tests": [
+        "test_cli_ci_check_without_github_actions_rejected"
+      ],
+      "regression_test": "test_cli_ci_check_without_github_actions_rejected",
+      "status": "FIXED_UNVERIFIED",
+      "branch": "docs/mpvrex-v32-stage09-chatgpt-integration-20261110",
+      "sha": "b3f7af6c6ba31954f8f0c2346886990a8977c1ac",
+      "ci": {
+        "status": "FAIL",
+        "run_id": 42757240129,
+        "attempt": 1
+      },
+      "observations": [
+        {
+          "event_key": "stage09-chat-context-source-run42757240129",
+          "date": "2026-11-10",
+          "stage": 9,
+          "sha": "b3f7af6c6ba31954f8f0c2346886990a8977c1ac"
+        },
+        {
+          "event_key": "stage09-chat-context-pr-run42757259526",
+          "date": "2026-11-10",
+          "stage": 9,
+          "sha": "b3f7af6c6ba31954f8f0c2346886990a8977c1ac"
+        }
+      ]
     }
   ]
 }

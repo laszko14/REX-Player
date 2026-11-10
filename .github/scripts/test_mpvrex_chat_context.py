@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import unittest.mock
 
 from mpvrex_chat_context import (
     ContextError, DOCUMENTS, read_project, snapshot,
@@ -233,7 +234,9 @@ class ChatContextTests(unittest.TestCase):
             self.assertEqual(json.loads(target.read_text()), self.evidence())
 
     def test_cli_ci_check_without_github_actions_rejected(self):
-        self.assertEqual(1, main(["ci-check", "--root", str(ROOT)]))
+        # Even when run by real Actions, isolate the negative environment fixture.
+        with unittest.mock.patch.dict("os.environ", {"GITHUB_ACTIONS": "false"}):
+            self.assertEqual(1, main(["ci-check", "--root", str(ROOT)]))
 
 
 if __name__ == "__main__":
