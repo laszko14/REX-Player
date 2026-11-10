@@ -23,6 +23,18 @@ v56 ancestry, branch, origin, clean tree and tracked documentation. It cannot
 replace a **live GitHub branch/CI lookup** or prove that a document was read.
 In CI, `--ci` compares the trusted push context and SHA. Never bypass FAIL.
 
+## Persistent checkpoint policy (stage 3)
+
+The sole machine-readable state is [`docs/ai/CHECKPOINT_STATE.json`](docs/ai/CHECKPOINT_STATE.json).
+Read [`docs/ai/CHECKPOINT_POLICY.md`](docs/ai/CHECKPOINT_POLICY.md) and
+[`docs/AI_HANDOFF.md`](docs/AI_HANDOFF.md) at the same explicit HEAD SHA.
+Validate state with `python3 .github/scripts/mpvrex_checkpoint.py validate`;
+the script only proves schema structure, **not** live CI success or
+a current GitHub HEAD. A local `record --write` modifies only the checkpoint;
+it never commits/pushes. Do not rewrite `CODE_VERIFIED` into the currently
+committed SHA to chase CI in a circular commit loop. Confirm final SHA and
+required CI live with the GitHub connector before starting another stage.
+
 ## Repository landmarks
 - Main Android app: `app/src/main/kotlin/xyz/mpv/rex/` (Kotlin + Jetpack Compose).
 - Player and its managers: `ui/player/`; player controls: `ui/player/controls/`.

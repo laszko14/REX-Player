@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "project": "MPVRex / MPV Alpha",
+  "repository": "laszko14/REX-Player",
+  "approved_baseline": {
+    "branch": "build/player-transparency-v56",
+    "sha": "74b059ab0d2c5492451c42f88ff993128a2e45c9"
+  },
+  "completed": [
+    {
+      "stage": 1,
+      "branch": "docs/mpvrex-v32-stage01-foundation-20261110",
+      "sha": "99d19f3daaeba5c037a947b508e481fac2c82088",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42729647590,
+        "attempt": 1,
+        "sha": "99d19f3daaeba5c037a947b508e481fac2c82088",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
+    },
+    {
+      "stage": 2,
+      "branch": "docs/mpvrex-v32-stage02-preflight-20261110",
+      "sha": "4e7db043b4d9a8d6cce47d134b141e14fecc592d",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42734552364,
+        "attempt": 1,
+        "sha": "4e7db043b4d9a8d6cce47d134b141e14fecc592d",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
+    }
+  ],
+  "active": {
+    "stage": 3,
+    "branch": "docs/mpvrex-v32-stage03-checkpoints-20261110",
+    "status": "CI_PENDING",
+    "parent_sha": "4e7db043b4d9a8d6cce47d134b141e14fecc592d",
+    "next_action": "Verify final stage-3 commit and required source/Android CI live on exact SHA before starting stage 4.",
+    "summary": "Checkpoint policy, validated state registry and safe local recording; no player or APK changes."
+  }
+}

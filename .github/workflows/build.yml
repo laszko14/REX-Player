@@ -53,6 +53,10 @@ jobs:
       - name: Zainstaluj parser YAML
         run: python3 -m pip install --disable-pip-version-check "PyYAML>=6,<7"
 
+      - name: MPVRex checkpoint - waliduj rejestr
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
+        run: python3 .github/scripts/mpvrex_checkpoint.py validate
+
       - name: Sprawdz skladnie workflow i osadzonego Pythona
         run: python3 .github/scripts/check_workflows.py
 

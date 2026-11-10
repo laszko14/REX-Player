@@ -12,6 +12,7 @@ Rozbieżne `master` nie jest podstawą instalowanej aplikacji.
 2. Odczytaj LIVE w GitHubie pełne SHA zatwierdzonej gałęzi i aktualnej gałęzi zadania.
 3. Odczytaj z JAWNEGO tego samego SHA: `AGENTS.md`, `CONTRIBUTING.md`,
    `docs/AI_HANDOFF.md` i dokumentację funkcji związanej z zadaniem.
+   Sprawdź `docs/ai/CHECKPOINT_STATE.json` i `docs/ai/CHECKPOINT_POLICY.md` na tym SHA; nie ufaj zapisowi bez weryfikacji CI na żywo.
 4. Sprawdź faktyczną historię CI na tym SHA (workflow/run/attempt/job), a nie tylko checkpoint.
 5. Potwierdź pochodzenie gałęzi od v56, bezpieczeństwo zmian i brak konfliktów.
 6. Przed implementacją na lokalnym checkout uruchom poniższy walidator (bez edycji plików):
