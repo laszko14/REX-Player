@@ -13,7 +13,12 @@ class RegistryTests(unittest.TestCase):
         cls.canonical = json.loads((Path(__file__).resolve().parents[2] / PATH).read_text(encoding="utf-8"))
 
     def fresh(self):
-        return copy.deepcopy(self.canonical)
+        data = copy.deepcopy(self.canonical)
+        data["cases"] = []  # Independent fixture; production registry may be populated.
+        return data
+
+    def test_checked_in_registry_valid(self):
+        self.assertEqual(self.canonical, validate(copy.deepcopy(self.canonical)))
 
     def event(self, **extra):
         event = dict(stage=4, category="configuration", component="preflight",

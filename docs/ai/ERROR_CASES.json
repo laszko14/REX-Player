@@ -36,6 +36,40 @@
           "sha": "b78af59cec876503544a5cd5258159b9c0f013e0"
         }
       ]
+    },
+    {
+      "id": "MPV-ERR-0002",
+      "fingerprint": "c0d8993d42e1b6f75e6b48437df32ce1177a7574130d0ff7b5eef4740692fd3e",
+      "stage": 4,
+      "category": "test_fixture",
+      "component": "error_registry",
+      "signature": "nonempty_canonical_fixture_assumption",
+      "symptom": "Error registry unit suite failed after the first real error case was recorded",
+      "condition": "Checked-in registry contained a case while test helpers assumed it was empty",
+      "confidence": "confirmed",
+      "root_cause": "Unit test helper reused the populated canonical registry rather than an isolated empty fixture",
+      "fix": "Create a deep-copied empty fixture and separately validate the actual checked-in registry",
+      "diagnostic_tests": [
+        "test_checked_in_registry_valid",
+        "test_repeat_fingerprint_merges_observations"
+      ],
+      "regression_test": "test_checked_in_registry_valid",
+      "status": "FIXED_UNVERIFIED",
+      "branch": "docs/mpvrex-v32-stage04-error-registry-20261110",
+      "sha": "fcecf8584e40e6dfae8f334e690b4b2832651dd0",
+      "ci": {
+        "status": "FAIL",
+        "run_id": 42743225632,
+        "attempt": 1
+      },
+      "observations": [
+        {
+          "event_key": "stage04-registry-fixture-run42743225632",
+          "date": "2026-11-10",
+          "stage": 4,
+          "sha": "fcecf8584e40e6dfae8f334e690b4b2832651dd0"
+        }
+      ]
     }
   ]
 }

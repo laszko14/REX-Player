@@ -29,6 +29,11 @@ Zakres: wersjonowany JSON, schemat i walidacja, fingerprinty, wykrywanie powtór
 - Przyczyna potwierdzona logiem: fixture ustawiał 4, teraz prawidłowy aktywny etap; test musi ustawiać 5, by sprawdzić odrzucenie.
 - Poprawiono fixture. Rejestr zachowuje FIXED_UNVERIFIED i FAIL historycznego runu; wynik następnego CI jest zawsze weryfikowany na żywo, a nowy wpis nie udaje przyszłego PASS.
 
+## Druga usterka testowa etapu 4
+- MPV-ERR-0002: run 42743225632, attempt 1, SHA fcecf8584e40e6dfae8f334e690b4b2832651dd0, SOURCE FAIL w siedmiu testach rejestru. Android skipped zależnie od SOURCE.
+- Przyczyna: fixture testów wykorzystywał pusty kanoniczny rejestr; po zapisaniu MPV-ERR-0001 rejestr stał się niepusty i testy błędnie traktowały prawdziwy wpis jak własny testowy.
+- Poprawka: izolowany pusty fixture plus osobny test walidacji faktycznego rejestru. Wpis FIXED_UNVERIFIED nie deklaruje sukcesu jeszcze nieprzeprowadzonego końcowego CI.
+
 ## Wymagana końcowa kontrola etapu 4
 1. Odczytaj live HEAD gałęzi i sprawdź, że pochodzi od zatwierdzonej v56.
 2. Zweryfikuj workflow na dokładnym końcowym SHA, attempt, wymagany job YAML/Python/Lua (w tym preflight, checkpoint, nowy rejestr i testy) oraz Android build, testy jednostkowe, Lint. Oba joby muszą zakończyć się SUCCESS.
