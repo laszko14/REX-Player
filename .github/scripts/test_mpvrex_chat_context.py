@@ -66,7 +66,7 @@ class ChatContextTests(unittest.TestCase):
     def test_canonical_snapshot_never_claims_live_pass(self):
         state, cases = read_project(ROOT)
         report = snapshot(state, cases)
-        self.assertEqual(9, report["active"]["stage"])
+        self.assertEqual(len(state["completed"]) + 1, report["active"]["stage"])
         self.assertEqual("CI_PENDING", report["active"]["status"])
         self.assertFalse(report["live_head_verified"])
         self.assertFalse(report["live_source_ci_verified"])
@@ -79,7 +79,7 @@ class ChatContextTests(unittest.TestCase):
             root = Path(td)
             with self.assertRaises(Exception):
                 read_project(root)
-            self.assertEqual(9, state["active"]["stage"])
+            self.assertEqual(len(state["completed"]) + 1, state["active"]["stage"])
 
     def test_source_ci_identity_valid(self):
         env, git = self.context()

@@ -29,6 +29,7 @@ REQUIRED_DOCS = {
     "docs/ai/ERROR_LEARNING.md": ("ERROR_CASES.json", "DEBUGGING_PROTOCOL.md"),
     "docs/ai/DEBUGGING_PROTOCOL.md": ("SYSTEMATIC DEBUGGING", "SOURCE", "Android"),
     "docs/ai/SOURCE_PR_CI.md": ("## SOURCE CI", "## PR CI", "## Kontrole", "## Ograniczenia"),
+    "docs/ai/FINAL_AUDIT.md": ("## Źródła i zakres", "## Etapy 1–9", "## Weryfikacja", "## Ograniczenia", "## Status"),
     "docs/ai/CHATGPT_INTEGRATION.md": ("## Źródła prawdy", "## Protokół startu", "## Kontrole i testy", "## Ograniczenia"),
     "docs/ai/SAFE_APK.md": ("## Zakres", "## Autoryzacja", "## Kontrole", "## Testy", "## Status"),
     QUALITY_DOC: ("## Zakres", "## Bramki", "## Testy", "## Ograniczenia",
@@ -54,6 +55,13 @@ REQUIRED_TESTS = {
         "test_missing_android_job_rejected",
         "test_missing_regression_test_rejected",
         "test_missing_quality_gate_step_rejected",
+    },
+    "test_mpvrex_final_audit.py": {
+        "test_final_audit_canonical_pass",
+        "test_missing_historical_stage_rejected",
+        "test_missing_android_evidence_rejected",
+        "test_unapproved_app_changes_rejected",
+        "test_final_ci_gate_disabled_rejected",
     },
     "test_mpvrex_chat_context.py": {
         "test_canonical_snapshot_never_claims_live_pass",
@@ -273,6 +281,12 @@ def validate_inputs(state: dict, cases: dict, docs: dict, workflow: dict,
                 str(context_steps[0].get("if", "")).strip() ==
                 "${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-')) || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'docs/mpvrex-v32-') && github.base_ref != 'master') }}",
                 "Stage-9 ChatGPT checkout evidence gate missing or bypassed")
+    if state["active"]["stage"] >= 10:
+        from mpvrex_final_audit import GATE, CI_GUARD
+        steps = steps_for(workflow, "sources")
+        final = [s for s in steps if s.get("run") == GATE]
+        require(len(final) == 1 and final[0].get("if") == CI_GUARD,
+                "Missing stage 10 final audit CI gate")
     return {
         "stage": state["active"]["stage"],
         "active_status": state["active"]["status"],

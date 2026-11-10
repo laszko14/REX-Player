@@ -98,3 +98,11 @@ Gałąź etapu 9: `docs/mpvrex-v32-stage09-chatgpt-integration-20261110`, bezpo�
 ### Etap 9 — błąd testu negatywnego MPV-ERR-0004
 
 SOURCE run `42757240129` i PR run `42757259526`, attempt 1, SHA `b3f7af6c6ba31954f8f0c2346886990a8977c1ac`: test `test_cli_ci_check_without_github_actions_rejected` zakończył się `AssertionError: 1 != 0`; inne testy Python przeszły. Przyczyna potwierdzona w obu logach: fixture bez izolacji korzystał z prawdziwego `GITHUB_ACTIONS=true`, więc narzędzie słusznie zwracało sukces. Poprawiono wyłącznie test przez lokalne ustawienie `GITHUB_ACTIONS=false`, zachowując rzeczywisty warunek odmowy poza CI. Wpis `MPV-ERR-0004` w kanonicznym rejestrze, status `FIXED_UNVERIFIED` do czasu kontroli finalnego CI.
+
+## Etap 10/10 — końcowy audyt (aktywny)
+
+Etap 9/10 zweryfikowano LIVE: SOURCE `42757412237`, PR `42757418572`, attempt 1, oba wymagane joby SUCCESS dla finalnego SHA `75010b7f2898b8453c829fb811e4d0fa6a185133`, PR #67 zamknięty bez merge. Zatwierdzona linia jest potomkiem v56, nie użyto master.
+
+Nowa gałąź `docs/mpvrex-v32-stage10-final-audit-20261110` od `75010b7f2898b8453c829fb811e4d0fa6a185133`. Zakres: `docs/ai/FINAL_AUDIT.md`, read-only `.github/scripts/mpvrex_final_audit.py`, `test_mpvrex_final_audit.py`, bramka w SOURCE/PR, zmiana struktury checkpointu z `completed=1..9` i `active=10/CI_PENDING`; uaktualniono instrukcje ChatGPT i testy. Bez zmian aplikacji, APK, podpisu i danych użytkownika.
+
+**Status zapisany: CI_PENDING — to nie jest końcowy wynik GitHub Actions.** Przed CODE_VERIFIED sprawdź aktualny pełny HEAD i obydwa niezależne CI SOURCE oraz PR na tym finalnym SHA: run/attempt, wymagane zadania źródła/Android, prawdziwy PR merge checkout. Każdy FAIL napraw w ramach etapu 10. Nie twórz samopotwierdzającego commita wyłącznie do zapisania wyniku CI.

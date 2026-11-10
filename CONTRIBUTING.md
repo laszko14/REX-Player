@@ -170,3 +170,6 @@ The isolated manual-only signed v56 workflow is described in [docs/ai/SAFE_APK.m
 
 ### ChatGPT resume (MPVRex stage 9)
 The canonical start and verification process is in [docs/ai/CHATGPT_INTEGRATION.md](docs/ai/CHATGPT_INTEGRATION.md). Use the GitHub connector for fresh HEAD and CI; `mpvrex_chat_context.py snapshot` is read-only/offline and cannot establish CODE_VERIFIED. CI verifies the SOURCE/PR checkout; APK signing still requires separate authorization.
+
+### MPVRex final V3.2 checks
+See [docs/ai/FINAL_AUDIT.md](docs/ai/FINAL_AUDIT.md). The structural validator and negative regressions are mandatory, in addition to real SOURCE and PR merge CI with Android build, unit tests and lint on the terminal SHA. A valid offline audit is not proof of signed APK or a physical-device test.

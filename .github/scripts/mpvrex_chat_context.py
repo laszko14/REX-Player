@@ -32,6 +32,7 @@ DOCUMENTS = (
     "docs/ai/SOURCE_PR_CI.md",
     "docs/ai/SAFE_APK.md",
     "docs/ai/CHATGPT_INTEGRATION.md",
+    "docs/ai/FINAL_AUDIT.md",
 )
 
 

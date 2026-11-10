@@ -134,14 +134,30 @@
           "Android - build, testy, lint"
         ]
       }
+    },
+    {
+      "stage": 9,
+      "branch": "docs/mpvrex-v32-stage09-chatgpt-integration-20261110",
+      "sha": "75010b7f2898b8453c829fb811e4d0fa6a185133",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42757412237,
+        "attempt": 1,
+        "sha": "75010b7f2898b8453c829fb811e4d0fa6a185133",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
     }
   ],
   "active": {
-    "stage": 9,
-    "branch": "docs/mpvrex-v32-stage09-chatgpt-integration-20261110",
+    "stage": 10,
+    "branch": "docs/mpvrex-v32-stage10-final-audit-20261110",
     "status": "CI_PENDING",
-    "parent_sha": "bf9190b3ebad11a6a31027eaa7ad0b47df77a105",
-    "next_action": "Verify stage 9 SOURCE push and independent PR merge CI on the final SHA; do not start stage 10 until both required jobs succeed.",
-    "summary": "Implement read-only ChatGPT recovery manifest, strict checkout/CI evidence checks, negative regressions and CI integration, without signed APK."
+    "parent_sha": "75010b7f2898b8453c829fb811e4d0fa6a185133",
+    "next_action": "Check stage 10 final full HEAD SHA and independent SOURCE plus PR merge CI (both mandatory jobs SUCCESS); no APK or merge.",
+    "summary": "Final offline ten-stage integrity audit, regression tests, source isolation and factual final report."
   }
 }
