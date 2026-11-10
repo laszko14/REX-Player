@@ -10,7 +10,7 @@
 
 ## Staged modernization plan (user-approved: 10 stages)
 1. Establish v56 working branch and foundational GitHub instructions — **implemented**; mandatory workflow passed on the first implementation commit; recheck the new checkpoint commit's CI before recording stage 1 as fully verified.
-2. Preflight: branch/SHA/source-of-truth enforcement.
+2. Preflight: branch/SHA/source-of-truth enforcement — **implemented in stage-2 work branch; required final CI pending verification**.
 3. Persistent checkpoints and resumption.
 4. Error case registry and deduplication.
 5. Systematic debugging and regression workflow.
@@ -30,3 +30,12 @@
 - First implementation commit: `9e6ab57f80adb97002867fcaf318686b339b0cc1`; Actions run [42728386046](https://github.com/laszko14/REX-Player/actions/runs/42728386046), attempt 1, **completed/success on that SHA**. Required `YAML, Python i Lua` and `Android - build, testy, lint` jobs: **success**. APK signing job: **skipped by design**. No APK or device test.
 - This handoff update produces a **new Git commit**. Its final full SHA and the outcome of required CI **must be checked live on that new exact SHA** before declaring `CODE_VERIFIED`. Never treat previous run as verification of the new commit.
 - On a verified stage-1 terminal SHA: continue only after all required CI gates are green, then begin stage **2/10** with a new explicit instruction.
+
+## Stage 2/10 — automated preflight (2026-11-10)
+
+- Starting point: stage-1 verified SHA \`99d19f3daaeba5c037a947b508e481fac2c82088\`, Actions [42729647590](https://github.com/laszko14/REX-Player/actions/runs/42729647590), **completed/success** on exact SHA, sources+Android PASS, signing intentionally skipped.
+- Branch: \`docs/mpvrex-v32-stage02-preflight-20261110\`, created directly from stage-1 final commit.
+- Scope: \`docs/ai/STARTUP_PREFLIGHT.md\`, read-only script \`.github/scripts/mpvrex_preflight.py\`, 12 unit test cases, \`AGENTS.md\` and GitHub Actions source job. No app/audio, Secrets, signing, release, merge or APK changes.
+- Mandatory checks: preflight on actual GitHub checkout, positive/negative unit tests, workflow syntax/Python, localization, and Android assembleDebug, testDebugUnitTest, lintDebug. On a new SHA inspect live GitHub Actions run/attempt/jobs.
+- Final CI result for this checkpoint's own commit: **NOT KNOWN UNTIL LIVE FINAL-SHA CHECK**. This is not PASS. Before stage 3: verify ALL required checks on terminal full SHA, do not rely on earlier green runs.
+- Next after successful verification: stage **3/10** — persistent checkpoint policy with safe resumption.

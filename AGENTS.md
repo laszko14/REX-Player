@@ -14,6 +14,15 @@ The installed and owner-approved baseline is **MPV Alpha v56**, branch `build/pl
 - For media history and visual states, consult `docs/media_states_architecture.md`.
 - `docs/testing_roadmap.md` describes future ambitions as well as existing tests. Do **not** assume Detekt, Ktlint, Kover, or screenshot tests are installed without checking Gradle configuration.
 
+## V3.2 preflight (stage 2)
+
+Read [`docs/ai/STARTUP_PREFLIGHT.md`](docs/ai/STARTUP_PREFLIGHT.md)
+and run the read-only `.github/scripts/mpvrex_preflight.py` **before editing**
+a clean full-history checkout. It verifies exact checked-out SHA, approved
+v56 ancestry, branch, origin, clean tree and tracked documentation. It cannot
+replace a **live GitHub branch/CI lookup** or prove that a document was read.
+In CI, `--ci` compares the trusted push context and SHA. Never bypass FAIL.
+
 ## Repository landmarks
 - Main Android app: `app/src/main/kotlin/xyz/mpv/rex/` (Kotlin + Jetpack Compose).
 - Player and its managers: `ui/player/`; player controls: `ui/player/controls/`.

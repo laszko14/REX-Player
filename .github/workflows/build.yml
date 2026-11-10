@@ -34,11 +34,21 @@ jobs:
     steps:
       - name: Pobierz kod
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Python 3.12
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: MPVRex V3.2 - sprawdz galaz SHA i dokumenty
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
+        run: |
+          python3 .github/scripts/mpvrex_preflight.py \
+            --ci \
+            --expected-branch "$GITHUB_REF_NAME" \
+            --expected-sha "$GITHUB_SHA"
 
       - name: Zainstaluj parser YAML
         run: python3 -m pip install --disable-pip-version-check "PyYAML>=6,<7"
