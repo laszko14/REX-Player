@@ -70,6 +70,45 @@
           "sha": "fcecf8584e40e6dfae8f334e690b4b2832651dd0"
         }
       ]
+    },
+    {
+      "id": "MPV-ERR-0003",
+      "fingerprint": "2bf6e4c858df316d19e8a421a36cf9510a62c1a36360f518de0fe5321f9d4bce",
+      "stage": 8,
+      "category": "test_fixture",
+      "component": "safe_apk_tests",
+      "signature": "signed_apk_step_index_run_key",
+      "symptom": "Stage 8 SOURCE CI failed in test_tag_push_rejected with KeyError run",
+      "condition": "The signed APK pipeline gained a final key cleanup step after the upload-artifact action",
+      "confidence": "confirmed",
+      "root_cause": "The negative test selected the upload-artifact action by positional index and incorrectly assumed that it had a run script",
+      "fix": "Select the verification shell step by its stable command marker before injecting a forbidden Git push",
+      "diagnostic_tests": [
+        "test_tag_push_rejected"
+      ],
+      "regression_test": "test_tag_push_rejected",
+      "status": "FIXED_UNVERIFIED",
+      "branch": "docs/mpvrex-v32-stage08-safe-apk-20261110",
+      "sha": "ac48d6d7d5e1cf6ed328804558d565832e1c7600",
+      "ci": {
+        "status": "FAIL",
+        "run_id": 42754585245,
+        "attempt": 1
+      },
+      "observations": [
+        {
+          "event_key": "stage08-apk-fixture-run42754519129",
+          "date": "2026-11-10",
+          "stage": 8,
+          "sha": "835a267c257b59c49c66c9be0c9b86e242bd4a69"
+        },
+        {
+          "event_key": "stage08-apk-fixture-run42754585245",
+          "date": "2026-11-10",
+          "stage": 8,
+          "sha": "ac48d6d7d5e1cf6ed328804558d565832e1c7600"
+        }
+      ]
     }
   ]
 }

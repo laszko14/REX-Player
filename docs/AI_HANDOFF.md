@@ -82,3 +82,7 @@ Etap 7/10 SOURCE/PR CI potwierdzono na żywo: pełny SHA `20e9894e1ea6c60df858be
 Zadanie obejmuje `docs/ai/SAFE_APK.md`, fail-closed `.github/scripts/mpvrex_apk.py`, negatywne testy `test_mpvrex_apk.py`, osobny job `signed_v56_apk` w `.github/workflows/build.yml` i bramkę jakości, bez zmian aplikacji i klucza. Nowy job może działać wyłącznie przy manualnym `workflow_dispatch` właściciela, jawnej dodatkowej autoryzacji, dokładnym SHA i wersji; zwykły push/PR nie podpisuje. Historyczny master ma odrębny workflow i nie jest bazą v56.
 
 **Snapshot w commicie: CI_PENDING, nie live PASS.** Zweryfikuj na końcowym SHA SOURCE i osobne PR CI (merge checkout), oba wymagane joby. Realne podpisanie APK wymaga odrębnej zgody i potwierdzenia dostępności dispatchu na właściwej gałęzi; bez tego nie deklaruj APK_VERIFIED. Nie twórz tagu ani release, nie wykonuj merge ani testu urządzenia. Następny etap 9/10 wyłącznie po ukończeniu 8 i kolejnej komendzie DALEJ.
+
+### Etap 8 — poprawka testu negatywnego (MPV-ERR-0003)
+
+SOURCE runy `42754519129` oraz `42754585245` zakończyły się FAIL w `test_tag_push_rejected`: test wybierał akcję upload-artifact indeksowo i próbował użyć nieistniejącego pola `run` (KeyError). Potwierdzono z logów obu uruchomień. Poprawiono fixture przez wybór kroku weryfikacji po komendzie, bez osłabienia kontroli; test diagnostyczny i regresyjny `test_tag_push_rejected`. Wynik końcowego CI nowego SHA trzeba sprawdzić osobno.

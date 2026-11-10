@@ -147,7 +147,9 @@ class SafeAPKTests(unittest.TestCase):
 
     def test_tag_push_rejected(self):
         wf = copy.deepcopy(self.workflow)
-        wf["jobs"]["signed_v56_apk"]["steps"][-2]["run"] += "\ngit push origin refs/tags/unsafe"
+        verify = next(s for s in wf["jobs"]["signed_v56_apk"]["steps"]
+                      if "mpvrex_apk.py verify --ci" in str(s.get("run", "")))
+        verify["run"] += "\ngit push origin refs/tags/unsafe"
         with self.assertRaisesRegex(APKError, "push"):
             validate_workflow(wf)
 
