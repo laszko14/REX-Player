@@ -107,6 +107,12 @@
           "date": "2026-11-10",
           "stage": 8,
           "sha": "ac48d6d7d5e1cf6ed328804558d565832e1c7600"
+        },
+        {
+          "event_key": "stage08-apk-fixture-pr42754605827",
+          "date": "2026-11-10",
+          "stage": 8,
+          "sha": "ac48d6d7d5e1cf6ed328804558d565832e1c7600"
         }
       ]
     }

@@ -15,7 +15,6 @@ import subprocess
 import sys
 import zipfile
 
-import yaml
 
 REPO = "laszko14/REX-Player"
 BASE = "74b059ab0d2c5492451c42f88ff993128a2e45c9"
@@ -199,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.action == "workflow":
             ensure(not args.ci, "Workflow check is offline")
+            import yaml  # Only offline validation requires PyYAML; signing runner does not.
             with open(Path(args.root) / ".github/workflows/build.yml", encoding="utf-8") as f:
                 validate_workflow(yaml.safe_load(f))
             print("SAFE_APK_WORKFLOW_PASS (offline only)")
@@ -211,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 print("V56_SIGNING_REQUEST_AUTHORIZED SHA=" + data["sha"])
         return 0
-    except (OSError, ValueError, subprocess.CalledProcessError, yaml.YAMLError,
+    except (OSError, ValueError, subprocess.CalledProcessError,
             zipfile.BadZipFile, KeyError) as exc:
         print("SAFE_APK_FAIL: " + str(exc), file=sys.stderr)
         return 1

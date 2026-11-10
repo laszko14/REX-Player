@@ -85,4 +85,4 @@ Zadanie obejmuje `docs/ai/SAFE_APK.md`, fail-closed `.github/scripts/mpvrex_apk.
 
 ### Etap 8 — poprawka testu negatywnego (MPV-ERR-0003)
 
-SOURCE runy `42754519129` oraz `42754585245` zakończyły się FAIL w `test_tag_push_rejected`: test wybierał akcję upload-artifact indeksowo i próbował użyć nieistniejącego pola `run` (KeyError). Potwierdzono z logów obu uruchomień. Poprawiono fixture przez wybór kroku weryfikacji po komendzie, bez osłabienia kontroli; test diagnostyczny i regresyjny `test_tag_push_rejected`. Wynik końcowego CI nowego SHA trzeba sprawdzić osobno.
+SOURCE runy `42754519129` i `42754585245` oraz PR run `42754605827` zakończyły się FAIL w `test_tag_push_rejected`: test wybierał akcję upload-artifact indeksowo i próbował użyć nieistniejącego pola `run` (KeyError). Potwierdzono z logów obu uruchomień. Poprawiono fixture przez wybór kroku weryfikacji po komendzie, bez osłabienia kontroli; test diagnostyczny i regresyjny `test_tag_push_rejected`. Wynik końcowego CI nowego SHA trzeba sprawdzić osobno.
