@@ -3,5 +3,39 @@
   "project": "MPVRex / MPV Alpha",
   "repository": "laszko14/REX-Player",
   "approved_baseline_sha": "74b059ab0d2c5492451c42f88ff993128a2e45c9",
-  "cases": []
+  "cases": [
+    {
+      "id": "MPV-ERR-0001",
+      "fingerprint": "6e6932fc15ed7f46df23efe9f15539d419ae94f5ea4a7fc9ca46c719b513c271",
+      "stage": 4,
+      "category": "test_fixture",
+      "component": "checkpoint",
+      "signature": "active_stage_fixture_after_promotion",
+      "symptom": "Negative checkpoint test did not raise after active stage was promoted to 4",
+      "condition": "Stage 3 entered completed history, making stage 4 the valid active stage",
+      "confidence": "confirmed",
+      "root_cause": "The negative test fixture still assigned stage 4, equal to the newly valid active stage",
+      "fix": "Change the intentionally invalid active-stage fixture from 4 to 5",
+      "diagnostic_tests": [
+        "test_active_stage_must_follow_verified"
+      ],
+      "regression_test": "test_active_stage_must_follow_verified",
+      "status": "FIXED_UNVERIFIED",
+      "branch": "docs/mpvrex-v32-stage04-error-registry-20261110",
+      "sha": "b78af59cec876503544a5cd5258159b9c0f013e0",
+      "ci": {
+        "status": "FAIL",
+        "run_id": 42742959215,
+        "attempt": 1
+      },
+      "observations": [
+        {
+          "event_key": "stage04-checkpoint-fixture-run42742959215",
+          "date": "2026-11-10",
+          "stage": 4,
+          "sha": "b78af59cec876503544a5cd5258159b9c0f013e0"
+        }
+      ]
+    }
+  ]
 }

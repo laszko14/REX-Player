@@ -23,6 +23,12 @@ Punkt wyjścia: 002215acc5decc8d25c93f7bd150666a0a9e46b7.
 Zakres: wersjonowany JSON, schemat i walidacja, fingerprinty, wykrywanie powtórzeń, chroniony lokalny zapis, statusy hipoteza/potwierdzenie/ponowne wystąpienie, testy pozytywne i negatywne, odczyt w GitHub Actions. Nie wprowadzono żadnych domniemanych błędów do rejestru: początkowo jest pusty. To nie jest jeszcze automatyczna telemetria ani autonomiczne pobieranie logów.
 **Snapshot active=CI_PENDING oznacza stan zapisany przed zakończeniem własnego CI. Nie jest potwierdzeniem sukcesu ani dowodem, że CI nadal trwa po zakończeniu runu.**
 
+## Zarejestrowany błąd i naprawa podczas etapu 4
+- MPV-ERR-0001: regresja fixture testu negatywnego checkpointu po przejściu active 3 → 4.
+- Pierwszy run 42742959215, attempt 1, SHA b78af59cec876503544a5cd5258159b9c0f013e0: SOURCE FAIL tylko w test_active_stage_must_follow_verified; Android skipped wskutek zależności.
+- Przyczyna potwierdzona logiem: fixture ustawiał 4, teraz prawidłowy aktywny etap; test musi ustawiać 5, by sprawdzić odrzucenie.
+- Poprawiono fixture. Rejestr zachowuje FIXED_UNVERIFIED i FAIL historycznego runu; wynik następnego CI jest zawsze weryfikowany na żywo, a nowy wpis nie udaje przyszłego PASS.
+
 ## Wymagana końcowa kontrola etapu 4
 1. Odczytaj live HEAD gałęzi i sprawdź, że pochodzi od zatwierdzonej v56.
 2. Zweryfikuj workflow na dokładnym końcowym SHA, attempt, wymagany job YAML/Python/Lua (w tym preflight, checkpoint, nowy rejestr i testy) oraz Android build, testy jednostkowe, Lint. Oba joby muszą zakończyć się SUCCESS.

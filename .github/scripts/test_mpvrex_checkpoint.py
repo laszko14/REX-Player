@@ -68,7 +68,7 @@ class CheckpointTests(unittest.TestCase):
 
     def test_active_stage_must_follow_verified(self):
         v = self.new()
-        v["active"]["stage"] = 4
+        v["active"]["stage"] = 5
         with self.assertRaisesRegex(CheckpointError, "immediately"):
             validate(v)
 
