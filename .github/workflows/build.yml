@@ -345,7 +345,7 @@ jobs:
   signed_v56_apk:
     name: MPV Alpha v56 - prywatny podpis po osobnej zgodzie
     # Manual-only route, never automatic source/PR signing.
-    if: \${{ github.event_name == 'workflow_dispatch' && github.repository == 'laszko14/REX-Player' && github.actor == 'laszko14' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') && inputs.approval == 'SIGN_MPV_ALPHA_V56' }}
+    if: ${{ github.event_name == 'workflow_dispatch' && github.repository == 'laszko14/REX-Player' && github.actor == 'laszko14' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') && inputs.approval == 'SIGN_MPV_ALPHA_V56' }}
     needs: sources
     runs-on: ubuntu-latest
     timeout-minutes: 70
@@ -362,10 +362,10 @@ jobs:
 
       - name: Fail closed - authorize source, owner, version and lineage
         env:
-          APPROVAL: \${{ inputs.approval }}
-          SOURCE_SHA: \${{ inputs.source_sha }}
-          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
-          VERSION_NAME: \${{ inputs.version_name }}
+          APPROVAL: ${{ inputs.approval }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION_CODE_BASE: ${{ inputs.version_code_base }}
+          VERSION_NAME: ${{ inputs.version_name }}
         run: python3 .github/scripts/mpvrex_apk.py authorize --ci
 
       - name: Java 17
@@ -392,15 +392,15 @@ jobs:
       - name: Restore approved existing keystore only after tests
         shell: bash
         env:
-          MPV_ALPHA_KEYSTORE_BASE64: \${{ secrets.MPV_ALPHA_KEYSTORE_BASE64 }}
-          MPV_ALPHA_KEYSTORE_PASSWORD: \${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
-          MPV_ALPHA_KEY_ALIAS: \${{ secrets.MPV_ALPHA_KEY_ALIAS }}
-          MPV_ALPHA_KEY_PASSWORD: \${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+          MPV_ALPHA_KEYSTORE_BASE64: ${{ secrets.MPV_ALPHA_KEYSTORE_BASE64 }}
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
         run: |
           set -euo pipefail
           umask 077
           for name in MPV_ALPHA_KEYSTORE_BASE64 MPV_ALPHA_KEYSTORE_PASSWORD MPV_ALPHA_KEY_ALIAS MPV_ALPHA_KEY_PASSWORD; do
-            [[ -n "\${!name}" ]] || { echo "::error::Missing approved signing secret: $name"; exit 1; }
+            [[ -n "${!name}" ]] || { echo "::error::Missing approved signing secret: $name"; exit 1; }
           done
           mkdir -p "$RUNNER_TEMP/mpvrex-v56-signing"
           printf '%s' "$MPV_ALPHA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mpvrex-v56-signing/approved.jks"
@@ -409,11 +409,11 @@ jobs:
 
       - name: Assemble exactly one signed debug ARM64 APK
         env:
-          MPV_ALPHA_KEYSTORE_PASSWORD: \${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
-          MPV_ALPHA_KEY_ALIAS: \${{ secrets.MPV_ALPHA_KEY_ALIAS }}
-          MPV_ALPHA_KEY_PASSWORD: \${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
-          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
-          VERSION_NAME: \${{ inputs.version_name }}
+          MPV_ALPHA_KEYSTORE_PASSWORD: ${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: ${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: ${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+          VERSION_CODE_BASE: ${{ inputs.version_code_base }}
+          VERSION_NAME: ${{ inputs.version_name }}
         shell: bash
         run: |
           set -euo pipefail
@@ -424,10 +424,10 @@ jobs:
       - name: Verify certificate, package, version, ABI and SHA
         id: apk
         env:
-          APPROVAL: \${{ inputs.approval }}
-          SOURCE_SHA: \${{ inputs.source_sha }}
-          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
-          VERSION_NAME: \${{ inputs.version_name }}
+          APPROVAL: ${{ inputs.approval }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+          VERSION_CODE_BASE: ${{ inputs.version_code_base }}
+          VERSION_NAME: ${{ inputs.version_name }}
         run: python3 .github/scripts/mpvrex_apk.py verify --ci
 
       - name: Upload private APK only after verification

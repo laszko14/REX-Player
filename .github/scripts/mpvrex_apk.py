@@ -24,7 +24,7 @@ BRANCH_PREFIX = "refs/heads/docs/mpvrex-v32-"
 SHA_RE = re.compile(r"[0-9a-f]{40}\Z")
 VERSION_RE = re.compile(r"v56\.[1-9][0-9]*\Z")
 MAX_BASE_CODE = 214748364
-SIGN_IF = "\${{ github.event_name == 'workflow_dispatch' && github.repository == 'laszko14/REX-Player' && github.actor == 'laszko14' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') && inputs.approval == 'SIGN_MPV_ALPHA_V56' }}"
+SIGN_IF = "${{ github.event_name == 'workflow_dispatch' && github.repository == 'laszko14/REX-Player' && github.actor == 'laszko14' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') && inputs.approval == 'SIGN_MPV_ALPHA_V56' }}"
 REQUIRED_INPUTS = ("approval", "source_sha", "version_code_base", "version_name")
 
 

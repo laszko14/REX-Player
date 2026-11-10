@@ -114,7 +114,7 @@ class SafeAPKTests(unittest.TestCase):
 
     def test_automatic_signing_guard_rejected(self):
         wf = copy.deepcopy(self.workflow)
-        wf["jobs"]["signed_v56_apk"]["if"] = "\${{ github.event_name == 'push' }}"
+        wf["jobs"]["signed_v56_apk"]["if"] = "${{ github.event_name == 'push' }}"
         with self.assertRaisesRegex(APKError, "guard"):
             validate_workflow(wf)
 
