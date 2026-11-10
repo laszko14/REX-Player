@@ -29,6 +29,7 @@ REQUIRED_DOCS = {
     "docs/ai/ERROR_LEARNING.md": ("ERROR_CASES.json", "DEBUGGING_PROTOCOL.md"),
     "docs/ai/DEBUGGING_PROTOCOL.md": ("SYSTEMATIC DEBUGGING", "SOURCE", "Android"),
     "docs/ai/SOURCE_PR_CI.md": ("## SOURCE CI", "## PR CI", "## Kontrole", "## Ograniczenia"),
+    "docs/ai/CHATGPT_INTEGRATION.md": ("## Źródła prawdy", "## Protokół startu", "## Kontrole i testy", "## Ograniczenia"),
     "docs/ai/SAFE_APK.md": ("## Zakres", "## Autoryzacja", "## Kontrole", "## Testy", "## Status"),
     QUALITY_DOC: ("## Zakres", "## Bramki", "## Testy", "## Ograniczenia",
                   "CI_PENDING", "CODE_VERIFIED", "NOT_TESTED"),
@@ -53,6 +54,13 @@ REQUIRED_TESTS = {
         "test_missing_android_job_rejected",
         "test_missing_regression_test_rejected",
         "test_missing_quality_gate_step_rejected",
+    },
+    "test_mpvrex_chat_context.py": {
+        "test_canonical_snapshot_never_claims_live_pass",
+        "test_source_ci_stale_sha_rejected",
+        "test_evidence_skipped_android_rejected",
+        "test_evidence_incorrect_pr_merge_parents_rejected",
+        "test_provided_consistent_evidence_is_not_authentication",
     },
     "test_mpvrex_apk.py": {
         "test_authorized_manual_request",
@@ -257,6 +265,14 @@ def validate_inputs(state: dict, cases: dict, docs: dict, workflow: dict,
     if state["active"]["stage"] >= 8:
         from mpvrex_apk import validate_workflow as validate_apk_workflow
         validate_apk_workflow(workflow)
+    if state["active"]["stage"] >= 9:
+        steps = steps_for(workflow, "sources")
+        context_steps = [s for s in steps if str(s.get("run", "")).strip() ==
+                         "python3 .github/scripts/mpvrex_chat_context.py ci-check"]
+        require(len(context_steps) == 1 and
+                str(context_steps[0].get("if", "")).strip() ==
+                "${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-')) || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'docs/mpvrex-v32-') && github.base_ref != 'master') }}",
+                "Stage-9 ChatGPT checkout evidence gate missing or bypassed")
     return {
         "stage": state["active"]["stage"],
         "active_status": state["active"]["status"],

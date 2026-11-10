@@ -86,3 +86,11 @@ Zadanie obejmuje `docs/ai/SAFE_APK.md`, fail-closed `.github/scripts/mpvrex_apk.
 ### Etap 8 — poprawka testu negatywnego (MPV-ERR-0003)
 
 SOURCE runy `42754519129` i `42754585245` oraz PR run `42754605827` zakończyły się FAIL w `test_tag_push_rejected`: test wybierał akcję upload-artifact indeksowo i próbował użyć nieistniejącego pola `run` (KeyError). Potwierdzono z logów obu uruchomień. Poprawiono fixture przez wybór kroku weryfikacji po komendzie, bez osłabienia kontroli; test diagnostyczny i regresyjny `test_tag_push_rejected`. Wynik końcowego CI nowego SHA trzeba sprawdzić osobno.
+
+## Etap 9/10 — integracja ChatGPT (aktywny)
+
+Etap 8/10 CODE_VERIFIED na pełnym SHA `bf9190b3ebad11a6a31027eaa7ad0b47df77a105`: SOURCE push run `42754873328`, attempt 1, SUCCESS (YAML/Python/Lua i Android); niezależne PR CI run `42754880184`, attempt 1, SUCCESS, testowy PR #66 zamknięty bez merge. W obu runach podpisany APK skipped. Podpis nie był autoryzowany, urządzenie nie zostało przetestowane. Punkt wyjścia: ta zatwierdzona linia v56, nie rozbieżny master.
+
+Gałąź etapu 9: `docs/mpvrex-v32-stage09-chatgpt-integration-20261110`, bezpośredni rodzic `bf9190b3ebad11a6a31027eaa7ad0b47df77a105`. Zakres: `docs/ai/CHATGPT_INTEGRATION.md`, `.github/scripts/mpvrex_chat_context.py`, negatywne testy `test_mpvrex_chat_context.py`, rozszerzenie bramki jakości i odrębna kontrola kontekstu w SOURCE/PR CI. Weryfikacja lokalnego checkoutu ani JSON z danymi CI nie zastępują sprawdzania rzeczywistych runów z konektora. Bez zmian odtwarzacza, APK, certyfikatu lub GitHub Secrets.
+
+**Status zapisany w commicie: CI_PENDING, nie oznacza rzeczywistego wyniku CI.** Przed ogłoszeniem CODE_VERIFIED odczytaj live HEAD, run/attempt SOURCE i PR oraz oba obowiązkowe joby na dokładnym końcowym SHA, a dla PR również merge checkout. Nie zaczynaj 10/10 bez zamknięcia wymaganego CI i polecenia DALEJ. 

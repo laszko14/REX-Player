@@ -167,3 +167,6 @@ Saving changes updates:
 
 ### MPVRex V3.2 stage 8 — signed v56 build
 The isolated manual-only signed v56 workflow is described in [docs/ai/SAFE_APK.md](docs/ai/SAFE_APK.md). Its source SHA, owner authorization, versionCode, package, certificate and ARM64 output must be checked before distribution. Successful SOURCE/PR CI does not authorize a signed build or prove installation on a device.
+
+### ChatGPT resume (MPVRex stage 9)
+The canonical start and verification process is in [docs/ai/CHATGPT_INTEGRATION.md](docs/ai/CHATGPT_INTEGRATION.md). Use the GitHub connector for fresh HEAD and CI; `mpvrex_chat_context.py snapshot` is read-only/offline and cannot establish CODE_VERIFIED. CI verifies the SOURCE/PR checkout; APK signing still requires separate authorization.

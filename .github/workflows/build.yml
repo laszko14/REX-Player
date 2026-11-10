@@ -96,6 +96,10 @@ jobs:
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
         run: python3 .github/scripts/mpvrex_quality.py validate
 
+      - name: MPVRex ChatGPT - verify current task checkout
+        if: ${{ (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-')) || (github.event_name == 'pull_request' && startsWith(github.head_ref, 'docs/mpvrex-v32-') && github.base_ref != 'master') }}
+        run: python3 .github/scripts/mpvrex_chat_context.py ci-check
+
       - name: Sprawdz skladnie workflow i osadzonego Pythona
         run: python3 .github/scripts/check_workflows.py
 

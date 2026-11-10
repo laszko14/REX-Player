@@ -89,3 +89,6 @@ On task branch push, SOURCE CI checks the exact final branch HEAD SHA and both r
 
 ## Safe MPV Alpha v56 APK (stage 8)
 See [docs/ai/SAFE_APK.md](docs/ai/SAFE_APK.md). The separate `signed_v56_apk` job is gated to explicit manual owner dispatch, exact approved SHA and version; run `python3 .github/scripts/mpvrex_apk.py workflow` and the full regression suite. Ordinary push and PR must never sign, tag or publish. The existing master signing job is historical and NOT the owner-approved v56 path. A manual approval for actual signing remains mandatory even after all code/CI checks pass.
+
+## ChatGPT resume integration (stage 9)
+Follow [docs/ai/CHATGPT_INTEGRATION.md](docs/ai/CHATGPT_INTEGRATION.md). Read the live task branch and full HEAD through the direct GitHub connector, then all required instructions at that SHA. The read-only `.github/scripts/mpvrex_chat_context.py` provides a local snapshot and validates CI checkout/evidence consistency but does not query GitHub, authenticate provided records or claim completed CI. Do not trust stored CI_PENDING or a green historical SHA as the current outcome. In CI, require the stage-9 checkout guard in both SOURCE push and PR merge; without actual required SOURCE and PR CI job results, report CI_PENDING/NOT_TESTED, never CODE_VERIFIED. The installed MPV Alpha v56 and signing identity remain unchanged.
