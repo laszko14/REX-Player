@@ -9,7 +9,7 @@
 - Do **not** adopt divergent `master` as product baseline, migrate historical Auto Audio code, merge PRs, modify playback or sign an APK.
 
 ## Staged modernization plan (user-approved: 10 stages)
-1. Establish v56 working branch and foundational GitHub instructions — **changes staged in this branch; verify live final commit and CI before marking complete**.
+1. Establish v56 working branch and foundational GitHub instructions — **implemented**; mandatory workflow passed on the first implementation commit; recheck the new checkpoint commit's CI before recording stage 1 as fully verified.
 2. Preflight: branch/SHA/source-of-truth enforcement.
 3. Persistent checkpoints and resumption.
 4. Error case registry and deduplication.
@@ -27,5 +27,6 @@
 
 ## Evidence and next decision
 - Initial basis SHA: `74b059ab0d2c5492451c42f88ff993128a2e45c9`.
-- Final SHA / workflow runs / failures: **not embedded here yet**. Read live GitHub and report actual state. Do not treat this omission as PASS.
+- First implementation commit: `9e6ab57f80adb97002867fcaf318686b339b0cc1`; Actions run [42728386046](https://github.com/laszko14/REX-Player/actions/runs/42728386046), attempt 1, **completed/success on that SHA**. Required `YAML, Python i Lua` and `Android - build, testy, lint` jobs: **success**. APK signing job: **skipped by design**. No APK or device test.
+- This handoff update produces a **new Git commit**. Its final full SHA and the outcome of required CI **must be checked live on that new exact SHA** before declaring `CODE_VERIFIED`. Never treat previous run as verification of the new commit.
 - On a verified stage-1 terminal SHA: continue only after all required CI gates are green, then begin stage **2/10** with a new explicit instruction.
