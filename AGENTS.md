@@ -43,6 +43,10 @@ For each new or recurring failure, follow [docs/ai/DEBUGGING_PROTOCOL.md](docs/a
 
 Run the offline, read-only structural contract `python3 .github/scripts/mpvrex_quality.py validate` according to [docs/ai/QUALITY_GATES.md](docs/ai/QUALITY_GATES.md). It checks the canonical checkpoint and error registry, required documentation, active task/parent SHA, asserting regressions, SOURCE/Android CI wiring and guards against bypassing tests. The gate must actually fail for missing evidence, tests, documentation or jobs; never lower thresholds, skip required checks or equate the gate's offline PASS with live GitHub CI success. Inspect the final full HEAD SHA and both mandatory source/Android jobs live before reporting CODE_VERIFIED. This policy does not authorize signed APKs, release, merge or destructive changes.
 
+## SOURCE/PR CI (stage 7)
+
+On task branch push, SOURCE CI checks the exact final branch HEAD SHA and both required SOURCE/Android jobs. For pull requests targeting the owner-approved MPV Alpha v56 documentation line or historical v56 base, PR CI must separately verify the GitHub-generated merge checkout: GITHUB_SHA is the PR merge commit, not the PR's head SHA. See [docs/ai/SOURCE_PR_CI.md](docs/ai/SOURCE_PR_CI.md); use the read-only `mpvrex_pr_ci.py validate --ci` in SOURCE and Android PR jobs. Do not treat a green push workflow as proof that the PR merge checkout passed. PRs targeting divergent master retain their historical contract. Never use pull_request_target, expose signing secrets, force-push, merge, or create signed APKs without explicit approval.
+
 ## Repository landmarks
 - Main Android app: `app/src/main/kotlin/xyz/mpv/rex/` (Kotlin + Jetpack Compose).
 - Player and its managers: `ui/player/`; player controls: `ui/player/controls/`.

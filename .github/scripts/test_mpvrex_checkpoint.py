@@ -87,6 +87,13 @@ class CheckpointTests(unittest.TestCase):
         self.assertEqual(1, last["evidence"]["attempt"])
         self.assertEqual("success", last["evidence"]["result"])
 
+    def test_stage6_verified_history_preserved(self):
+        entry = next(x for x in self.new()["completed"] if x["stage"] == 6)
+        self.assertEqual("50170ae71ddbb65993260f0c36bd8a1673f30d3c", entry["sha"])
+        self.assertEqual(42748935978, entry["evidence"]["run_id"])
+        self.assertEqual(1, entry["evidence"]["attempt"])
+        self.assertEqual("success", entry["evidence"]["result"])
+
     def test_stage_parent_matches_last_sha(self):
         v = self.new()
         v["active"]["parent_sha"] = "f"*40

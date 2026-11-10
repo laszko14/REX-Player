@@ -2,10 +2,9 @@ name: MPV Alpha - kontrola i podpisany APK na zadanie
 
 on:
   pull_request:
-    branches: [master]
+    branches: [master, "docs/mpvrex-v32-*", "build/player-transparency-v56"]
   push:
-    # Minimal source CI bootstrap for the owner-selected v56 documentation line.
-    # Stage 7 will review and consolidate SOURCE/PR quality gates.
+    # SOURCE push for the selected v56 docs line; PR checkout tested separately.
     branches: [master, "docs/mpvrex-v32-*"]
     paths:
       - "AGENTS.md"
@@ -52,6 +51,17 @@ jobs:
 
       - name: Zainstaluj parser YAML
         run: python3 -m pip install --disable-pip-version-check "PyYAML>=6,<7"
+
+      - name: MPVRex PR CI - validate merge provenance and quality
+        if: ${{ github.event_name == 'pull_request' && github.base_ref != 'master' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 .github/scripts/mpvrex_pr_ci.py validate --ci
+          python3 .github/scripts/mpvrex_checkpoint.py validate
+          python3 .github/scripts/mpvrex_errors.py validate
+          python3 .github/scripts/mpvrex_debugging.py validate
+          python3 .github/scripts/mpvrex_quality.py validate
 
       - name: MPVRex checkpoint - waliduj rejestr
         if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') }}
@@ -109,6 +119,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: MPVRex PR CI - confirm Android merge checkout
+        if: ${{ github.event_name == 'pull_request' && github.base_ref != 'master' }}
+        run: python3 .github/scripts/mpvrex_pr_ci.py validate --ci
 
       - name: Java 17
         uses: actions/setup-java@v4

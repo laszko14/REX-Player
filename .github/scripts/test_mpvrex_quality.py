@@ -21,8 +21,8 @@ class QualityGateTests(unittest.TestCase):
 
     def test_canonical_quality_pass(self):
         result = validate_project(ROOT)
-        self.assertEqual(6, result["stage"])
-        self.assertEqual(5, result["completed_stages"])
+        self.assertEqual(len(self.inputs[0]["completed"]) + 1, result["stage"])
+        self.assertEqual(len(self.inputs[0]["completed"]), result["completed_stages"])
         self.assertFalse(result["live_ci_verified"])
         self.assertFalse(result["device_verified"])
         self.assertGreaterEqual(result["discovered_asserting_tests"], 10)

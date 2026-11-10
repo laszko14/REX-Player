@@ -39,3 +39,7 @@ Testy negatywne muszą powodować FAIL przy: usuniętym jobie Android, brakując
 Po każdej implementacji sprawdź GitHub HEAD gałęzi, pełny SHA, run, attempt, obydwa wymagane zadania YAML/Python/Lua oraz Android build/testy/lint i ich rzeczywisty status. CI_PENDING oznacza, że trwa, CI_BLOCKED wymaga udokumentowanej przeszkody, NOT_TESTED oznacza brak testu. Wyłącznie kompletne wymagane SUCCESS na **końcowym SHA** pozwala zgłosić CODE_VERIFIED.
 
 W etapie 6 wdrażamy bramki dla istniejącego źródłowego workflow i linii dokumentacyjnej. Pełna modernizacja rozdzielnych SOURCE CI oraz PR CI (inne checkouty i konteksty) pozostaje etapem 7/10. Budowanie i autoryzacja podpisanego APK to dopiero etap 8/10 z osobną zgodą. Używaj bezpośredniego konektora GitHub, a nie zewnętrznych przeglądarek automatyzujących GitHub.
+
+## SOURCE / PR CI — dodatkowa bramka etapu 7
+
+Zasady pełnej weryfikacji znajdują się w [SOURCE_PR_CI.md](SOURCE_PR_CI.md). Po etapie 7 strukturalny walidator jakości wymaga zatwierdzonych triggerów PR do linii v56, obowiązkowej walidacji `refs/pull/NUMBER/merge` i jego dwóch rodziców (base SHA/head SHA), niezależnego checkoutu i kontroli w SOURCE oraz Android, niezmienionego bezpiecznego joba podpisu. Testy negatywne odrzucają head-only checkout, niezweryfikowane PR, pominięte walidatory i wyłączenie kontroli. Prawdziwe `PR CI SUCCESS` wymaga jednak osobnego runu zdarzenia pull_request; lokalny PASS nie jest dowodem GitHub Actions.

@@ -27,6 +27,10 @@ We welcome bug fixes, performance optimizations, and feature enhancements.
   ./gradlew assembleRelease
   ```
 
+#### SOURCE and PR validation on MPV Alpha v56
+
+SOURCE CI runs on `docs/mpvrex-v32-*` push commits. PR CI also supports PRs targeting this family and the historical `build/player-transparency-v56` branch, validating the GitHub merge checkout separately. The unrelated `master` target retains its previous checks. See [docs/ai/SOURCE_PR_CI.md](docs/ai/SOURCE_PR_CI.md) for exact SHA, run/attempt and job checks. A passing push does not prove a PR passed, and neither builds nor the source gate authorize a signed APK.
+
 #### Verification
 JVM unit tests live in `app/src/test/kotlin/`. Pull requests run `:app:assembleDebug`, `:app:testDebugUnitTest`, `:app:lintDebug`, and workflow/Python syntax checks via `.github/workflows/build.yml`. Run these checks locally when possible. These checks do not replace manual verification on a physical Android device or emulator; inspect Android Logcat during playback for errors. For agent-specific guardrails, see [AGENTS.md](AGENTS.md).
 

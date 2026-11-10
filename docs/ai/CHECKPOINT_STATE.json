@@ -86,14 +86,30 @@
           "Android - build, testy, lint"
         ]
       }
+    },
+    {
+      "stage": 6,
+      "branch": "docs/mpvrex-v32-stage06-quality-gates-20261110",
+      "sha": "50170ae71ddbb65993260f0c36bd8a1673f30d3c",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42748935978,
+        "attempt": 1,
+        "sha": "50170ae71ddbb65993260f0c36bd8a1673f30d3c",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
     }
   ],
   "active": {
-    "stage": 6,
-    "branch": "docs/mpvrex-v32-stage06-quality-gates-20261110",
+    "stage": 7,
+    "branch": "docs/mpvrex-v32-stage07-source-pr-ci-20261110",
     "status": "CI_PENDING",
-    "parent_sha": "3d8611e981fe993a1ced867bf7509fa40f92550a",
-    "next_action": "Verify quality-gate positive/negative regression tests and source + Android jobs on final stage-6 SHA.",
-    "summary": "Fail-closed read-only quality gates for documentation, checkpoint consistency, incident regressions and required CI contracts; player and signing unchanged."
+    "parent_sha": "50170ae71ddbb65993260f0c36bd8a1673f30d3c",
+    "next_action": "Check stage 7 SOURCE push CI at final SHA and independent PR merge CI; verify actual run/attempt/source+Android jobs for both contexts.",
+    "summary": "SOURCE/PR CI separation for v56, strict pull_request merge SHA + parent provenance, read-only repo quality checks and negative tests; no player or APK edits."
   }
 }

@@ -28,6 +28,7 @@ REQUIRED_DOCS = {
     "docs/ai/STARTUP_PREFLIGHT.md": ("MPVRex", "SHA"),
     "docs/ai/ERROR_LEARNING.md": ("ERROR_CASES.json", "DEBUGGING_PROTOCOL.md"),
     "docs/ai/DEBUGGING_PROTOCOL.md": ("SYSTEMATIC DEBUGGING", "SOURCE", "Android"),
+    "docs/ai/SOURCE_PR_CI.md": ("## SOURCE CI", "## PR CI", "## Kontrole", "## Ograniczenia"),
     QUALITY_DOC: ("## Zakres", "## Bramki", "## Testy", "## Ograniczenia",
                   "CI_PENDING", "CODE_VERIFIED", "NOT_TESTED"),
 }
@@ -51,6 +52,12 @@ REQUIRED_TESTS = {
         "test_missing_android_job_rejected",
         "test_missing_regression_test_rejected",
         "test_missing_quality_gate_step_rejected",
+    },
+    "test_mpvrex_pr_ci.py": {
+        "test_pr_merge_context_valid",
+        "test_pr_checkout_head_only_rejected",
+        "test_pr_missing_source_checks_rejected",
+        "test_pr_missing_android_merge_verification_rejected",
     },
 }
 # These commands must be actual source CI run commands, not merely comments.
@@ -199,12 +206,15 @@ def check_workflow(workflow: dict) -> None:
     source_scripts = "\n".join(str(x.get("run", "")) for x in source)
     for cmd in REQUIRED_SOURCE_COMMANDS:
         require(cmd in source_scripts, f"Missing source quality command: {cmd}")
-    quality = [x for x in source if "mpvrex_quality.py validate" in str(x.get("run", ""))]
+    quality = [x for x in source if "mpvrex_quality.py validate" in str(x.get("run", ""))
+               and "mpvrex_pr_ci.py validate --ci" not in str(x.get("run", ""))]
     require(len(quality) == 1 and
             str(quality[0].get("if", "")).strip() == DOCS_PUSH_CONDITION,
             "Stage-6 quality gate must run once on docs pushes")
     for x in source:
         command = str(x.get("run", ""))
+        if "mpvrex_pr_ci.py validate --ci" in command:
+            continue  # PR has a dedicated fail-closed contract.
         if any(c in command for c in ("mpvrex_preflight.py", "mpvrex_checkpoint.py validate",
                                      "mpvrex_errors.py validate", "mpvrex_debugging.py validate")):
             require(str(x.get("if", "")).strip() == DOCS_PUSH_CONDITION,
@@ -233,6 +243,9 @@ def validate_inputs(state: dict, cases: dict, docs: dict, workflow: dict,
     check_docs(state, docs)
     check_registry(cases, tests)
     check_workflow(workflow)
+    if state["active"]["stage"] >= 7:
+        from mpvrex_pr_ci import validate_workflow as validate_pr_workflow
+        validate_pr_workflow(workflow)
     return {
         "stage": state["active"]["stage"],
         "active_status": state["active"]["status"],

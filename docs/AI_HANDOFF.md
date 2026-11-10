@@ -64,3 +64,13 @@ Gałąź robocza: `docs/mpvrex-v32-stage06-quality-gates-20261110` (od `3d8611e9
 **Checkpoint w commicie: CI_PENDING (snapshot).** Nie stanowi dowodu końcowego PASS. Przed zgłoszeniem `CODE_VERIFIED` sprawdź rzeczywisty pełny HEAD gałęzi i zakończony run/attempt na tym SHA: job `YAML, Python i Lua` oraz `Android - build, testy, lint` muszą mieć SUCCESS. Na FAIL odczytaj krok i log, napraw przyczynę oraz przetestuj nowy SHA. Nie uruchamiaj etapu 7 bez zweryfikowanego sukcesu.
 
 Po zakończeniu i następnym zatwierdzonym poleceniu **DALEJ**: etap **7/10 — modernizacja SOURCE CI i PR CI**. W tej aktualizacji nie uruchamiano podpisanego APK ani testu na urządzeniu. Historyczne wpisy rejestru błędów zachowują statusy i dawną dokumentację FAIL; nie wprowadzaj fikcyjnych wpisów.
+
+## Etap 7/10 — SOURCE CI i PR CI (aktywny)
+
+Etap 6/10 **CODE_VERIFIED** na pełnym SHA `50170ae71ddbb65993260f0c36bd8a1673f30d3c`: workflow push `42748935978`, attempt 1, źródła i Android SUCCESS; podpisany APK skipped. Sprawdzono ponownie live HEAD i wynik wymaganych jobów przed rozpoczęciem etapu 7.
+
+Gałąź: `docs/mpvrex-v32-stage07-source-pr-ci-20261110`, od `50170ae71ddbb65993260f0c36bd8a1673f30d3c`. Zakres: docs/ai/SOURCE_PR_CI.md, .github/scripts/mpvrex_pr_ci.py, testy pozytywne/negatywne, workflow .github/workflows/build.yml, istniejące bramki jakości i dokumentacja. SOURCE push sprawdza commit zadaniowy, PR sprawdza odrębny merge SHA i dwie gałęzie; nie wolno utożsamiać tych wyników. Nie zmieniono aplikacji, APK, certyfikatu, sekretów, historii ani master.
+
+**Checkpoint w commicie: CI_PENDING, nie live PASS.** Po push sprawdź SOURCE CI na dokładnym finalnym SHA. Dla PR CI zweryfikuj oddzielny prawdziwy run pull_request na konkretnym PR merge SHA i HEAD SHA, oba wymagane joby i attempt. Bez rzeczywistego PR runu zgłoś PR_NOT_TESTED, a nie sukces. Po CI PASS zgłoś CODE_VERIFIED tylko gdy komplet wymaganych kontroli ma potwierdzony wynik. Przy FAIL przeanalizuj log, napraw błąd w tym etapie, sprawdź nowe SHA. Zakaz merge, release i podpisu APK.
+
+Dopiero następne **DALEJ**, po poprawnym zakończeniu etapu 7, rozpocznie etap **8/10 — bezpieczne APK (osobna zgoda na kompilację i podpis)**.
