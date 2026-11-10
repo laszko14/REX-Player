@@ -117,6 +117,15 @@ class CheckoutTests(unittest.TestCase):
         with self.assertRaisesRegex(PreflightError, "--expected-sha"):
             self.check(expected_sha=None, ci_env={})
 
+class MarkdownSourceTests(unittest.TestCase):
+    def test_stage2_documents_have_real_markdown_code_markup(self):
+        repo = Path(__file__).resolve().parents[2]
+        escaped = chr(92) + chr(96)
+        for path in ("docs/AI_HANDOFF.md", "docs/ai/STARTUP_PREFLIGHT.md"):
+            with self.subTest(path=path):
+                text = (repo / path).read_text(encoding="utf-8")
+                self.assertNotIn(escaped, text)
+
 
 if __name__ == "__main__":
     unittest.main()

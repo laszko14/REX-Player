@@ -33,9 +33,9 @@
 
 ## Stage 2/10 — automated preflight (2026-11-10)
 
-- Starting point: stage-1 verified SHA \`99d19f3daaeba5c037a947b508e481fac2c82088\`, Actions [42729647590](https://github.com/laszko14/REX-Player/actions/runs/42729647590), **completed/success** on exact SHA, sources+Android PASS, signing intentionally skipped.
-- Branch: \`docs/mpvrex-v32-stage02-preflight-20261110\`, created directly from stage-1 final commit.
-- Scope: \`docs/ai/STARTUP_PREFLIGHT.md\`, read-only script \`.github/scripts/mpvrex_preflight.py\`, 12 unit test cases, \`AGENTS.md\` and GitHub Actions source job. No app/audio, Secrets, signing, release, merge or APK changes.
+- Starting point: stage-1 verified SHA `99d19f3daaeba5c037a947b508e481fac2c82088`, Actions [42729647590](https://github.com/laszko14/REX-Player/actions/runs/42729647590), **completed/success** on exact SHA, sources+Android PASS, signing intentionally skipped.
+- Branch: `docs/mpvrex-v32-stage02-preflight-20261110`, created directly from stage-1 final commit.
+- Scope: `docs/ai/STARTUP_PREFLIGHT.md`, read-only script `.github/scripts/mpvrex_preflight.py`, 12 unit test cases, `AGENTS.md` and GitHub Actions source job. No app/audio, Secrets, signing, release, merge or APK changes.
 - Mandatory checks: preflight on actual GitHub checkout, positive/negative unit tests, workflow syntax/Python, localization, and Android assembleDebug, testDebugUnitTest, lintDebug. On a new SHA inspect live GitHub Actions run/attempt/jobs.
 - Final CI result for this checkpoint's own commit: **NOT KNOWN UNTIL LIVE FINAL-SHA CHECK**. This is not PASS. Before stage 3: verify ALL required checks on terminal full SHA, do not rely on earlier green runs.
 - Next after successful verification: stage **3/10** — persistent checkpoint policy with safe resumption.
@@ -43,3 +43,7 @@
 ### Stage 2 hardening and terminal-verification rule
 - Review found that accepting a user-overridable CLI baseline could defeat v56 lineage protection. The final implementation fixes the approved SHA in the CLI, requires an explicit full expected HEAD and adds two negative regression tests.
 - GitHub Actions for the stage-2 final commit must be checked live after the final push. Do not report CODE_VERIFIED from the earlier intermediate commit's run; that run may be cancelled by concurrency policy.
+
+### Zweryfikowany przebieg pierwszego finalnego kodu
+- Commit `516c0e96638d34d484da60c1ef3584c74de1880b` — Actions [42732711851](https://github.com/laszko14/REX-Player/actions/runs/42732711851), attempt 1: **completed/success** na tym SHA. Source preflight i 30 testów Pythona: PASS; Android build/unit tests/Lint: SUCCESS; signing APK: skipped celowo.
+- Dodatkowy przegląd wykrył błędnie escapowane znaczniki Markdown w dokumentacji; poprawiono je i dodano test regresyjny w kolejnym commicie. **Wynik CI ostatniego commita dokumentacyjnego sprawdzić live, zanim zostanie uznany za CODE_VERIFIED.**
