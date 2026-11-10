@@ -162,6 +162,13 @@ class CheckpointTests(unittest.TestCase):
                 record(root, expected_head="c"*40, stage=3, status="CODE_VERIFIED",
                        next_action="next stage", summary="not actually verified")
 
+    def test_historical_handoff_preserved_as_archive(self):
+        archive = (Path(__file__).resolve().parents[2] /
+                   "docs/ai/archive/AI_HANDOFF_STAGE1_2.md").read_text(encoding="utf-8")
+        self.assertIn("42728386046", archive)
+        self.assertIn("42732711851", archive)
+        self.assertIn("docs/mpvrex-v32-stage02-preflight-20261110", archive)
+
     def test_state_file_does_not_contain_secrets(self):
         s = (Path(__file__).resolve().parents[2] / STATE_PATH).read_text()
         self.assertNotIn("ghp_", s)

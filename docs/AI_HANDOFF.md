@@ -1,6 +1,7 @@
 # MPVRex — AI handoff / wznowienie V3.2
 
 **Kanoniczny rejestr:** [CHECKPOINT_STATE.json](ai/CHECKPOINT_STATE.json).
+**Zachowana historia 1–2:** [archiwum checkpointu](ai/archive/AI_HANDOFF_STAGE1_2.md), bez utraty szczegółów wcześniejszych runów.
 **Zasady:** [CHECKPOINT_POLICY.md](ai/CHECKPOINT_POLICY.md).
 **Preflight:** [STARTUP_PREFLIGHT.md](ai/STARTUP_PREFLIGHT.md).
 

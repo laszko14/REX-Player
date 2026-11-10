@@ -6,7 +6,9 @@ at `74b059ab0d2c5492451c42f88ff993128a2e45c9`.
 Always read live GitHub branch, **full HEAD SHA**, `AGENTS.md`, and this policy at
 that exact SHA. The machine-readable snapshot is **one file**:
 `docs/ai/CHECKPOINT_STATE.json`. Human entry point: `docs/AI_HANDOFF.md`.
-No duplicate parallel "current state" files.
+No duplicate parallel "current state" files. A read-only legacy handoff
+snapshot is preserved at `docs/ai/archive/AI_HANDOFF_STAGE1_2.md`; it is
+historical evidence, **not** a second live checkpoint.
 
 The JSON records verified historical stages and **one active stage**, not
 an automatic GitHub check. `completed[].evidence` contains a run ID and
