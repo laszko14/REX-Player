@@ -4,9 +4,14 @@ on:
   pull_request:
     branches: [master]
   push:
-    branches: [master]
+    # Minimal source CI bootstrap for the owner-selected v56 documentation line.
+    # Stage 7 will review and consolidate SOURCE/PR quality gates.
+    branches: [master, "docs/mpvrex-v32-*"]
     paths:
       - "AGENTS.md"
+      - "CONTRIBUTING.md"
+      - "docs/AI_HANDOFF.md"
+      - "docs/ai/**"
       - ".github/workflows/**"
       - ".github/scripts/**"
       - "app/**"
@@ -68,7 +73,9 @@ jobs:
     needs: sources
     # Full compile, unit tests and Lint only on PRs. Signed master builds run once,
     # without a simultaneous redundant unsigned Android build.
-    if: github.event_name == 'pull_request'
+    # Also run all mandatory Android checks for documentation-stage source commits
+    # on the dedicated v56 line; never interpret source-only PASS as full Android CI.
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 70
     steps:

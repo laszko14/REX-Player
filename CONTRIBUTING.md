@@ -6,6 +6,8 @@ This guide outlines our development practices, code guidelines, git workflow, an
 
 ---
 
+**MPV Alpha v56 owner line:** this repo retains `master` as its default branch. A separate, user-approved installed v56 line is based on `build/player-transparency-v56` (`74b059ab0d2c5492451c42f88ff993128a2e45c9`). Follow the additional task-specific guidance in [AGENTS.md](AGENTS.md) and the state record in [docs/AI_HANDOFF.md](docs/AI_HANDOFF.md). The historical branch/SHA is a baseline; always verify the latest live branch head before work. Changes to release, signing or merging require separate approval.
+
 ## Code Contributions
 
 We welcome bug fixes, performance optimizations, and feature enhancements.
@@ -78,14 +80,14 @@ If you are porting code, patterns, or assets from other media players (e.g., `mp
 
 To keep the repository history clean and manageable, we adhere to the following Git rules:
 
-* **Feature Branches:** Create a new branch for every feature or fix, branched off `master`.
+* **Feature Branches:** For ordinary repository contributions, create a branch from `master`. **For the owner-selected MPV Alpha v56 line**, start only from `build/player-transparency-v56` or its latest explicitly approved descendant, verifying the full SHA and ancestry. Do not silently mix the divergent `master` and v56 histories.
 * **Atomic Commits:** Separate structural refactoring from visual/functional fixes into distinct commits.
-* **Keep Branches Updated:** Use `rebase` instead of merge to bring your branch up to date with `master`.
+* **Keep Branches Updated:** Refresh from the **approved parent line** after reviewing changes and possible conflicts; never rebase the v56 line onto `master` without separate authorization.
 * **Commit Messages:** We follow [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `fix:`, `feat:`, `refactor:`, `chore:`) to keep our commit history clear and organized. You are responsible for keeping your commits clean and conforming; non-conforming commits will need to be reworded or squashed by you before merge.
 
 ### Pull Requests
 
-* Target the `master` branch.
+* Target `master` for ordinary contributions. For the owner-selected MPV Alpha v56 line, target the reviewed v56-based integration branch; do not open an integration PR against divergent `master` just to obtain green CI.
 * Keep PRs scoped to a single fix or feature — split unrelated changes into separate PRs.
 * Reference the related issue number if one exists.
 * Describe *what* changed and *why*; the diff already shows *how*.

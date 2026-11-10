@@ -2,6 +2,12 @@
 
 Applies to this repository. It is guidance for development, not permission to make unrelated changes.
 
+## Owner-selected MPV Alpha v56 development line (2026-11-10)
+
+The installed and owner-approved baseline is **MPV Alpha v56**, branch `build/player-transparency-v56`, base commit `74b059ab0d2c5492451c42f88ff993128a2e45c9`. This is **not** a repository-wide default-branch change: `master` remains the upstream default but has a divergent history and is not the baseline for this MPV Alpha line. Before work, resolve the latest full HEAD SHA of the approved line, read this `AGENTS.md` and relevant documents **at that exact SHA**, and confirm the active task branch derives from v56. Record the current SHA, task scope, last confirmed stage and actual GitHub Actions results. If the branch or ancestry cannot be proven, stop rather than guess. See [`docs/AI_HANDOFF.md`](docs/AI_HANDOFF.md) for the first stage record; a checkpoint never substitutes for live verification.
+
+**Authority:** ANALYZE/plan is read-only. IMPLEMENT authorizes only the user-approved scope: diagnose, implement, run relevant and required tests, review changes, commit/push on the correct branch and verify mandatory CI at the **final SHA**. VERIFY confirms evidence without mutation. If CI is running, skipped or failed, never report `CODE_VERIFIED`; diagnose the first failed workflow/run/attempt/job/step and repair root causes in scope. Do not bypass tests or create a false green result. Report `CI_PENDING`, `CI_BLOCKED` or `NOT_TESTED` explicitly when relevant. Signed APK, publication, merging, forced updates, secrets, certificate changes, default-branch changes and destructive operations require separate explicit authorization. Use the direct GitHub connector; do not automate GitHub through unrelated browsing services.
+
 ## Read first
 - Read `CONTRIBUTING.md` for the verified build setup, code conventions, branch/PR process, and attribution rules.
 - For player internals, read `docs/player_architecture_decomposition.md` and then inspect the current implementations; documentation may lag the code.
@@ -36,7 +42,9 @@ Applies to this repository. It is guidance for development, not permission to ma
 - CI is not a substitute for manual playback testing.
 
 ## Change delivery
-- Start from `master` on a dedicated feature/fix branch; use small, conventional commits and a scoped PR as in `CONTRIBUTING.md`.
+- For the owner-approved MPV Alpha v56 line, start from `build/player-transparency-v56` (or a later explicitly approved descendant) on a dedicated task branch. Verify the full current SHA and ancestry before any write; **do not** use default `master` or import its divergent Auto Audio features without a separate request. General contributions outside this line may still follow the standard `master` process documented in `CONTRIBUTING.md`.
+- Target a review PR at the verified v56-based integration branch, not at divergent `master`. Never merge, rebase across lineages, change the default branch, release, sign or publish without a separate authorization.
+- Use small, conventional commits and a scoped PR. Record progress in `docs/AI_HANDOFF.md` after verified work; distinguish planned actions from completed actions.
 - Report: root cause/goal, affected files, checks run and their actual result, APK variant (if applicable), and any unverified UI/device behavior.
 - Do not claim a test/build has passed unless logs or local execution confirm it.
 
