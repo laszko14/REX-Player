@@ -9,7 +9,7 @@
 - Do **not** adopt divergent `master` as product baseline, migrate historical Auto Audio code, merge PRs, modify playback or sign an APK.
 
 ## Staged modernization plan (user-approved: 10 stages)
-1. Establish v56 working branch and foundational GitHub instructions — **implemented**; mandatory workflow passed on the first implementation commit; recheck the new checkpoint commit's CI before recording stage 1 as fully verified.
+1. Establish v56 working branch and foundational GitHub instructions — **CODE_VERIFIED**, terminal commit `99d19f3daaeba5c037a947b508e481fac2c82088`, Actions [42729647590](https://github.com/laszko14/REX-Player/actions/runs/42729647590), source and Android jobs SUCCESS.
 2. Preflight: branch/SHA/source-of-truth enforcement — **implemented in stage-2 work branch; required final CI pending verification**.
 3. Persistent checkpoints and resumption.
 4. Error case registry and deduplication.
@@ -39,3 +39,7 @@
 - Mandatory checks: preflight on actual GitHub checkout, positive/negative unit tests, workflow syntax/Python, localization, and Android assembleDebug, testDebugUnitTest, lintDebug. On a new SHA inspect live GitHub Actions run/attempt/jobs.
 - Final CI result for this checkpoint's own commit: **NOT KNOWN UNTIL LIVE FINAL-SHA CHECK**. This is not PASS. Before stage 3: verify ALL required checks on terminal full SHA, do not rely on earlier green runs.
 - Next after successful verification: stage **3/10** — persistent checkpoint policy with safe resumption.
+
+### Stage 2 hardening and terminal-verification rule
+- Review found that accepting a user-overridable CLI baseline could defeat v56 lineage protection. The final implementation fixes the approved SHA in the CLI, requires an explicit full expected HEAD and adds two negative regression tests.
+- GitHub Actions for the stage-2 final commit must be checked live after the final push. Do not report CODE_VERIFIED from the earlier intermediate commit's run; that run may be cancelled by concurrency policy.

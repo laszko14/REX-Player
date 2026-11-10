@@ -22,7 +22,8 @@ python3 .github/scripts/mpvrex_preflight.py \
   --expected-sha "$(git rev-parse HEAD)"
 \`\`\`
 
-Wymagany Python 3.12+ i pełna historia Git. Skrypt weryfikuje checkout,
+Wymagany Python 3.12+ i pełna historia Git. Nie ma parametru CLI pozwalającego podmienić zatwierdzony bazowy SHA v56.
+Skrypt weryfikuje checkout,
 40-znakowy SHA, dozwoloną nazwę gałęzi, przodka v56, \`origin\`, brak zmian
 i obecność niepustych *śledzonych* dokumentów w HEAD. Nie wykonuje zapisów,
 fetch, push, buildów, zmian ustawień ani operacji na APK. Przy FAIL nie ignoruj

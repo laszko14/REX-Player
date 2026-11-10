@@ -3,6 +3,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 import unittest
+import contextlib
+import io
 
 from mpvrex_preflight import REPO, REQUIRED, PreflightError, check_checkout
 
@@ -92,6 +94,23 @@ class CheckoutTests(unittest.TestCase):
                "GITHUB_REF": "refs/heads/master", "GITHUB_SHA": self.head}
         with self.assertRaisesRegex(PreflightError, "GITHUB_REF"):
             self.check(ci_env=env)
+
+    def test_cli_forbids_overriding_approved_base(self):
+        from mpvrex_preflight import main
+        args = ["--expected-branch", self.branch, "--expected-sha", self.head,
+                "--base-sha", self.base, "--root", str(self.root)]
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                main(args)
+        self.assertEqual(2, raised.exception.code)
+
+    def test_cli_requires_expected_head(self):
+        from mpvrex_preflight import main
+        args = ["--expected-branch", self.branch, "--root", str(self.root)]
+        with contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                main(args)
+        self.assertEqual(2, raised.exception.code)
 
     def test_ci_requires_sha(self):
         self.git("checkout", "-q", "--detach")

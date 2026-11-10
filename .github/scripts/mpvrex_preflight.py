@@ -107,15 +107,14 @@ def check_checkout(
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--expected-branch", required=True)
-    parser.add_argument("--expected-sha")
-    parser.add_argument("--base-sha", default=BASE_SHA)
+    parser.add_argument("--expected-sha", required=True)
     parser.add_argument("--root", default=".")
     parser.add_argument("--ci", action="store_true")
     args = parser.parse_args(argv)
     try:
         report = check_checkout(
             Path(args.root), expected_branch=args.expected_branch,
-            expected_sha=args.expected_sha, base_sha=args.base_sha,
+            expected_sha=args.expected_sha, base_sha=BASE_SHA,
             ci_env=dict(os.environ) if args.ci else None,
         )
     except (OSError, ValueError, PreflightError) as exc:
