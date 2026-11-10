@@ -74,3 +74,11 @@ Gałąź: `docs/mpvrex-v32-stage07-source-pr-ci-20261110`, od `50170ae71ddbb6599
 **Checkpoint w commicie: CI_PENDING, nie live PASS.** Po push sprawdź SOURCE CI na dokładnym finalnym SHA. Dla PR CI zweryfikuj oddzielny prawdziwy run pull_request na konkretnym PR merge SHA i HEAD SHA, oba wymagane joby i attempt. Bez rzeczywistego PR runu zgłoś PR_NOT_TESTED, a nie sukces. Po CI PASS zgłoś CODE_VERIFIED tylko gdy komplet wymaganych kontroli ma potwierdzony wynik. Przy FAIL przeanalizuj log, napraw błąd w tym etapie, sprawdź nowe SHA. Zakaz merge, release i podpisu APK.
 
 Dopiero następne **DALEJ**, po poprawnym zakończeniu etapu 7, rozpocznie etap **8/10 — bezpieczne APK (osobna zgoda na kompilację i podpis)**.
+
+## Etap 8/10 — bezpieczne APK (aktywny)
+
+Etap 7/10 SOURCE/PR CI potwierdzono na żywo: pełny SHA `20e9894e1ea6c60df858be8b734d041d3823fb02`, SOURCE push run `42751454971` attempt 1 SUCCESS i osobny PR CI run `42751599103` attempt 1 SUCCESS, oba wymagane joby SUCCESS. Draft PR #65 zamknięty bez merge. Gałąź etapu 8: `docs/mpvrex-v32-stage08-safe-apk-20261110`, bezpośrednio od zatwierdzonego SHA etapu 7.
+
+Zadanie obejmuje `docs/ai/SAFE_APK.md`, fail-closed `.github/scripts/mpvrex_apk.py`, negatywne testy `test_mpvrex_apk.py`, osobny job `signed_v56_apk` w `.github/workflows/build.yml` i bramkę jakości, bez zmian aplikacji i klucza. Nowy job może działać wyłącznie przy manualnym `workflow_dispatch` właściciela, jawnej dodatkowej autoryzacji, dokładnym SHA i wersji; zwykły push/PR nie podpisuje. Historyczny master ma odrębny workflow i nie jest bazą v56.
+
+**Snapshot w commicie: CI_PENDING, nie live PASS.** Zweryfikuj na końcowym SHA SOURCE i osobne PR CI (merge checkout), oba wymagane joby. Realne podpisanie APK wymaga odrębnej zgody i potwierdzenia dostępności dispatchu na właściwej gałęzi; bez tego nie deklaruj APK_VERIFIED. Nie twórz tagu ani release, nie wykonuj merge ani testu urządzenia. Następny etap 9/10 wyłącznie po ukończeniu 8 i kolejnej komendzie DALEJ.

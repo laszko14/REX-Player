@@ -29,6 +29,7 @@ REQUIRED_DOCS = {
     "docs/ai/ERROR_LEARNING.md": ("ERROR_CASES.json", "DEBUGGING_PROTOCOL.md"),
     "docs/ai/DEBUGGING_PROTOCOL.md": ("SYSTEMATIC DEBUGGING", "SOURCE", "Android"),
     "docs/ai/SOURCE_PR_CI.md": ("## SOURCE CI", "## PR CI", "## Kontrole", "## Ograniczenia"),
+    "docs/ai/SAFE_APK.md": ("## Zakres", "## Autoryzacja", "## Kontrole", "## Testy", "## Status"),
     QUALITY_DOC: ("## Zakres", "## Bramki", "## Testy", "## Ograniczenia",
                   "CI_PENDING", "CODE_VERIFIED", "NOT_TESTED"),
 }
@@ -52,6 +53,13 @@ REQUIRED_TESTS = {
         "test_missing_android_job_rejected",
         "test_missing_regression_test_rejected",
         "test_missing_quality_gate_step_rejected",
+    },
+    "test_mpvrex_apk.py": {
+        "test_authorized_manual_request",
+        "test_push_cannot_sign",
+        "test_player_source_change_cannot_sign",
+        "test_workflow_manual_guard_valid",
+        "test_secrets_before_tests_rejected",
     },
     "test_mpvrex_pr_ci.py": {
         "test_pr_merge_context_valid",
@@ -246,6 +254,9 @@ def validate_inputs(state: dict, cases: dict, docs: dict, workflow: dict,
     if state["active"]["stage"] >= 7:
         from mpvrex_pr_ci import validate_workflow as validate_pr_workflow
         validate_pr_workflow(workflow)
+    if state["active"]["stage"] >= 8:
+        from mpvrex_apk import validate_workflow as validate_apk_workflow
+        validate_apk_workflow(workflow)
     return {
         "stage": state["active"]["stage"],
         "active_status": state["active"]["status"],

@@ -86,3 +86,6 @@ On task branch push, SOURCE CI checks the exact final branch HEAD SHA and both r
 - Screenshot tests live in `app/src/screenshotTest/kotlin/`. Update their fixtures whenever HUD or Lua typography changes. Follow `docs/ui-screenshot-previews.md`.
 - Do **not** call an illustrative screenshot a live player screenshot; these tests do not decode movies or show saved private preferences. Use Android device testing for gesture and live video correctness.
 - The screenshot workflow does not sign, tag, publish or install APKs. Only the separate, explicitly authorized MPV Alpha release workflow can publish updates.
+
+## Safe MPV Alpha v56 APK (stage 8)
+See [docs/ai/SAFE_APK.md](docs/ai/SAFE_APK.md). The separate `signed_v56_apk` job is gated to explicit manual owner dispatch, exact approved SHA and version; run `python3 .github/scripts/mpvrex_apk.py workflow` and the full regression suite. Ordinary push and PR must never sign, tag or publish. The existing master signing job is historical and NOT the owner-approved v56 path. A manual approval for actual signing remains mandatory even after all code/CI checks pass.

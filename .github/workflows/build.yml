@@ -17,6 +17,23 @@ on:
       - "gradle/**"
       - "*.gradle.kts"
   workflow_dispatch:
+    inputs:
+      approval:
+        description: "Type SIGN_MPV_ALPHA_V56 only after separate owner approval"
+        required: true
+        type: string
+      source_sha:
+        description: "Exact full SHA of approved v56-line branch"
+        required: true
+        type: string
+      version_code_base:
+        description: "New base code (greater than 100056)"
+        required: true
+        type: string
+      version_name:
+        description: "Version name v56.N"
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -324,3 +341,104 @@ jobs:
           path: ${{ steps.apk.outputs.path }}
           if-no-files-found: error
           retention-days: 30
+
+  signed_v56_apk:
+    name: MPV Alpha v56 - prywatny podpis po osobnej zgodzie
+    # Manual-only route, never automatic source/PR signing.
+    if: \${{ github.event_name == 'workflow_dispatch' && github.repository == 'laszko14/REX-Player' && github.actor == 'laszko14' && startsWith(github.ref, 'refs/heads/docs/mpvrex-v32-') && inputs.approval == 'SIGN_MPV_ALPHA_V56' }}
+    needs: sources
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    permissions:
+      contents: read
+    concurrency:
+      group: mpvrex-v56-signed-apk
+      cancel-in-progress: false
+    steps:
+      - name: Checkout exact source and full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fail closed - authorize source, owner, version and lineage
+        env:
+          APPROVAL: \${{ inputs.approval }}
+          SOURCE_SHA: \${{ inputs.source_sha }}
+          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
+          VERSION_NAME: \${{ inputs.version_name }}
+        run: python3 .github/scripts/mpvrex_apk.py authorize --ci
+
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Cache Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Android SDK 36
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Run unit tests and lint without signing secrets
+        run: |
+          set -euo pipefail
+          chmod +x ./gradlew
+          ./gradlew :app:testDebugUnitTest :app:lintDebug --stacktrace --no-daemon
+
+      - name: Restore approved existing keystore only after tests
+        shell: bash
+        env:
+          MPV_ALPHA_KEYSTORE_BASE64: \${{ secrets.MPV_ALPHA_KEYSTORE_BASE64 }}
+          MPV_ALPHA_KEYSTORE_PASSWORD: \${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: \${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: \${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          for name in MPV_ALPHA_KEYSTORE_BASE64 MPV_ALPHA_KEYSTORE_PASSWORD MPV_ALPHA_KEY_ALIAS MPV_ALPHA_KEY_PASSWORD; do
+            [[ -n "\${!name}" ]] || { echo "::error::Missing approved signing secret: $name"; exit 1; }
+          done
+          mkdir -p "$RUNNER_TEMP/mpvrex-v56-signing"
+          printf '%s' "$MPV_ALPHA_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/mpvrex-v56-signing/approved.jks"
+          test -s "$RUNNER_TEMP/mpvrex-v56-signing/approved.jks"
+          echo "MPV_ALPHA_KEYSTORE_PATH=$RUNNER_TEMP/mpvrex-v56-signing/approved.jks" >> "$GITHUB_ENV"
+
+      - name: Assemble exactly one signed debug ARM64 APK
+        env:
+          MPV_ALPHA_KEYSTORE_PASSWORD: \${{ secrets.MPV_ALPHA_KEYSTORE_PASSWORD }}
+          MPV_ALPHA_KEY_ALIAS: \${{ secrets.MPV_ALPHA_KEY_ALIAS }}
+          MPV_ALPHA_KEY_PASSWORD: \${{ secrets.MPV_ALPHA_KEY_PASSWORD }}
+          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
+          VERSION_NAME: \${{ inputs.version_name }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew :app:assembleDebug --stacktrace --no-daemon \
+            -PmpvAlphaVersionCode="$VERSION_CODE_BASE" \
+            -PmpvAlphaVersionName="$VERSION_NAME"
+
+      - name: Verify certificate, package, version, ABI and SHA
+        id: apk
+        env:
+          APPROVAL: \${{ inputs.approval }}
+          SOURCE_SHA: \${{ inputs.source_sha }}
+          VERSION_CODE_BASE: \${{ inputs.version_code_base }}
+          VERSION_NAME: \${{ inputs.version_name }}
+        run: python3 .github/scripts/mpvrex_apk.py verify --ci
+
+      - name: Upload private APK only after verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: MPV-Alpha-v56-arm64-update
+          path: ${{ steps.apk.outputs.path }}
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Remove temporary signing key
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/mpvrex-v56-signing"

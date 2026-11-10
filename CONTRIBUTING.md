@@ -164,3 +164,6 @@ Saving changes updates:
 2. A tracking file inside the `.translation_metadata/` directory (e.g., `.translation_metadata/values-<locale>.json`)
 
 **Important:** You must commit both the updated `strings.xml` and its corresponding `.json` ledger file to Git.
+
+### MPVRex V3.2 stage 8 — signed v56 build
+The isolated manual-only signed v56 workflow is described in [docs/ai/SAFE_APK.md](docs/ai/SAFE_APK.md). Its source SHA, owner authorization, versionCode, package, certificate and ARM64 output must be checked before distribution. Successful SOURCE/PR CI does not authorize a signed build or prove installation on a device.

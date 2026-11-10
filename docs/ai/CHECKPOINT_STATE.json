@@ -102,14 +102,30 @@
           "Android - build, testy, lint"
         ]
       }
+    },
+    {
+      "stage": 7,
+      "branch": "docs/mpvrex-v32-stage07-source-pr-ci-20261110",
+      "sha": "20e9894e1ea6c60df858be8b734d041d3823fb02",
+      "status": "CODE_VERIFIED",
+      "evidence": {
+        "run_id": 42751454971,
+        "attempt": 1,
+        "sha": "20e9894e1ea6c60df858be8b734d041d3823fb02",
+        "result": "success",
+        "required_jobs": [
+          "YAML, Python i Lua",
+          "Android - build, testy, lint"
+        ]
+      }
     }
   ],
   "active": {
-    "stage": 7,
-    "branch": "docs/mpvrex-v32-stage07-source-pr-ci-20261110",
+    "stage": 8,
+    "branch": "docs/mpvrex-v32-stage08-safe-apk-20261110",
     "status": "CI_PENDING",
-    "parent_sha": "50170ae71ddbb65993260f0c36bd8a1673f30d3c",
-    "next_action": "Check stage 7 SOURCE push CI at final SHA and independent PR merge CI; verify actual run/attempt/source+Android jobs for both contexts.",
-    "summary": "SOURCE/PR CI separation for v56, strict pull_request merge SHA + parent provenance, read-only repo quality checks and negative tests; no player or APK edits."
+    "parent_sha": "20e9894e1ea6c60df858be8b734d041d3823fb02",
+    "next_action": "Verify stage 8 SOURCE and separate PR merge CI at the final SHA. Signing requires independent owner approval and a tested manual dispatch.",
+    "summary": "Isolated manual-only v56 signed APK workflow with SHA/version/certificate/ABI safeguards; no signing run authorized."
   }
 }
